@@ -1,9 +1,5 @@
 from __future__ import print_function
 
-options = ["instrument", "grating", "subarray", "duty_cycle",
-           "onchip_summing", "event_filter", "window_filter", "dither",
-           "exposure_time","chips_turned_on"]
-
 criteria_map = {"==":"__eq__",
                 "!=":"__ne__",
                 ">=":"__ge__",
@@ -28,6 +24,9 @@ class ObsID(object):
 
     def __setitem__(self, item, value):
         self.obsid[item] = value
+
+    def __contains__(self, item):
+        return item in self.obsid
 
     def get(self, item, default=None):
         return self.obsid.get(item, default)
@@ -187,7 +186,7 @@ class LoadReviewObscat(object):
             subset = "%s %s %s" % (value, criterion, item)
         else:
             subset = "%s %s %s" % (item, criterion, value)
-        if item not in options:
+        if item not in list(self.values())[0]:
             s = "Cannot create a subset of ObsIDs with this criterion: %s." % subset
             raise RuntimeError(s)
         criterion = criteria_map[criterion]
