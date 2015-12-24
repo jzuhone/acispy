@@ -5,7 +5,7 @@ options = ["instrument", "grating", "subarray", "duty_cycle",
            "exposure_time","chips_turned_on"]
 
 criteria_map = {"==":"__eq__",
-                "!=":"__neq__",
+                "!=":"__ne__",
                 ">=":"__ge__",
                 "<=":"__le__",
                 ">":"__gt__",
@@ -67,10 +67,10 @@ class LoadReviewObscat(object):
             if in_ocat:
                 words = line.strip().split()
                 num_words = len(words)
-                if line.startswith("Target name"):
-                    idx_si = words.find("SI")
+                if line.startswith("Target Name"):
+                    idx_si = words.index("SI")
                     this_obsid["target_name"] = " ".join(words[2:idx_si])
-                    this_obsid["si_mode"] = words[-1]
+                    this_obsid["simode"] = words[-1]
                 elif line.startswith("Instrument"):
                     this_obsid["instrument"] = words[1]
                     this_obsid["grating"] = words[3]
@@ -79,13 +79,12 @@ class LoadReviewObscat(object):
                     this_obsid["exposure_time"] = float(words[2])
                     this_obsid["remaining_exposure_time"] = float(words[6])
                 elif line.startswith("Offset"):
-                    this_obsid["offset"] = {}
-                    this_obsid["offset"]["y"] = float(words[2])
-                    this_obsid["offset"]["z"] = float(words[4])
+                    this_obsid["offset_y"] = float(words[2])
+                    this_obsid["offset_z"] = float(words[4])
                     if num_words == 7:
-                        this_obsid["offset"]["z-sim"] = float(words[-1])
+                        this_obsid["offset_zsim"] = float(words[-1])
                     else:
-                        this_obsid["offset"]["z-sim"] = 0.0
+                        this_obsid["offset_zsim"] = 0.0
                 elif line.startswith("ACIS Exposure"):
                     this_obsid["exposure_mode"] = words[3]
                     this_obsid["event_tm_format"] = words[7]
@@ -100,21 +99,22 @@ class LoadReviewObscat(object):
                     if words[2] == "NONE":
                         this_obsid["subarray"] = "NONE"
                     else:
-                        this_obsid["subarray"] = {}
-                        this_obsid["subarray"]["start"] = int(words[4])
-                        this_obsid["subarray"]["rows"] = int(words[6])
+                        this_obsid["subarray"] = words[2]
+                        this_obsid["subarray_start"] = int(words[4])
+                        this_obsid["subarray_rows"] = int(words[6])
                 elif line.startswith("Duty Cycle"):
                     if words[2] == "Y":
-                        this_obsid["duty_cycle"] = {}
-                        this_obsid["duty_cycle"]["number"] = int(words[4])
-                        this_obsid["duty_cycle"]["tprimary"] = float(words[6])
-                        this_obsid["duty_cycle"]["tsecondary"] = float(words[8])
+                        this_obsid["duty_cycle"] = "Y"
+                        this_obsid["duty_cycle_number"] = int(words[4])
+                        this_obsid["duty_cycle_tprimary"] = float(words[6])
+                        this_obsid["duty_cycle_tsecondary"] = float(words[8])
                     else:
                         this_obsid["duty_cycle"] = "N"
                 elif line.startswith("Onchip Summing"):
                     if words[2] == "Y":
-                        this_obsid["onchip_summing"]["rows"] = int(words[4])
-                        this_obsid["onchip_summing"]["columns"] = int(words[6])
+                        this_obsid["onchip_summing"] = "Y"
+                        this_obsid["onchip_summing_rows"] = int(words[4])
+                        this_obsid["onchip_summing_columns"] = int(words[6])
                     else:
                         this_obsid["onchip_summing"] = "N"
                 elif line.startswith("Event Filter"):
@@ -184,15 +184,18 @@ class LoadReviewObscat(object):
         criterion = criteria_map[criterion]
         new_ocat = {}
         for k, v in self.ocat.items():
-            func_to_eval = getattr(v[item], criterion)
-            if isinstance(value, (list, tuple)):
-                matches = all([func_to_eval(vv) for vv in value])
+            if v.get(item) is None:
+                matches = False
             else:
-                matches = func_to_eval(value)
+                func_to_eval = getattr(v[item], criterion)
+                if isinstance(value, (list, tuple)):
+                    matches = all([func_to_eval(vv) for vv in value])
+                else:
+                    matches = func_to_eval(value)
             if matches:
                 new_ocat[k] = v
         if len(new_ocat) == 0:
             s = "No ObsIDs with the criterion \"%s\" were found." % subset
-            print(s)
+            raise RuntimeError(s)
         else:
             return LoadReviewObscat(self.lr_id, new_ocat, subset=subset)
