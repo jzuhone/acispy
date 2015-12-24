@@ -35,6 +35,15 @@ class ObsID(object):
     def __getattr__(self, item):
         return self.obsid[item]
 
+    def keys(self):
+        return self.obsid.keys()
+
+    def values(self):
+        return self.obsid.values()
+
+    def items(self):
+        return self.obsid.items()
+
 class LoadReviewObscat(object):
     def __init__(self, lr_id, ocat, subset=None):
         self.ocat = ocat
@@ -129,7 +138,7 @@ class LoadReviewObscat(object):
                     if num_words > 1:
                         this_obsid["dither"] = words[-1]
                     else:
-                        this_obsid["dither"] = "ON"
+                        this_obsid["dither"] = "NORMAL"
                 elif line.startswith("Cycle"):
                     this_obsid["cycle"] = words[1]
                     this_obsid["obj_flag"] = words[-1]
