@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 criteria_map = {"==":"__eq__",
                 "!=":"__ne__",
                 ">=":"__ge__",
@@ -90,7 +92,7 @@ class Obscat(object):
             if matches:
                 new_ocat[k] = v
         if len(new_ocat) == 0:
-            s = "No ObsIDs with the criterion \"%s\" were found." % subset
-            raise RuntimeError(s)
+            print("No ObsIDs with the criterion \"%s\" were found." % subset)
+            return None
         else:
             return Obscat(new_ocat, subset=subset)

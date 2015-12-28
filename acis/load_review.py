@@ -18,9 +18,15 @@ class LoadReview(object):
         self.obscat = LoadReviewObscat.from_load_review(self)
 
     def check_for_errors(self):
-        for line in self.txt:
+        for i, line in enumerate(self.txt):
             if line.startswith(">>>ERROR"):
-                print(line[3:].strip())
+                print("Line %d: %s" % (i, line[3:].strip()))
+
+    def __repr__(self):
+        return "Load Review %s" % self.id
+
+    def __str__(self):
+        return self.id
 
 def _parse_lines_ocat(lines):
 
@@ -139,3 +145,10 @@ class LoadReviewObscat(Obscat):
 
     def __str__(self):
         return self.lr_id
+
+    def find_obsids_with(self, item, criterion, value):
+        ocat = super(LoadReviewObscat, self).find_obsids_with(item, criterion, value)
+        if ocat is None:
+            return None
+        else:
+            return LoadReviewObscat(self.lr_id, ocat.ocat, subset=ocat.subset)
