@@ -1,1 +1,1 @@
-from acis.lr.api import LoadReviewObscat
+from acis.load_review import LoadReview, LoadReviewObscat
