@@ -1,6 +1,15 @@
 from __future__ import print_function
 from acis.obscat import Obscat, ObsID
 
+events_dict = {"perigee":"EPERIGEE",
+               "apogee":"APOGEE",
+               "enter_belts":"EEF1000",
+               "exit_belts":"XEF1000",
+               "disable_radmon":"OORMPDS",
+               "enable_radmon":"OORMPEN",
+               "comm_begins":"COMM BEGINS",
+               "comm_ends":"COMM ENDS"}
+
 def _check_for_lr_id(lines):
     for i, line in enumerate(lines):
         if line.startswith("USING"):
@@ -16,11 +25,44 @@ class LoadReview(object):
         f.close()
         self.id = _check_for_lr_id(self.txt)
         self.obscat = LoadReviewObscat.from_load_review(self)
+        self.event_times = {}
+        self.errors = []
+        self.obsid_times = {}
+        for line in self.txt:
+            if "MP_OBSID" in line:
+                words = line.strip().split()
+                self.obsid_times[words[-1]] = words[0]
 
     def check_for_errors(self):
+        if len(self.errors) == 0:
+            for i, line in enumerate(self.txt):
+                if line.startswith(">>>ERROR"):
+                    self.errors.append("Line %d: %s" % (i, line[3:].strip()))
+            if len(self.errors) == 0:
+                self.errors.append("No errors were found in this load review.")
+        for error in self.errors:
+            print(error)
+
+    def jump_to_time(self, time, n=10):
+        ct = 0
         for i, line in enumerate(self.txt):
-            if line.startswith(">>>ERROR"):
-                print("Line %d: %s" % (i, line[3:].strip()))
+            if line.startswith(time) or 0 < ct <= n:
+                if line.strip() != "":
+                    print("Line %d: %s" % (i, line.strip()))
+                    ct += 1
+
+    def get_times_for_event(self, event):
+        if event not in events_dict:
+            raise RuntimeError("Cannot get times for event \"%s\"!" % event)
+        if event not in self.event_times:
+            self.event_times[event] = []
+            for line in self.txt:
+                if events_dict[event] in line:
+                    self.event_times[event].append(line.strip().split()[0])
+        return self.event_times[event]
+
+    def get_time_for_obsid_change(self, obsid):
+        return self.obsid_times[str(obsid)]
 
     def __repr__(self):
         return "Load Review %s" % self.id

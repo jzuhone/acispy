@@ -58,10 +58,10 @@ class Obscat(object):
         return self.ocat.values()
 
     def __getitem__(self, obsid):
-        return self.ocat[obsid]
+        return self.ocat[str(obsid)]
 
     def __contains__(self, obsid):
-        return obsid in self.ocat
+        return str(obsid) in self.ocat
 
     def __iter__(self):
         for obsid in self.ocat:
