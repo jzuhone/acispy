@@ -1,0 +1,39 @@
+#!/usr/bin/env python
+
+import argparse
+from acis import LoadReview
+
+parser = argparse.ArgumentParser()
+parser.add_argument("filename", type=str)
+args = parser.parse_args()
+
+lr = LoadReview(args.filename)
+
+print("Parsing Load Review %s." % str(lr))
+
+print("="*60)
+
+print("Checking for errors...")
+lr.check_for_errors()
+
+print("="*60)
+
+obsids_with = [("grating","==","LETG"),
+               ("grating","==","HETG"),
+               ("subarray","!=","NONE"),
+               ("dither","!=","NORMAL")]
+
+for check in obsids_with:
+    print("Checking Load Review for %s %s %s " % check)
+    obscat = lr.obscat.find_obsids_with(*check)
+    if obscat is not None:
+        print("There are %d ObsIDs with %s:" % (len(obscat), obscat.subset))
+        for obsid in obscat:
+            print(obsid)
+    print("="*60)
+
+print("Done parsing Load Review %s." % str(lr))
+
+
+
+

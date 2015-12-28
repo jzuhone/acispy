@@ -2,14 +2,15 @@
 from setuptools import setup
 
 setup(name='acis',
-      packages = ['acis'],
+      packages=['acis'],
       version='0.1.0',
-      description = 'Python tools for ACIS Ops',
+      description='Python tools for ACIS Ops',
       author='John ZuHone',
       author_email='jzuhone@gmail.com',
       url='http://github.com/jzuhone/acis',
       download_url='https://github.com/jzuhone/acis/tarball/0.1.0',
-      install_requires = [],
+      install_requires=[],
+      scripts=["scripts/parse_load_review"],
       classifiers=[
           'Intended Audience :: Science/Research',
           'Operating System :: OS Independent',
