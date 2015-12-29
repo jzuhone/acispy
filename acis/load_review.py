@@ -1,5 +1,10 @@
 from __future__ import print_function
+from six import string_types
 from acis.obscat import Obscat, ObsID
+from astropy.time import Time
+import requests
+from bs4 import BeautifulSoup
+from collections import OrderedDict
 
 events_dict = {"perigee":"EPERIGEE",
                "apogee":"APOGEE",
@@ -19,21 +24,42 @@ def _check_for_lr_id(lines):
     raise RuntimeError("Was not able to determine the ID for the load review!")
 
 class LoadReview(object):
-    def __init__(self, fn):
-        f = open(fn, "r")
-        self.txt = f.readlines()
-        f.close()
+    def __init__(self, txt):
+        self.txt = txt
         self.id = _check_for_lr_id(self.txt)
         self.obscat = LoadReviewObscat.from_load_review(self)
-        self.event_times = {}
         self.errors = []
+        self.line_times = OrderedDict()
         self.obsid_times = {}
-        for line in self.txt:
-            if "MP_OBSID" in line:
-                words = line.strip().split()
-                self.obsid_times[words[-1]] = words[0]
+        self.event_times = {}
+        for i, line in enumerate(self.txt):
+            words = line.strip().split()
+            if len(words) > 0:
+                try:
+                    time = Time(words[0])
+                    self.line_times[i] = time
+                    if "MP_OBSID" in line:
+                        self.obsid_times[words[-1]] = time
+                except ValueError:
+                    pass
+
+    @classmethod
+    def from_file(cls, fn):
+        f = open(fn, "r")
+        txt = f.readlines()
+        f.close()
+        return cls(txt)
+
+    @classmethod
+    def from_webpage(cls, lr_id):
+        yr = "20%s" % lr_id[5:7]
+        url = "http://cxc.cfa.harvard.edu/acis/lr_texts/%s/%s_lr.html" % (yr, lr_id)
+        u = requests.get(url)
+        soup = BeautifulSoup(u.content, "lxml")
+        return cls(soup.body.pre.text.split("\n"))
 
     def check_for_errors(self):
+        # Lazy-evaluate errors
         if len(self.errors) == 0:
             for i, line in enumerate(self.txt):
                 if line.startswith(">>>ERROR"):
@@ -44,25 +70,42 @@ class LoadReview(object):
             print(error)
 
     def jump_to_time(self, time, n=10):
+        if time == "now":
+            time = Time.now()
+            print("Current time is %s UTC." % time.yday)
+        else:
+            time = Time(time)
         ct = 0
-        for i, line in enumerate(self.txt):
-            if line.startswith(time) or 0 < ct <= n:
-                if line.strip() != "":
-                    print("Line %d: %s" % (i, line.strip()))
-                    ct += 1
+        i = -1
+        for it, t in self.line_times.items():
+            if time <= t:
+                i = it-1
+                break
+        if i == -1:
+            err = "The time %s is not within the time frame of load review %s." % (time, self.id)
+            raise RuntimeError(err)
+        while ct <= n:
+            line = self.txt[i]
+            if line.strip() != "":
+                print("Line %d: %s" % (i, line.strip()))
+                ct += 1
+            i += 1
 
     def get_times_for_event(self, event):
         if event not in events_dict:
             raise RuntimeError("Cannot get times for event \"%s\"!" % event)
+        # Lazy-evaluate event times
         if event not in self.event_times:
             self.event_times[event] = []
             for line in self.txt:
                 if events_dict[event] in line:
-                    self.event_times[event].append(line.strip().split()[0])
+                    self.event_times[event].append(Time(line.strip().split()[0]))
         return self.event_times[event]
 
     def get_time_for_obsid_change(self, obsid):
-        return self.obsid_times[str(obsid)]
+        if not isinstance(obsid, string_types):
+            obsid = "%05d" % obsid
+        return self.obsid_times[obsid]
 
     def __repr__(self):
         return "Load Review %s" % self.id

@@ -1,4 +1,5 @@
 from __future__ import print_function
+from six import string_types
 
 criteria_map = {"==":"__eq__",
                 "!=":"__ne__",
@@ -58,6 +59,8 @@ class Obscat(object):
         return self.ocat.values()
 
     def __getitem__(self, obsid):
+        if not isinstance(obsid, string_types):
+            obsid = "%05d" % obsid
         return self.ocat[str(obsid)]
 
     def __contains__(self, obsid):
