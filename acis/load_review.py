@@ -1,19 +1,12 @@
 from __future__ import print_function
 from six import string_types
 from acis.obscat import Obscat, ObsID
-from astropy.time import Time
+from acis.utils import get_time
+from astropy.time import Time, TimeDelta
 import requests
 from bs4 import BeautifulSoup
-from collections import OrderedDict
-
-events_dict = {"perigee":"EPERIGEE",
-               "apogee":"APOGEE",
-               "enter_belts":"EEF1000",
-               "exit_belts":"XEF1000",
-               "disable_radmon":"OORMPDS",
-               "enable_radmon":"OORMPEN",
-               "comm_begins":"COMM BEGINS",
-               "comm_ends":"COMM ENDS"}
+import numpy as np
+from collections import defaultdict
 
 def _check_for_lr_id(lines):
     for i, line in enumerate(lines):
@@ -23,25 +16,38 @@ def _check_for_lr_id(lines):
             return lr_id
     raise RuntimeError("Was not able to determine the ID for the load review!")
 
+def make_two_lists():
+    return [[],[]]
+
 class LoadReview(object):
     def __init__(self, txt):
         self.txt = txt
         self.id = _check_for_lr_id(self.txt)
         self.obscat = LoadReviewObscat.from_load_review(self)
         self.errors = []
-        self.line_times = OrderedDict()
-        self.obsid_times = {}
-        self.event_times = {}
-        for i, line in enumerate(self.txt):
-            words = line.strip().split()
-            if len(words) > 0:
-                try:
-                    time = Time(words[0])
-                    self.line_times[i] = time
-                    if "MP_OBSID" in line:
-                        self.obsid_times[words[-1]] = time
-                except ValueError:
-                    pass
+        start_time, status = self._get_start_time_and_status()
+        # To define *the* start time, take the first time entry
+        # and then subtract half a second
+        start_time -= TimeDelta(0.5,format="sec")
+        start_time = start_time.decimalyear
+        self.event_times = defaultdict(make_two_lists)
+        self.event_times["instrument"][0].append(start_time)
+        self.event_times["instrument"][1].append(status[0])
+        self.event_times["hetg"][0].append(start_time)
+        if status[1].endswith("IN"):
+            self.event_times["hetg"][1].append(True)
+        else:
+            self.event_times["hetg"][1].append(False)
+        self.event_times["letg"][0].append(start_time)
+        if status[2].endswith("IN"):
+            self.event_times["letg"][1].append(True)
+        else:
+            self.event_times["letg"][1].append(False)
+        self.event_times["obsid"][0].append(start_time)
+        self.event_times["obsid"][1].append(status[3])
+        self.event_times["format"][0].append(start_time)
+        self.event_times["format"][1].append(int(status[5][-1]))
+        self._populate_event_times()
 
     @classmethod
     def from_file(cls, fn):
@@ -58,6 +64,68 @@ class LoadReview(object):
         soup = BeautifulSoup(u.content, "lxml")
         return cls(soup.body.pre.text.split("\n"))
 
+    def _get_start_time_and_status(self):
+        for i, line in enumerate(self.txt):
+            words = line.strip().split()
+            if len(words) > 0:
+                try:
+                    time = Time(words[0])
+                    break
+                except:
+                    pass
+                if line.startswith("CHANDRA STATUS ARRAY"):
+                    status = self.txt[i+2].strip().split()[-1]
+                    continue
+        status = status.strip("()").split(",")
+        return time, status
+
+    def _populate_event_times(self):
+        for i, line in enumerate(self.txt):
+            words = line.strip().split()
+            if len(words) > 0:
+                try:
+                    time = Time(words[0]).decimalyear
+                    self.event_times["line"][0].append(time)
+                    self.event_times["line"][1].append(i)
+                    if "MP_OBSID" in line:
+                        self.event_times["obsid"][0].append(time)
+                        self.event_times["obsid"][1].append(words[-1])
+                    if "SIMTRANS" in line:
+                        self.event_times["instrument"][0].append(time)
+                        self.event_times["instrument"][1].append(words[-1].strip("()"))
+                    if "HETGIN" in line:
+                        self.event_times["hetg"][0].append(time)
+                        self.event_times["hetg"][1].append(True)
+                    if "HETGRE" in line:
+                        self.event_times["hetg"][0].append(time)
+                        self.event_times["hetg"][1].append(False)
+                    if "LETGIN" in line:
+                        self.event_times["letg"][0].append(time)
+                        self.event_times["letg"][1].append(True)
+                    if "LETGRE" in line:
+                        self.event_times["letg"][0].append(time)
+                        self.event_times["letg"][1].append(False)
+                    if "CSELFMT" in line:
+                        self.event_times["format"][0].append(time)
+                        self.event_times["format"][1].append(int(words[-1][-1]))
+                except ValueError:
+                    pass
+
+    def _search_for_status(self, key, time):
+        list = self.event_times[key]
+        # We have this if we need it
+        err = "The time %s is not within the time frame for this load review!" % time
+        if time.decimalyear < list[0][0]:
+            raise RuntimeError(err)
+        idx = np.searchsorted(list[0], time.decimalyear)
+        if key != "line":
+            idx -= 1
+        try:
+            stat = list[1][idx]
+        except IndexError:
+            raise RuntimeError(err)
+        return stat
+
     def check_for_errors(self):
         # Lazy-evaluate errors
         if len(self.errors) == 0:
@@ -70,20 +138,9 @@ class LoadReview(object):
             print(error)
 
     def jump_to_time(self, time, n=10):
-        if time == "now":
-            time = Time.now()
-            print("Current time is %s UTC." % time.yday)
-        else:
-            time = Time(time)
+        time = get_time(time)
         ct = 0
-        i = -1
-        for it, t in self.line_times.items():
-            if time <= t:
-                i = it-1
-                break
-        if i == -1:
-            err = "The time %s is not within the time frame of load review %s." % (time, self.id)
-            raise RuntimeError(err)
+        i = self._search_for_status("line", time)
         while ct <= n:
             line = self.txt[i]
             if line.strip() != "":
@@ -91,21 +148,20 @@ class LoadReview(object):
                 ct += 1
             i += 1
 
-    def get_times_for_event(self, event):
-        if event not in events_dict:
-            raise RuntimeError("Cannot get times for event \"%s\"!" % event)
-        # Lazy-evaluate event times
-        if event not in self.event_times:
-            self.event_times[event] = []
-            for line in self.txt:
-                if events_dict[event] in line:
-                    self.event_times[event].append(Time(line.strip().split()[0]))
-        return self.event_times[event]
+    def get_status(self, time):
+        time = get_time(time)
+        status = {}
+        for k,v in self.event_times.items():
+            if k != "line":
+                status[k] = self._search_for_status(k, time)
+        return status
 
     def get_time_for_obsid_change(self, obsid):
         if not isinstance(obsid, string_types):
             obsid = "%05d" % obsid
-        return self.obsid_times[obsid]
+        idx = self.event_times["obsid"][1].index(obsid)
+        return Time(self.event_times["obsid"][0][idx],
+                    format='decimalyear').yday
 
     def __repr__(self):
         return "Load Review %s" % self.id
