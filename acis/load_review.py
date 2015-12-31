@@ -19,6 +19,9 @@ def _check_for_lr_id(lines):
 def make_two_lists():
     return [[],[]]
 
+def convert_decyear_to_yday(time):
+    return Time(time, format='decimalyear').replicate(format='yday')
+
 class LoadReview(object):
     def __init__(self, txt):
         self.txt = txt
@@ -192,8 +195,7 @@ class LoadReview(object):
         if not isinstance(obsid, string_types):
             obsid = "%05d" % obsid
         idx = self.event_times["obsid"][1].index(obsid)
-        return Time(self.event_times["obsid"][0][idx],
-                    format='decimalyear').replicate(format="yday")
+        return convert_decyear_to_yday(self.event_times["obsid"][0][idx])
 
     def get_times_for_event(self, event, filter=None):
         if filter is None:
@@ -202,7 +204,7 @@ class LoadReview(object):
             if not isinstance(filter, bool):
                 filter = np.array(self.event_times[event][1]) == filter
             times = np.array(self.event_times[event][0])[filter]
-        return Time(times, format='decimalyear').replicate(format="yday")
+        return convert_decyear_to_yday(times)
 
     def __repr__(self):
         return "Load Review %s" % self.id
