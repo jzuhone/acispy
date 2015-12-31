@@ -44,6 +44,12 @@ class ObsID(object):
     def items(self):
         return self.obsid.items()
 
+    def open_chaser(self):
+        import webbrowser
+        url = "http://cda.cfa.harvard.edu/chaser/"
+        url += "startViewer.do?menuItem=details&obsid=%s" % self.id
+        webbrowser.open(url)
+
 class Obscat(object):
     def __init__(self, ocat, subset=None):
         self.ocat = ocat
