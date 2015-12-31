@@ -193,7 +193,7 @@ class LoadReview(object):
             obsid = "%05d" % obsid
         idx = self.event_times["obsid"][1].index(obsid)
         return Time(self.event_times["obsid"][0][idx],
-                    format='decimalyear').yday
+                    format='decimalyear').replicate(format="yday")
 
     def get_times_for_event(self, event, filter=None):
         if filter is None:
@@ -201,8 +201,8 @@ class LoadReview(object):
         else:
             if not isinstance(filter, bool):
                 filter = np.array(self.event_times[event][1]) == filter
-            times = np.array(self.event_times[event][0])[filter]          
-        return Time(times, format='decimalyear').yday
+            times = np.array(self.event_times[event][0])[filter]
+        return Time(times, format='decimalyear').replicate(format="yday")
 
     def __repr__(self):
         return "Load Review %s" % self.id
