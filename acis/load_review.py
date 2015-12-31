@@ -45,9 +45,19 @@ class LoadReview(object):
             self.event_times["letg"][1].append(False)
         self.event_times["obsid"][0].append(start_time)
         self.event_times["obsid"][1].append(status[3])
+        self.event_times["radmon_enabled"][0].append(start_time)
+        if status[4].endswith("DS"):
+            self.event_times["radmon_enabled"][1].append(False)
+        else:
+            self.event_times["radmon_enabled"][1].append(True)
         self.event_times["format"][0].append(start_time)
         self.event_times["format"][1].append(int(status[5][-1]))
         self._populate_event_times()
+        # Now we fix the initial entries for comm and belts
+        self.event_times["in_comm"][0].insert(0, start_time)
+        self.event_times["in_comm"][1].insert(0, not self.event_times["in_comm"][1][0])
+        self.event_times["in_belts"][0].insert(0, start_time)
+        self.event_times["in_belts"][1].insert(0, not self.event_times["in_belts"][1][0])
 
     @classmethod
     def from_file(cls, fn):
@@ -108,6 +118,28 @@ class LoadReview(object):
                     if "CSELFMT" in line:
                         self.event_times["format"][0].append(time)
                         self.event_times["format"][1].append(int(words[-1][-1]))
+                    if "EPERIGEE" in line:
+                        self.event_times["perigee"][0].append(time)
+                    if "APOGEE" in line:
+                        self.event_times["apogee"][0].append(time)
+                    if "COMM BEGINS" in line:
+                        self.event_times["in_comm"][0].append(time)
+                        self.event_times["in_comm"][1].append(True)
+                    if "COMM ENDS" in line:
+                        self.event_times["in_comm"][0].append(time)
+                        self.event_times["in_comm"][1].append(False)
+                    if "EEF1000" in line:
+                        self.event_times["in_belts"][0].append(time)
+                        self.event_times["in_belts"][1].append(True)
+                    if "XEF1000" in line:
+                        self.event_times["in_belts"][0].append(time)
+                        self.event_times["in_belts"][1].append(False)
+                    if "OORMPDS" in line:
+                        self.event_times["radmon_enabled"][0].append(time)
+                        self.event_times["radmon_enabled"][1].append(False)
+                    if "OORMPEN" in line:
+                        self.event_times["radmon_enabled"][0].append(time)
+                        self.event_times["radmon_enabled"][1].append(True)
                 except ValueError:
                     pass
 
@@ -152,7 +184,7 @@ class LoadReview(object):
         time = get_time(time)
         status = {}
         for k,v in self.event_times.items():
-            if k != "line":
+            if k not in ["line","perigee","apogee"]:
                 status[k] = self._search_for_status(k, time)
         return status
 
@@ -162,6 +194,15 @@ class LoadReview(object):
         idx = self.event_times["obsid"][1].index(obsid)
         return Time(self.event_times["obsid"][0][idx],
                     format='decimalyear').yday
+
+    def get_times_for_event(self, event, filter=None):
+        if filter is None:
+            times = self.event_times[event][0]
+        else:
+            if not isinstance(filter, bool):
+                filter = np.array(self.event_times[event][1]) == filter
+            times = np.array(self.event_times[event][0])[filter]          
+        return Time(times, format='decimalyear').yday
 
     def __repr__(self):
         return "Load Review %s" % self.id
