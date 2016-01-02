@@ -4,10 +4,9 @@ import numpy as np
 from six import string_types
 
 def get_time(time):
-    if isinstance(time, string_types):
-        if time == "now":
-            time = Time.now()
-            print("Current time is %s UTC." % time.yday)
+    if time is "now":
+        time = Time.now()
+        print("Current time is %s UTC." % time.yday)
     else:
         time = Time(time)
     return time
