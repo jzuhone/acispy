@@ -9,7 +9,7 @@ setup(name='acis',
       author_email='jzuhone@gmail.com',
       url='http://github.com/jzuhone/acis',
       download_url='https://github.com/jzuhone/acis/tarball/0.1.0',
-      install_requires=["six","requests","astropy","beautifulsoup4"],
+      install_requires=["six","requests","astropy","beautifulsoup4","scipy"],
       scripts=["scripts/parse_load_review"],
       classifiers=[
           'Intended Audience :: Science/Research',

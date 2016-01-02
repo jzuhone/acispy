@@ -1,8 +1,10 @@
 from __future__ import print_function
 from six import string_types
 from acis.obscat import Obscat, ObsID
-from acis.utils import get_time
+from acis.utils import get_time, convert_decyear_to_yday
+from acis.temperature_model import TemperatureModel
 from astropy.time import Time, TimeDelta
+import astropy.units as u
 import requests
 from bs4 import BeautifulSoup
 import numpy as np
@@ -18,9 +20,6 @@ def _check_for_lr_id(lines):
 
 def make_two_lists():
     return [[],[]]
-
-def convert_decyear_to_yday(time):
-    return Time(time, format='decimalyear').replicate(format='yday')
 
 class LoadReview(object):
     def __init__(self, txt):
@@ -61,6 +60,7 @@ class LoadReview(object):
         self.event_times["in_comm"][1].insert(0, not self.event_times["in_comm"][1][0])
         self.event_times["in_belts"][0].insert(0, start_time)
         self.event_times["in_belts"][1].insert(0, not self.event_times["in_belts"][1][0])
+        self.fptemp = TemperatureModel.from_webpage("fp", self.id[:-1], self.id[-1])
 
     @classmethod
     def from_file(cls, fn):
@@ -189,6 +189,7 @@ class LoadReview(object):
         for k,v in self.event_times.items():
             if k not in ["line","perigee","apogee"]:
                 status[k] = self._search_for_status(k, time)
+        status["fptemp"] = self.fptemp.get_temp_at_time(time)
         return status
 
     def get_time_for_obsid_change(self, obsid):
@@ -238,8 +239,8 @@ def _parse_lines_ocat(lines):
                 this_obsid["grating"] = words[3]
                 this_obsid["type"] = words[5]
             elif line.startswith("Exposure"):
-                this_obsid["exposure_time"] = float(words[2])
-                this_obsid["remaining_exposure_time"] = float(words[6])
+                this_obsid["exposure_time"] = float(words[2])*u.ks
+                this_obsid["remaining_exposure_time"] = float(words[6])*u.ks
             elif line.startswith("Offset"):
                 this_obsid["offset_y"] = float(words[2])
                 this_obsid["offset_z"] = float(words[4])
@@ -251,7 +252,7 @@ def _parse_lines_ocat(lines):
                 this_obsid["exposure_mode"] = words[3]
                 this_obsid["event_tm_format"] = words[7]
                 if num_words > 10:
-                    this_obsid["frame_time"] = float(words[-1])
+                    this_obsid["frame_time"] = float(words[-1])*u.s
                 else:
                     this_obsid["frame_time"] = None
             elif line.startswith("Chips Turned"):
@@ -268,8 +269,8 @@ def _parse_lines_ocat(lines):
                 if words[2] == "Y":
                     this_obsid["duty_cycle"] = "Y"
                     this_obsid["duty_cycle_number"] = int(words[4])
-                    this_obsid["duty_cycle_tprimary"] = float(words[6])
-                    this_obsid["duty_cycle_tsecondary"] = float(words[8])
+                    this_obsid["duty_cycle_tprimary"] = float(words[6])*u.s
+                    this_obsid["duty_cycle_tsecondary"] = float(words[8])*u.s
                 else:
                     this_obsid["duty_cycle"] = "N"
             elif line.startswith("Onchip Summing"):
