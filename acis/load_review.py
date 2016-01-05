@@ -64,6 +64,11 @@ class LoadReview(object):
 
     @classmethod
     def from_file(cls, fn):
+        """
+        Create a ``LoadReview`` from a file.
+        :param fn: the text file containing the load review.
+        :return: the ``LoadReview`` object.
+        """
         f = open(fn, "r")
         txt = f.readlines()
         f.close()
@@ -71,6 +76,11 @@ class LoadReview(object):
 
     @classmethod
     def from_webpage(cls, lr_id):
+        """
+        Create a ``LoadReview`` from its HTML version.
+        :param lr_id: The identifier for the load review in standard format, e.g. "DEC2815C".
+        :return: the ``LoadReview`` object.
+        """
         yr = "20%s" % lr_id[5:7]
         url = "http://cxc.cfa.harvard.edu/acis/lr_texts/%s/%s_lr.html" % (yr, lr_id)
         u = requests.get(url)
@@ -162,6 +172,7 @@ class LoadReview(object):
         return stat
 
     def check_for_errors(self):
+        """Check the ``LoadReview`` for error messages."""
         # Lazy-evaluate errors
         if len(self.errors) == 0:
             for i, line in enumerate(self.txt):
@@ -193,6 +204,11 @@ class LoadReview(object):
         return status
 
     def get_time_for_obsid_change(self, obsid):
+        """
+        Return the time for an ``obsid`` change. 
+        :param obsid: the ObsID to return the time for. 
+        :return: 
+        """
         if not isinstance(obsid, string_types):
             obsid = "%05d" % obsid
         idx = self.event_times["obsid"][1].index(obsid)
@@ -310,11 +326,21 @@ class LoadReviewObscat(Obscat):
 
     @classmethod
     def from_load_review(cls, lr):
+        """
+        Return a ``LoadReviewObscat`` from a ``LoadReview`` object.
+        :param lr: the ``LoadReview`` object from which to extract the catalog.
+        :return: the ``LoadReviewObscat`` object.
+        """
         ocat = _parse_lines_ocat(lr.txt)
         return cls(lr.id, ocat)
 
     @classmethod
     def from_file(cls, fn):
+        """
+        Return a ``LoadReviewObscat`` from a load review file.
+        :param fn: the load review file from which to extract the catalog.
+        :return: the ``LoadReviewObscat`` object.
+        """
         f = open(fn, "r")
         lines = f.readlines()
         f.close()
