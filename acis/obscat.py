@@ -1,5 +1,6 @@
 from __future__ import print_function
 from six import string_types
+import webbrowser
 
 criteria_map = {"==":"__eq__",
                 "!=":"__ne__",
@@ -45,9 +46,13 @@ class ObsID(object):
         return self.obsid.items()
 
     def open_chaser(self):
-        import webbrowser
         url = "http://cda.cfa.harvard.edu/chaser/"
         url += "startViewer.do?menuItem=details&obsid=%s" % self.id
+        webbrowser.open(url)
+
+    def open_obscat_data_page(self):
+        url = 'https://icxc.harvard.edu/cgi-bin/mp/'
+        url += "target_param.cgi?%s" % self.id
         webbrowser.open(url)
 
 class Obscat(object):
