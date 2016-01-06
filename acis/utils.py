@@ -1,6 +1,5 @@
 from __future__ import print_function
 from astropy.time import Time
-import numpy as np
 
 def get_time(time):
     if time is "now":

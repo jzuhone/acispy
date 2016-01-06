@@ -2,7 +2,7 @@ from __future__ import print_function
 from six import string_types
 from acis.obscat import Obscat, ObsID
 from acis.utils import get_time, convert_decyear_to_yday
-from acis.temperature_model import TemperatureModel
+from acis.states import TemperatureModel, ACISStates
 from astropy.time import Time, TimeDelta
 import astropy.units as u
 import requests
@@ -61,6 +61,7 @@ class LoadReview(object):
         self.event_times["in_belts"][0].insert(0, start_time)
         self.event_times["in_belts"][1].insert(0, not self.event_times["in_belts"][1][0])
         self.fptemp = TemperatureModel.from_webpage("fp", self.id[:-1], self.id[-1])
+        self.states = ACISStates.from_webpage("fp", self.id[:-1], self.id[-1])
 
     @classmethod
     def from_file(cls, fn):
@@ -201,7 +202,16 @@ class LoadReview(object):
             if k not in ["line","perigee","apogee"]:
                 status[k] = self._search_for_status(k, time)
         status["fptemp"] = self.fptemp.get_temp_at_time(time)
+        states = self.states.get_states(time)
+        for state in ["ra","dec","roll","dither","pitch","power_cmd","si_mode"]:
+            status[state] = states[state]
+        status["sim_z"] = states["simpos"]
+        status["sim_focus"] = states["simfa_pos"]
         return status
+
+    @property
+    def current_status(self):
+        self.get_status("now")
 
     def get_time_for_obsid_change(self, obsid):
         """

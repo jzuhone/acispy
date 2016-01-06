@@ -5,9 +5,10 @@ from acis import LoadReview
 
 parser = argparse.ArgumentParser()
 parser.add_argument("load_review", type=str)
+parser.add_argument("--time", type=str, default="now")
 args = parser.parse_args()
 
 lr = LoadReview.from_webpage(args.load_review.upper())
-status = lr.get_status("now")
+status = lr.get_status(args.time)
 for k, v in status.items():
     print("%s: %s" % (k, v))
