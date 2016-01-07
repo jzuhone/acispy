@@ -172,22 +172,26 @@ class LoadReview(object):
             raise RuntimeError(err)
         return stat
 
-    def check_for_errors(self):
-        """Check the ``LoadReview`` for error messages."""
+    def check_for_errors_and_warnings(self):
+        """Check the ``LoadReview`` for error and warning messages."""
         # Lazy-evaluate errors
         if len(self.errors) == 0:
             for i, line in enumerate(self.txt):
-                if line.startswith(">>>ERROR"):
+                if line.startswith(">>>ERROR") or line.startswith(">>>WARNING"):
                     self.errors.append("Line %d: %s" % (i, line[3:].strip()))
             if len(self.errors) == 0:
-                self.errors.append("No errors were found in this load review.")
+                self.errors.append("No errors or warnings were found in this load review.")
         for error in self.errors:
             print(error)
 
     def jump_to_time(self, time, n=10):
         time = get_time(time)
+        lineno = self._search_for_status("line", time)
+        self.jump_to_line(lineno, n=n)
+
+    def jump_to_line(self, lineno, n=10):
         ct = 0
-        i = self._search_for_status("line", time)
+        i = lineno
         while ct <= n:
             line = self.txt[i]
             if line.strip() != "":

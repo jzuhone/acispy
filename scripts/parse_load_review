@@ -11,14 +11,14 @@ parser.add_argument("--check-subarray", action="store_true")
 parser.add_argument("--check-dither", action="store_true")
 args = parser.parse_args()
 
-lr = LoadReview(args.filename)
+lr = LoadReview.from_file(args.filename)
 
 print("Parsing Load Review %s." % str(lr))
 print("="*60)
 
 if not args.no_check_errors:
-    print("Checking for errors...")
-    lr.check_for_errors()
+    print("Checking for errors and warnings...")
+    lr.check_for_errors_and_warnings()
     print("="*60)
 
 obsids_with = []
