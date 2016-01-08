@@ -11,6 +11,9 @@ from scipy.interpolate import InterpolatedUnivariateSpline
 base_urls = {"1m":"ftp://ftp.swpc.noaa.gov/pub/lists/ace/%s_ace_%s_1m.txt",
              "5m":"ftp://ftp.swpc.noaa.gov/pub/lists/ace/%s_ace_%s_5m.txt",
              "1h":"ftp://ftp.swpc.noaa.gov/pub/lists/ace2/%s_ace_%s_1h.txt"}
+realtime_urls = {"epam":"http://services.swpc.noaa.gov/text/ace-epam.txt",
+                 "mag":"http://services.swpc.noaa.gov/text/ace-magnetometer.txt",
+                 "swepam":"http://services.swpc.noaa.gov/text/ace-swepam.txt"}
 
 cols = {}
 cols["epam"] = ["year","month","day","time","mjd","jds","status_e","e_38-53_keV",
@@ -27,32 +30,39 @@ excludes["epam"] = ["year","month","day","time","index"]
 
 class ACE(object):
     units = {}
-    def __init__(self, dtype, start_time, end_time, cadence):
-        self.start_time = get_time(start_time)
-        self.end_time = get_time(end_time)
+    def __init__(self, dtype, times, cadence):
         self.dtype = dtype
-        tables = []
-        if cadence == "1h":
-            dt = relativedelta(months=1)
+        if times == "realtime":
+            url = realtime_urls[self.dtype]
+            tables = [self._get_table(url)]
         else:
-            dt = relativedelta(days=1)
-        time = self.start_time.to_datetime()
-        end_time = self.end_time.to_datetime()
-        while time <= end_time:
-            tables.append(self._get_table(cadence, time))
-            time += dt
+            start_time = get_time(times[0])
+            end_time = get_time(times[1])
+            tables = []
+            if cadence == "1h":
+                dt = relativedelta(months=1)
+            else:
+                dt = relativedelta(days=1)
+            time = start_time.to_datetime()
+            etime = end_time.to_datetime()
+            while time <= etime:
+                datestr = "%s%02d" % (time.year, time.month)
+                if cadence != "1h":
+                    datestr += "%02d" % time.day
+                base_url = base_urls[cadence]
+                url = base_url % (datestr, self.dtype)
+                tables.append(self._get_table(url))
+                time += dt
         self.data = vstack(tables)
         self._time = (Time(self.data["mjd"].data, format="mjd") + 
                       TimeDelta(self.data["jds"].data, format='sec')).yday
-        self.mask = self._time >= self.start_time
-        self.mask = np.logical_and(self.mask, self._time <= self.end_time)
+        if times == "recent":
+            self.mask = True
+        else:
+            self.mask = self._time >= start_time
+            self.mask = np.logical_and(self.mask, self._time <= end_time)
 
-    def _get_table(self, cadence, time):
-        datestr = "%s%02d" % (time.year, time.month)
-        if cadence != "1h":
-            datestr += "%02d" % time.day
-        base_url = base_urls[cadence]
-        url = base_url % (datestr, self.dtype)
+    def _get_table(self, url):
         u = request.urlopen(url).read().decode("utf8").split("\n")[2:]
         mycols = cols[self.dtype]
         myexcludes = excludes[self.dtype]
@@ -70,6 +80,14 @@ class ACE(object):
     def time(self):
         return Time(self._time[self.mask])
 
+    @property
+    def start_time(self):
+        return self.time[0]
+
+    @property
+    def end_time(self):
+        return self.time[-1]
+
     def __getitem__(self, item):
         return self.data[item][self.mask]*self.units[item]
 
@@ -79,8 +97,8 @@ class ACE(object):
                     for k in self.units.keys())
 
 class ACEParticles(ACE):
-    def __init__(self, start_time, end_time, cadence="1m"):
-        super(ACEParticles, self).__init__("epam", start_time, end_time, cadence=cadence)
+    def __init__(self, times, cadence="1m"):
+        super(ACEParticles, self).__init__("epam", times, cadence=cadence)
         self.mask = np.logical_and(self.mask, self.data["status_p"] == 0)
         self.mask = np.logical_and(self.mask, self.data["status_e"] == 0)
         flux_units = 1./(u.cm**2*u.s*u.steradian*u.MeV)
@@ -89,14 +107,14 @@ class ACEParticles(ACE):
 
 class ACESolarWind(ACE):
     units = {"density":u.cm**-3, "speed":u.km/u.s, "temperature":u.K}
-    def __init__(self, start_time, end_time, cadence="1m"):
-        super(ACESolarWind, self).__init__("swepam", start_time, end_time, cadence=cadence)
+    def __init__(self, times, cadence="1m"):
+        super(ACESolarWind, self).__init__("swepam", times, cadence=cadence)
         self.mask = np.logical_and(self.mask, self.data["status"] == 0)
         self._setup_interp()
 
 class ACEMagneticField(ACE):
     units = {"Bx":u.nT, "By":u.nT, "Bz":u.nT, "Bt":u.nT, "lat":u.deg, "lon":u.deg}
-    def __init__(self, start_time, end_time, cadence="1m"):
-        super(ACEMagneticField, self).__init__("mag", start_time, end_time, cadence=cadence)
+    def __init__(self, times, cadence="1m"):
+        super(ACEMagneticField, self).__init__("mag", times, cadence=cadence)
         self.mask = np.logical_and(self.mask, self.data["status"] == 0)
         self._setup_interp()
