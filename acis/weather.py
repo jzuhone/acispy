@@ -10,6 +10,7 @@ from scipy.interpolate import InterpolatedUnivariateSpline
 
 base_url = "ftp://ftp.swpc.noaa.gov/pub/lists/%s/%s_ace_%s_%s.txt"
 excludes = ["year","month","day","time","index"]
+noindex = ["mjd","jds","status","status_e","status_p"]
 
 class ACE(object):
     units = {}
@@ -38,14 +39,15 @@ class ACE(object):
                 url = base_url % (which_dir, datestr, self.dtype, cadence)
                 tables.append(self._get_table(url))
                 time += dt
-        self.data = vstack(tables)
-        self._time = (Time(self.data["mjd"].data, format="mjd") + 
-                      TimeDelta(self.data["jds"].data, format='sec')).yday
+        self.table = vstack(tables)
+        self._time = (Time(self.table["mjd"].data, format="mjd") + 
+                      TimeDelta(self.table["jds"].data, format='sec')).copy("yday")
         if times == "recent":
             self.mask = True
         else:
             self.mask = self._time >= start_time
             self.mask = np.logical_and(self.mask, self._time <= end_time)
+        self.data = {}
 
     def _get_table(self, url):
         u = request.urlopen(url).read().decode("utf8").split("\n")[2:]
@@ -56,23 +58,18 @@ class ACE(object):
     def _setup_interp(self):
         self.interp = {}
         for k in self.units.keys():
-            self.interp[k] = InterpolatedUnivariateSpline(self.time.decimalyear,
+            self.interp[k] = InterpolatedUnivariateSpline(self["time"].decimalyear,
                                                           self[k].value)
 
-    @property
-    def time(self):
-        return Time(self._time[self.mask])
-
-    @property
-    def start_time(self):
-        return self.time[0]
-
-    @property
-    def end_time(self):
-        return self.time[-1]
-
     def __getitem__(self, item):
-        return self.data[item][self.mask]*self.units[item]
+        if item not in self.data:
+            if item == "time":
+                self.data[item] = self._time[self.mask]
+            elif item in self.table.keys() and item not in noindex:
+                self.data[item] = self.table[item][self.mask]*self.units[item]
+            else:
+                raise KeyError
+        return self.data[item]
 
     def get_data(self, time):
         time = get_time(time).decimalyear
@@ -86,8 +83,8 @@ class ACEParticles(ACE):
     realtime_url = "http://services.swpc.noaa.gov/text/ace-epam.txt"
     def __init__(self, times, cadence="1m"):
         super(ACEParticles, self).__init__("epam", times, cadence=cadence)
-        self.mask = np.logical_and(self.mask, self.data["status_p"] == 0)
-        self.mask = np.logical_and(self.mask, self.data["status_e"] == 0)
+        self.mask = np.logical_and(self.mask, self.table["status_p"] == 0)
+        self.mask = np.logical_and(self.mask, self.table["status_e"] == 0)
         flux_units = 1./(u.cm**2*u.s*u.steradian*u.MeV)
         self.units = dict((k,flux_units) for k in self.cols if k.endswith("keV"))
         self._setup_interp()
@@ -99,7 +96,7 @@ class ACESolarWind(ACE):
     realtime_url = "http://services.swpc.noaa.gov/text/ace-swepam.txt"
     def __init__(self, times, cadence="1m"):
         super(ACESolarWind, self).__init__("swepam", times, cadence=cadence)
-        self.mask = np.logical_and(self.mask, self.data["status"] == 0)
+        self.mask = np.logical_and(self.mask, self.table["status"] == 0)
         self._setup_interp()
 
 class ACEMagneticField(ACE):
@@ -109,5 +106,5 @@ class ACEMagneticField(ACE):
     realtime_url = "http://services.swpc.noaa.gov/text/ace-magnetometer.txt"
     def __init__(self, times, cadence="1m"):
         super(ACEMagneticField, self).__init__("mag", times, cadence=cadence)
-        self.mask = np.logical_and(self.mask, self.data["status"] == 0)
+        self.mask = np.logical_and(self.mask, self.table["status"] == 0)
         self._setup_interp()
