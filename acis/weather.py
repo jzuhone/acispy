@@ -8,49 +8,34 @@ from astropy.io import ascii
 from astropy.table import vstack
 from scipy.interpolate import InterpolatedUnivariateSpline
 
-base_urls = {"1m":"ftp://ftp.swpc.noaa.gov/pub/lists/ace/%s_ace_%s_1m.txt",
-             "5m":"ftp://ftp.swpc.noaa.gov/pub/lists/ace/%s_ace_%s_5m.txt",
-             "1h":"ftp://ftp.swpc.noaa.gov/pub/lists/ace2/%s_ace_%s_1h.txt"}
-realtime_urls = {"epam":"http://services.swpc.noaa.gov/text/ace-epam.txt",
-                 "mag":"http://services.swpc.noaa.gov/text/ace-magnetometer.txt",
-                 "swepam":"http://services.swpc.noaa.gov/text/ace-swepam.txt"}
-
-cols = {}
-cols["epam"] = ["year","month","day","time","mjd","jds","status_e","e_38-53_keV",
-                "e_175-315_keV","status_p","p_47-68_keV","p_115-195_keV",
-                "p_310-580_keV","p_795-1193_keV","p_1060-1900_keV","index"]
-cols["mag"] = ["year","month","day","time","mjd","jds",
-               "status","Bx","By","Bz","Bt","lat","lon"]
-cols["swepam"] = ["year","month","day","time","mjd","jds",
-                  "status","density","speed","temperature"]
-excludes = {}
-excludes["swepam"] = ["year","month","day","time"]
-excludes["mag"] = ["year","month","day","time"]
-excludes["epam"] = ["year","month","day","time","index"]
+base_url = "ftp://ftp.swpc.noaa.gov/pub/lists/%s/%s_ace_%s_%s.txt"
+excludes = ["year","month","day","time","index"]
 
 class ACE(object):
     units = {}
+    cols = []
+    realtime_url = ""
     def __init__(self, dtype, times, cadence):
         self.dtype = dtype
         if times == "realtime":
-            url = realtime_urls[self.dtype]
-            tables = [self._get_table(url)]
+            tables = [self._get_table(self.realtime_url)]
         else:
             start_time = get_time(times[0])
             end_time = get_time(times[1])
             tables = []
             if cadence == "1h":
                 dt = relativedelta(months=1)
+                which_dir = "ace2"
             else:
                 dt = relativedelta(days=1)
+                which_dir = "ace"
             time = start_time.to_datetime()
             etime = end_time.to_datetime()
             while time <= etime:
                 datestr = "%s%02d" % (time.year, time.month)
                 if cadence != "1h":
                     datestr += "%02d" % time.day
-                base_url = base_urls[cadence]
-                url = base_url % (datestr, self.dtype)
+                url = base_url % (which_dir, datestr, self.dtype, cadence)
                 tables.append(self._get_table(url))
                 time += dt
         self.data = vstack(tables)
@@ -64,10 +49,8 @@ class ACE(object):
 
     def _get_table(self, url):
         u = request.urlopen(url).read().decode("utf8").split("\n")[2:]
-        mycols = cols[self.dtype]
-        myexcludes = excludes[self.dtype]
         table = ascii.read(u, format='fast_no_header', data_start=0, comment="#",
-                           guess=False, names=mycols, exclude_names=myexcludes)
+                           guess=False, names=self.cols, exclude_names=excludes)
         return table
 
     def _setup_interp(self):
@@ -97,23 +80,33 @@ class ACE(object):
                     for k in self.units.keys())
 
 class ACEParticles(ACE):
+    cols = ["year","month","day","time","mjd","jds","status_e","e_38-53_keV",
+            "e_175-315_keV","status_p","p_47-68_keV","p_115-195_keV",
+            "p_310-580_keV","p_795-1193_keV","p_1060-1900_keV","index"]
+    realtime_url = "http://services.swpc.noaa.gov/text/ace-epam.txt"
     def __init__(self, times, cadence="1m"):
         super(ACEParticles, self).__init__("epam", times, cadence=cadence)
         self.mask = np.logical_and(self.mask, self.data["status_p"] == 0)
         self.mask = np.logical_and(self.mask, self.data["status_e"] == 0)
         flux_units = 1./(u.cm**2*u.s*u.steradian*u.MeV)
-        self.units = dict((k,flux_units) for k in cols["epam"] if k.endswith("keV"))
+        self.units = dict((k,flux_units) for k in self.cols if k.endswith("keV"))
         self._setup_interp()
 
 class ACESolarWind(ACE):
+    cols = ["year","month","day","time","mjd","jds",
+            "status","density","speed","temperature"]
     units = {"density":u.cm**-3, "speed":u.km/u.s, "temperature":u.K}
+    realtime_url = "http://services.swpc.noaa.gov/text/ace-swepam.txt"
     def __init__(self, times, cadence="1m"):
         super(ACESolarWind, self).__init__("swepam", times, cadence=cadence)
         self.mask = np.logical_and(self.mask, self.data["status"] == 0)
         self._setup_interp()
 
 class ACEMagneticField(ACE):
+    cols = ["year","month","day","time","mjd","jds",
+            "status","Bx","By","Bz","Bt","lat","lon"]
     units = {"Bx":u.nT, "By":u.nT, "Bz":u.nT, "Bt":u.nT, "lat":u.deg, "lon":u.deg}
+    realtime_url = "http://services.swpc.noaa.gov/text/ace-magnetometer.txt"
     def __init__(self, times, cadence="1m"):
         super(ACEMagneticField, self).__init__("mag", times, cadence=cadence)
         self.mask = np.logical_and(self.mask, self.data["status"] == 0)
