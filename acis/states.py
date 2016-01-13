@@ -9,7 +9,7 @@ class ACISStates(object):
 
     state_keys = ["ccd_count","clocking","ra","dec","dither","fep_count",
                   "hetg","letg","obsid","pcad_mode","pitch","power_cmd",
-                  "roll","si_mode","simfa_pos","simpos"]
+                  "roll","si_mode","simfa_pos","simpos","q1","q2","q3","q4"]
 
     def __init__(self, table, component, date, rev):
         self.table = ascii.read(table)
