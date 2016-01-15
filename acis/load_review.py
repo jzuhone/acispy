@@ -185,11 +185,24 @@ class LoadReview(object):
             print(error)
 
     def jump_to_time(self, time, n=10):
+        """
+        Jump to a particular time in the load review and print
+        a number of lines.
+        :param time: The time to start printing from. Can be in yday format, 
+            an AstroPy Time object, or "now".
+        :param n: The number of lines to print, default 10.
+        """
         time = get_time(time)
         lineno = self._search_for_status("line", time)
         self.jump_to_line(lineno, n=n)
 
     def jump_to_line(self, lineno, n=10):
+        """
+        Jump to a particular line number in the load review and print
+        a number of lines.
+        :param lineno: The line number to start printing from.
+        :param n: The number of lines to print, default 10.
+        """
         ct = 0
         i = lineno
         while ct <= n:
@@ -221,7 +234,7 @@ class LoadReview(object):
         """
         Return the time for an ``obsid`` change. 
         :param obsid: the ObsID to return the time for. 
-        :return: 
+        :return: AstroPy Time object for the time of the obsid change.
         """
         if not isinstance(obsid, string_types):
             obsid = "%05d" % obsid

@@ -32,6 +32,12 @@ class ACISStates(object):
             return self.table[item].data
 
     def get_states(self, time):
+        """
+        Get the state data at a particular time.
+        :param time: The time to get the states at. Can be in 
+            yday format, an AstroPy Time object, or "now".
+        :return: A dictionary of the states.
+        """
         time = get_time(time)
         # We have this if we need it
         err = "The time %s is not within the time frame for this load!" % time
@@ -76,5 +82,11 @@ class TemperatureModel(object):
             return self.table[item].data
 
     def get_temp_at_time(self, time):
+        """
+        Get the temperature of the component at a particular time.
+        :param time: The time to get the temperature at. Can be in 
+            yday format, an AstroPy Time object, or "now".
+        :return: The temperature of the component as an AstroPy Quantity. 
+        """
         t = get_time(time).decimalyear
         return self.Tfunc(t)*u.deg_C
