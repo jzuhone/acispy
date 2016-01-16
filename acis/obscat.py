@@ -46,11 +46,17 @@ class ObsID(object):
         return self.obsid.items()
 
     def open_chaser(self):
+        """
+        Get the obsid information from ChaSeR in a web browser. 
+        """
         url = "http://cda.cfa.harvard.edu/chaser/"
         url += "startViewer.do?menuItem=details&obsid=%s" % self.id
         webbrowser.open(url)
 
     def open_obscat_data_page(self):
+        """
+        Get the obsid information from ChaSeR in a web browser. 
+        """
         url = 'https://icxc.harvard.edu/cgi-bin/mp/'
         url += "target_param.cgi?%s" % self.id
         webbrowser.open(url)
