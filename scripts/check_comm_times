@@ -42,10 +42,10 @@ end_idxs = np.logical_and(comm_ends.decimalyear >= start_time,
 cbs = comm_begins[begin_idxs]
 ces = comm_ends[end_idxs]
 
-if isinstance(args.time_zone, string_types):
+if args.time_zone in time_zones:
     time_zone = time_zones[args.time_zone.upper()]
 else:
-    time_zone = args.time_zone
+    time_zone = int(args.time_zone)
 tzi = TimezoneInfo(utc_offset=time_zone*u.hour)
 
 cb_list = list(cbs.to_datetime(timezone=tzi))
@@ -55,7 +55,7 @@ if cbs[0] > ces[0]:
     cb_list.insert(0, "-------------------")
 
 if len(cbs) != len(ces):
-    ce_list.append("--------------------------")
+    ce_list.append("-------------------")
 
 print("Comm Times for load %s (%d UTC):" % (lr, time_zone))
 print("===========================================")
