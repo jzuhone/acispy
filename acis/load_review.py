@@ -236,8 +236,7 @@ class LoadReview(object):
         if filter is None:
             times = self.event_times[event][0]
         else:
-            if not isinstance(filter, bool):
-                filter = np.array(self.event_times[event][1]) == filter
+            filter = np.array(self.event_times[event][1]) == filter
             times = np.array(self.event_times[event][0])[filter]
         return convert_decyear_to_yday(times)
 
