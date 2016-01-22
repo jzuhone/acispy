@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 from setuptools import setup
+import glob
+
+scripts = glob.glob("scripts/*")
 
 setup(name='acis',
       packages=['acis'],
@@ -10,7 +13,7 @@ setup(name='acis',
       url='http://github.com/jzuhone/acis',
       download_url='https://github.com/jzuhone/acis/tarball/0.1.0',
       install_requires=["six","requests","astropy","beautifulsoup4","scipy"],
-      scripts=["scripts/get_expected_acis_status","scripts/parse_load_review","scripts/open_obscat"],
+      scripts=scripts,
       classifiers=[
           'Intended Audience :: Science/Research',
           'Operating System :: OS Independent',
