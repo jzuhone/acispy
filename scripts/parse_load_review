@@ -4,14 +4,14 @@ import argparse
 from acis import LoadReview
 
 parser = argparse.ArgumentParser()
-parser.add_argument("filename", type=str)
+parser.add_argument("load_review", type=str)
 parser.add_argument("--no_check_errors", action="store_true")
 parser.add_argument("--check-grating", action="store_true")
 parser.add_argument("--check-subarray", action="store_true")
 parser.add_argument("--check-dither", action="store_true")
 args = parser.parse_args()
 
-lr = LoadReview.from_file(args.filename)
+lr = LoadReview(args.load_review)
 
 print("Parsing Load Review %s." % str(lr))
 print("="*60)
