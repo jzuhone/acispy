@@ -9,6 +9,7 @@ import requests
 from bs4 import BeautifulSoup
 import numpy as np
 from collections import defaultdict
+import os
 
 def _check_for_lr_id(lines):
     for i, line in enumerate(lines):
@@ -22,8 +23,23 @@ def make_two_lists():
     return [[],[]]
 
 class LoadReview(object):
-    def __init__(self, txt):
-        self.txt = txt
+    """
+    Create a ``LoadReview`` from its HTML version or a file.
+    :param lr_id: The identifier for the load review in standard format, e.g. "DEC2815C", or the text
+        file containing the load review.
+    :return: the ``LoadReview`` object.
+    """
+    def __init__(self, load_review):
+        if os.path.exists(load_review):
+            f = open(load_review, "r")
+            self.txt = f.readlines()
+            f.close()
+        else:
+            yr = "20%s" % load_review[5:7]
+            url = "http://cxc.cfa.harvard.edu/acis/lr_texts/%s/%s_lr.html" % (yr, load_review.upper())
+            u = requests.get(url)
+            soup = BeautifulSoup(u.content, "lxml")
+            self.txt = soup.body.pre.text.split("\n")
         self.id = _check_for_lr_id(self.txt)
         self.obscat = LoadReviewObscat.from_load_review(self)
         self.errors = []
@@ -62,31 +78,6 @@ class LoadReview(object):
         self.event_times["in_belts"][1].insert(0, not self.event_times["in_belts"][1][0])
         self.fptemp = TemperatureModel.from_webpage("fp", self.id)
         self.states = States.from_webpage("fp", self.id)
-
-    @classmethod
-    def from_file(cls, fn):
-        """
-        Create a ``LoadReview`` from a file.
-        :param fn: the text file containing the load review.
-        :return: the ``LoadReview`` object.
-        """
-        f = open(fn, "r")
-        txt = f.readlines()
-        f.close()
-        return cls(txt)
-
-    @classmethod
-    def from_webpage(cls, lr_id):
-        """
-        Create a ``LoadReview`` from its HTML version.
-        :param lr_id: The identifier for the load review in standard format, e.g. "DEC2815C".
-        :return: the ``LoadReview`` object.
-        """
-        yr = "20%s" % lr_id[5:7]
-        url = "http://cxc.cfa.harvard.edu/acis/lr_texts/%s/%s_lr.html" % (yr, lr_id)
-        u = requests.get(url)
-        soup = BeautifulSoup(u.content, "lxml")
-        return cls(soup.body.pre.text.split("\n"))
 
     def _get_start_time_and_status(self):
         for i, line in enumerate(self.txt):
@@ -245,8 +236,7 @@ class LoadReview(object):
         if filter is None:
             times = self.event_times[event][0]
         else:
-            if not isinstance(filter, bool):
-                filter = np.array(self.event_times[event][1]) == filter
+            filter = np.array(self.event_times[event][1]) == filter
             times = np.array(self.event_times[event][0])[filter]
         return convert_decyear_to_yday(times)
 
