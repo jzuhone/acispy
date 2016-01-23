@@ -11,12 +11,19 @@ class States(object):
                   "hetg","letg","obsid","pcad_mode","pitch","power_cmd",
                   "roll","si_mode","simfa_pos","simpos","q1","q2","q3","q4"]
 
+    """
+    Get the states table for a particular component and load.
+    :param table: The file which contains the states table.
+    :param component: The component to get the states for, e.g. "FP" for focal plane.
+    :param load: The identifier for the load, e.g. "JAN1116A"
+    :return: The States instance.
+    """
     def __init__(self, table, component, load):
         self.table = ascii.read(table)
         self.id = load.upper()
         self.component = component
-        self.time_start = get_time(self.table["datestart"].data).decimalyear
-        self.time_stop = get_time(self.table["datestop"].data).decimalyear
+        self._time_start = get_time(self.table["datestart"].data).decimalyear
+        self._time_stop = get_time(self.table["datestop"].data).decimalyear
 
     @classmethod
     def from_webpage(cls, component, load):
@@ -47,11 +54,11 @@ class States(object):
         time = get_time(time)
         # We have this if we need it
         err = "The time %s is not within the time frame for this load!" % time
-        if time.decimalyear < self.time_start[0]:
+        if time.decimalyear < self._time_start[0]:
             raise RuntimeError(err)
-        idx = np.searchsorted(self.time_start, time.decimalyear)
+        idx = np.searchsorted(self._time_start, time.decimalyear)
         try:
-            self.time_start[idx]
+            self._time_start[idx]
         except IndexError:
             raise RuntimeError(err)
         states = {}
@@ -64,6 +71,13 @@ class States(object):
         return self.get_state("now")
 
 class TemperatureModel(object):
+    """
+    Get the temperature model for a particular component and load.
+    :param table: The file which contains the temperature model table.
+    :param component: The component to get the temperature for, e.g. "FP" for focal plane.
+    :param load: The identifier for the load, e.g. "JAN1116A"
+    :return: The TemperatureModel instance. 
+    """
     def __init__(self, table, component, load):
         self.table = ascii.read(table)
         self.id = load.upper()
