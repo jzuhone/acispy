@@ -14,14 +14,10 @@ class States(object):
     """
     Get the states table for a particular component and load.
     :param table: The file which contains the states table.
-    :param component: The component to get the states for, e.g. "FP" for focal plane.
-    :param load: The identifier for the load, e.g. "JAN1116A"
     :return: The States instance.
     """
-    def __init__(self, table, component, load):
+    def __init__(self, table):
         self.table = ascii.read(table)
-        self.id = load.upper()
-        self.component = component
         self._time_start = get_time(self.table["datestart"].data).decimalyear
         self._time_stop = get_time(self.table["datestop"].data).decimalyear
 
@@ -36,7 +32,7 @@ class States(object):
         url = "http://cxc.cfa.harvard.edu/acis/%s_thermPredic/" % component.upper()
         url += "%s/ofls%s/states.dat" % (load[:-1].upper(), load[-1].lower())
         u = requests.get(url)
-        return cls(u.text, component, load)
+        return cls(u.text)
 
     def __getitem__(self, item):
         if item in ["datestart","datestop"]:
@@ -74,16 +70,13 @@ class TemperatureModel(object):
     """
     Get the temperature model for a particular component and load.
     :param table: The file which contains the temperature model table.
-    :param component: The component to get the temperature for, e.g. "FP" for focal plane.
-    :param load: The identifier for the load, e.g. "JAN1116A"
     :return: The TemperatureModel instance. 
     """
-    def __init__(self, table, component, load):
+    def __init__(self, table):
         self.table = ascii.read(table)
-        self.id = load.upper()
-        self.component = component
         self.time_years = get_time(self.table["date"].data).decimalyear
-        self.temp = self.table[self.component.lower()+"temp"].data
+        self.datetime = get_time(self.table["date"].data).to_datetime()
+        self.temp = self.table.columns[-1].data
         self.Tfunc = InterpolatedUnivariateSpline(self.time_years, self.temp)
 
     @classmethod
@@ -97,7 +90,7 @@ class TemperatureModel(object):
         url = "http://cxc.cfa.harvard.edu/acis/%s_thermPredic/" % component.upper()
         url += "%s/ofls%s/temperatures.dat" % (load[:-1].upper(), load[-1].lower())
         u = requests.get(url)
-        return cls(u.text, component, load)
+        return cls(u.text)
 
     def __getitem__(self, item):
         if item == "date":
