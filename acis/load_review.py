@@ -210,7 +210,7 @@ class LoadReview(object):
             if k not in ["line","perigee","apogee"]:
                 status[k] = self._search_for_status(k, time)
         status["fptemp"] = self.fptemp.get_temp_at_time(time)
-        states = self.states.get_states(time)
+        states = self.states.get_state(time)
         for state in ["ra","dec","roll","dither","pitch","power_cmd","si_mode"]:
             status[state] = states[state]
         status["sim_z"] = states["simpos"]
