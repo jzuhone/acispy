@@ -49,7 +49,7 @@ class States(object):
         """
         time = get_time(time)
         # We have this if we need it
-        err = "The time %s is not within the time frame for this load!" % time
+        err = "The time %s is not within the selected time frame!" % time
         if time.decimalyear < self._time_start[0]:
             raise RuntimeError(err)
         idx = np.searchsorted(self._time_start, time.decimalyear)
