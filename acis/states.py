@@ -2,8 +2,11 @@ from astropy.io import ascii
 import astropy.units as u
 from scipy.interpolate import InterpolatedUnivariateSpline
 import requests
-from acis.utils import get_time
+from acis.utils import get_time, calc_off_nom_rolls
 import numpy as np
+from Chandra.cmd_states import fetch_states
+import Ska.engarchive.fetch_sci as fetch
+from Chandra.Time import DateTime, date2secs
 
 class States(object):
 
@@ -11,15 +14,19 @@ class States(object):
                   "hetg","letg","obsid","pcad_mode","pitch","power_cmd",
                   "roll","si_mode","simfa_pos","simpos","q1","q2","q3","q4"]
 
-    """
-    Get the states table for a particular component and load.
-    :param table: The file which contains the states table.
-    :return: The States instance.
-    """
     def __init__(self, table):
-        self.table = ascii.read(table)
-        self._time_start = get_time(self.table["datestart"].data).decimalyear
-        self._time_stop = get_time(self.table["datestop"].data).decimalyear
+        self.table = table
+        self._time_start = get_time(self.table["datestart"]).decimalyear
+        self._time_stop = get_time(self.table["datestop"]).decimalyear
+        self.off_nominal_rolls = calc_off_nom_rolls(table)
+
+    @classmethod
+    def from_db(cls, tstart, tstop):
+        return cls(fetch_states(tstart, tstop, vals=cls.state_keys))
+
+    @classmethod
+    def from_file(cls, filename):
+        return cls(ascii.read(filename).as_array())
 
     @classmethod
     def from_webpage(cls, component, load):
@@ -32,13 +39,15 @@ class States(object):
         url = "http://cxc.cfa.harvard.edu/acis/%s_thermPredic/" % component.upper()
         url += "%s/ofls%s/states.dat" % (load[:-1].upper(), load[-1].lower())
         u = requests.get(url)
-        return cls(u.text)
+        return cls.from_file(u.text)
 
     def __getitem__(self, item):
         if item in ["datestart","datestop"]:
-            return get_time(self.table[item].data)
+            return get_time(self.table[item])
+        elif item == "off_nominal_roll":
+            return self.off_nominal_rolls
         else:
-            return self.table[item].data
+            return self.table[item]
 
     def get_state(self, time):
         """
@@ -66,18 +75,27 @@ class States(object):
     def get_current_state(self):
         return self.get_state("now")
 
-class TemperatureModel(object):
+class Temperatures(object):
     """
-    Get the temperature model for a particular component and load.
+    Get the temperatures for a particular component and load.
     :param table: The file which contains the temperature model table.
     :return: The TemperatureModel instance. 
     """
-    def __init__(self, table):
-        self.table = ascii.read(table)
-        self.time_years = get_time(self.table["date"].data).decimalyear
-        self.datetime = get_time(self.table["date"].data).to_datetime()
-        self.temp = self.table.columns[-1].data
-        self.Tfunc = InterpolatedUnivariateSpline(self.time_years, self.temp)
+    def __init__(self, time, temp, id):
+        self.time = time
+        self.temp = temp
+        self.id = id
+        self.Tfunc = InterpolatedUnivariateSpline(self.time, self.temp)
+
+    @classmethod
+    def from_db(cls, tstart, tstop, msid, filter_bad=False):
+        data = fetch.MSID(msid, tstart, tstop, filter_bad=filter_bad)
+        return cls(DateTime(data.times).secs, data.vals, msid)
+
+    @classmethod
+    def from_file(cls, filename):
+        table = ascii.read(filename)
+        return cls(table["time"].data, table.columns[-1].data, table.colnames[-1])
 
     @classmethod
     def from_webpage(cls, component, load):
@@ -90,15 +108,7 @@ class TemperatureModel(object):
         url = "http://cxc.cfa.harvard.edu/acis/%s_thermPredic/" % component.upper()
         url += "%s/ofls%s/temperatures.dat" % (load[:-1].upper(), load[-1].lower())
         u = requests.get(url)
-        return cls(u.text)
-
-    def __getitem__(self, item):
-        if item == "date":
-            return get_time(self.table["date"].data)
-        elif item == "temp":
-            return self.temp
-        else:
-            return self.table[item].data
+        return cls.from_file(u.text)
 
     def get_temp_at_time(self, time):
         """
@@ -107,5 +117,5 @@ class TemperatureModel(object):
             yday format, an AstroPy Time object, or "now".
         :return: The temperature of the component as an AstroPy Quantity. 
         """
-        t = get_time(time).decimalyear
+        t = date2secs(get_time(time).yday)
         return self.Tfunc(t)*u.deg_C

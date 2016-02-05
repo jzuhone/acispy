@@ -2,7 +2,7 @@ from __future__ import print_function
 from six import string_types
 from acis.obscat import Obscat, ObsID
 from acis.utils import get_time, convert_decyear_to_yday
-from acis.states import TemperatureModel, States
+from acis.states import Temperatures, States
 from astropy.time import Time, TimeDelta
 import astropy.units as u
 import requests
@@ -76,7 +76,7 @@ class LoadReview(object):
         self.event_times["in_comm"][1].insert(0, not self.event_times["in_comm"][1][0])
         self.event_times["in_belts"][0].insert(0, start_time)
         self.event_times["in_belts"][1].insert(0, not self.event_times["in_belts"][1][0])
-        self.fptemp = TemperatureModel.from_webpage("fp", self.id)
+        self.fptemp = Temperatures.from_webpage("fp", self.id)
         self.states = States.from_webpage("fp", self.id)
 
     def _get_start_time_and_status(self):
