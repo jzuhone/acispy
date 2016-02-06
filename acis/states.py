@@ -7,6 +7,7 @@ import numpy as np
 from Chandra.cmd_states import fetch_states
 import Ska.engarchive.fetch_sci as fetch
 from Chandra.Time import DateTime, date2secs
+from Ska.Matplotlib import plot_cxctime
 
 class States(object):
 
@@ -16,9 +17,10 @@ class States(object):
 
     def __init__(self, table):
         self.table = table
-        self._time_start = get_time(self.table["datestart"]).decimalyear
-        self._time_stop = get_time(self.table["datestop"]).decimalyear
-        self.off_nominal_rolls = calc_off_nom_rolls(table)
+        self._time_start = self.table["tstart"]
+        self._time_stop = self.table["tstop"]
+        self._time = 0.5*(self._time_start+self._time_stop)
+        self._off_nominal_roll = calc_off_nom_rolls(table)
 
     @classmethod
     def from_db(cls, tstart, tstop):
@@ -45,7 +47,7 @@ class States(object):
         if item in ["datestart","datestop"]:
             return get_time(self.table[item])
         elif item == "off_nominal_roll":
-            return self.off_nominal_rolls
+            return self._off_nominal_roll
         else:
             return self.table[item]
 
@@ -56,12 +58,12 @@ class States(object):
             yday format, an AstroPy Time object, or "now".
         :return: A dictionary of the states.
         """
-        time = get_time(time)
+        time = DateTime(get_time(time)).secs
         # We have this if we need it
         err = "The time %s is not within the selected time frame!" % time
-        if time.decimalyear < self._time_start[0]:
+        if time < self._time_start[0]:
             raise RuntimeError(err)
-        idx = np.searchsorted(self._time_start, time.decimalyear)
+        idx = np.searchsorted(self._time_start, time)
         try:
             self._time_start[idx]
         except IndexError:
@@ -74,6 +76,11 @@ class States(object):
     @property
     def get_current_state(self):
         return self.get_state("now")
+
+    def plot(self, y, fig=None, ax=None, **kwargs):
+        ticklocs, fig, ax = plot_cxctime(self._time, self[y],
+                                         fig=fig, ax=ax, **kwargs)
+        ax.set_xlabel(r"$\mathrm{Date}$")
 
 class Temperatures(object):
     """
@@ -119,3 +126,9 @@ class Temperatures(object):
         """
         t = date2secs(get_time(time).yday)
         return self.Tfunc(t)*u.deg_C
+
+    def plot(self, fig=None, ax=None, **kwargs):
+        ticklocs, fig, ax = plot_cxctime(self.time, self.temp, 
+                                         fig=fig, ax=ax, **kwargs)
+        ax.set_xlabel(r"$\mathrm{Date}$")
+        ax.set_ylabel(r"$\mathrm{Temperature\ {^\circ}C}$")
