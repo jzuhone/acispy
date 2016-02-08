@@ -8,12 +8,17 @@ from Chandra.cmd_states import fetch_states
 import Ska.engarchive.fetch_sci as fetch
 from Chandra.Time import DateTime, date2secs
 from Ska.Matplotlib import plot_cxctime
+from astropy.table import Table
+from matplotlib import font_manager
+
+fontProperties = font_manager.FontProperties(family="serif", size=18)
 
 class States(object):
 
     state_keys = ["ccd_count","clocking","ra","dec","dither","fep_count",
                   "hetg","letg","obsid","pcad_mode","pitch","power_cmd",
-                  "roll","si_mode","simfa_pos","simpos","q1","q2","q3","q4"]
+                  "roll","si_mode","simfa_pos","simpos","q1","q2","q3","q4",
+                  "trans_keys","vid_board"]
 
     def __init__(self, table):
         self.table = table
@@ -36,7 +41,7 @@ class States(object):
         Get the states table for a particular component and load from the web.
         :param component: The component to get the states for, e.g. "FP" for focal plane.
         :param load: The identifier for the load, e.g. "JAN1116A"
-        :return: The States instance. 
+        :return: The States instance.
         """
         url = "http://cxc.cfa.harvard.edu/acis/%s_thermPredic/" % component.upper()
         url += "%s/ofls%s/states.dat" % (load[:-1].upper(), load[-1].lower())
@@ -77,10 +82,17 @@ class States(object):
     def get_current_state(self):
         return self.get_state("now")
 
+    def write_ascii(self, filename):
+        Table(self.table).write(filename, format='ascii')
+
     def plot(self, y, fig=None, ax=None, **kwargs):
         ticklocs, fig, ax = plot_cxctime(self._time, self[y],
                                          fig=fig, ax=ax, **kwargs)
-        ax.set_xlabel(r"$\mathrm{Date}$")
+        ax.set_xlabel(r"$\mathrm{Date}$", fontsize=18)
+        for label in ax.get_xticklabels():
+            label.set_fontproperties(fontProperties)
+        for label in ax.get_yticklabels():
+            label.set_fontproperties(fontProperties)
 
 class Temperatures(object):
     """
@@ -117,6 +129,10 @@ class Temperatures(object):
         u = requests.get(url)
         return cls.from_file(u.text)
 
+    @classmethod
+    def from_model(cls, model, comp):
+        return cls(model.times, model.comp[comp].mvals, comp)
+
     def get_temp_at_time(self, time):
         """
         Get the temperature of the component at a particular time.
@@ -127,8 +143,16 @@ class Temperatures(object):
         t = date2secs(get_time(time).yday)
         return self.Tfunc(t)*u.deg_C
 
+    def write_ascii(self, filename):
+        Table(self.table).write(filename, format='ascii')
+
     def plot(self, fig=None, ax=None, **kwargs):
         ticklocs, fig, ax = plot_cxctime(self.time, self.temp, 
                                          fig=fig, ax=ax, **kwargs)
-        ax.set_xlabel(r"$\mathrm{Date}$")
-        ax.set_ylabel(r"$\mathrm{Temperature\ {^\circ}C}$")
+        ax.set_xlabel(r"$\mathrm{Date}$", fontsize=18)
+        ax.set_ylabel(r"$\mathrm{Temperature\ ({^\circ}C)}$", fontsize=18)
+        for label in ax.get_xticklabels():
+            label.set_fontproperties(fontProperties)
+        for label in ax.get_yticklabels():
+            label.set_fontproperties(fontProperties)
+
