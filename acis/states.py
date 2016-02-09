@@ -133,7 +133,7 @@ class Temperatures(object):
     def from_model(cls, model, comp):
         return cls(model.times, model.comp[comp].mvals, comp)
 
-    def get_temp_at_time(self, time):
+    def get_temperature(self, time):
         """
         Get the temperature of the component at a particular time.
         :param time: The time to get the temperature at. Can be in 
