@@ -10,15 +10,35 @@ from Chandra.Time import DateTime, date2secs
 from Ska.Matplotlib import plot_cxctime
 from astropy.table import Table
 from matplotlib import font_manager
+import matplotlib.pyplot as plt
 
 fontProperties = font_manager.FontProperties(family="serif", size=18)
+state_labels = {"ccd_count": "CCD Count",
+                "clocking": "Clocking",
+                "ra": "RA (deg)",
+                "dec": "Dec (deg)",
+                "dither": None,
+                "fep_count": "FEP Count",
+                "hetg": None,
+                "letg": None,
+                "obsid": "ObsID",
+                "pcad_mode": None, 
+                "pitch": "Pitch (deg)",
+                "power_cmd": None,
+                "roll": "Roll (deg)",
+                "si_mode": None,
+                "simfa_pos": None,
+                "simpos": "SIM-Z (steps)",
+                "q1": "q1",
+                "q2": "q2",
+                "q3": "q3",
+                "q4": "q4",
+                "trans_keys": None,
+                "vid_board": None}
+
+state_keys = list(state_labels.keys())
 
 class States(object):
-
-    state_keys = ["ccd_count","clocking","ra","dec","dither","fep_count",
-                  "hetg","letg","obsid","pcad_mode","pitch","power_cmd",
-                  "roll","si_mode","simfa_pos","simpos","q1","q2","q3","q4",
-                  "trans_keys","vid_board"]
 
     def __init__(self, table):
         self.table = table
@@ -29,7 +49,7 @@ class States(object):
 
     @classmethod
     def from_db(cls, tstart, tstop):
-        return cls(fetch_states(tstart, tstop, vals=cls.state_keys))
+        return cls(fetch_states(tstart, tstop, vals=state_keys))
 
     @classmethod
     def from_file(cls, filename):
@@ -74,7 +94,7 @@ class States(object):
         except IndexError:
             raise RuntimeError(err)
         states = {}
-        for key in self.state_keys:
+        for key in state_keys:
             states[key] = self[key][idx]
         states["off_nominal_roll"] = self._off_nominal_roll[idx]
         return states
@@ -86,14 +106,16 @@ class States(object):
     def write_ascii(self, filename):
         Table(self.table).write(filename, format='ascii')
 
-    def plot(self, y, fig=None, ax=None, **kwargs):
-        ticklocs, fig, ax = plot_cxctime(self._time, self[y],
-                                         fig=fig, ax=ax, **kwargs)
-        ax.set_xlabel(r"$\mathrm{Date}$", fontsize=18)
-        for label in ax.get_xticklabels():
-            label.set_fontproperties(fontProperties)
-        for label in ax.get_yticklabels():
-            label.set_fontproperties(fontProperties)
+    def plot(self, y, fig=None, ax=None, lw=2, **kwargs):
+        if state_labels[y] is None:
+            raise RuntimeError("Cannot plot state %s!" % y)
+        cp = CXCPlot(fig, ax, self._time, self[y], lw=lw, **kwargs)
+        if y == "off_nominal_roll":
+            ylabel = "Off-Nominal Roll (deg)"
+        else:
+            ylabel = state_labels[y]
+        cp.set_ylabel(ylabel)
+        return cp
 
 class Temperatures(object):
     """
@@ -147,13 +169,36 @@ class Temperatures(object):
     def write_ascii(self, filename):
         Table(self.table).write(filename, format='ascii')
 
-    def plot(self, fig=None, ax=None, **kwargs):
-        ticklocs, fig, ax = plot_cxctime(self.time, self.temp, 
-                                         fig=fig, ax=ax, **kwargs)
-        ax.set_xlabel(r"$\mathrm{Date}$", fontsize=18)
-        ax.set_ylabel(r"$\mathrm{Temperature\ ({^\circ}C)}$", fontsize=18)
-        for label in ax.get_xticklabels():
+    def plot(self, fig=None, ax=None, lw=2, **kwargs):
+        cp = CXCPlot(fig, ax, self.time, self.temp, lw=lw, **kwargs)
+        cp.set_ylabel(r"$\mathrm{Temperature\ ({^\circ}C)}$")
+        return cp
+
+class CXCPlot(object):
+    def __init__(self, fig, ax, x, y, lw=2, **kwargs):
+        if fig is None:
+            fig = plt.figure(figsize=(10,8))
+        ticklocs, fig, ax = plot_cxctime(x, y, fig=fig, ax=ax, lw=lw, **kwargs)
+        self.ticklocs = ticklocs
+        self.fig = fig
+        self.ax = ax
+        self.ax.set_xlabel(r"$\mathrm{Date}$", fontdict={"size":18, "family":"serif"})
+        for label in self.ax.get_xticklabels():
             label.set_fontproperties(fontProperties)
-        for label in ax.get_yticklabels():
+        for label in self.ax.get_yticklabels():
             label.set_fontproperties(fontProperties)
 
+    def set_xlim(self, xmin, xmax):
+        self.ax.set_xlim(get_time(xmin).to_datetime(),
+                         get_time(xmax).to_datetime())
+
+    def set_ylim(self, ymin, ymax):
+        self.ax.set_ylim(ymin, ymax)
+
+    def set_ylabel(self, ylabel, fontdict=None, **kwargs):
+        if fontdict is None:
+            fontdict = {"size": 18, "family": "serif"}
+        self.ax.set_ylabel(ylabel, fontdict=fontdict, **kwargs)
+
+    def savefig(self, filename, **kwargs):
+        self.fig.savefig(filename, **kwargs)
