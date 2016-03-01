@@ -68,7 +68,7 @@ class States(object):
         err = "The time %s is not within the selected time frame!" % time
         if time < self._time_start[0]:
             raise RuntimeError(err)
-        idx = np.searchsorted(self._time_start, time)
+        idx = np.searchsorted(self._time_start, time)-1
         try:
             self._time_start[idx]
         except IndexError:
@@ -76,6 +76,7 @@ class States(object):
         states = {}
         for key in self.state_keys:
             states[key] = self[key][idx]
+        states["off_nominal_roll"] = self._off_nominal_roll[idx]
         return states
 
     @property
