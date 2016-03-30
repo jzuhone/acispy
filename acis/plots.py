@@ -2,19 +2,34 @@ from Ska.Matplotlib import plot_cxctime
 from matplotlib import font_manager
 import matplotlib.pyplot as plt
 from matplotlib.dates import num2date
-from utils import state_labels, msid_units
+from acis.utils import state_labels, msid_units
 from astropy.time import Time
 
+drawstyles = {"simpos": "steps",
+              "pitch": "steps",
+              "ccd_count": "steps"}
+
+default_colors = ["b","r","g","k"]
+
 class DatePlot(object):
-    def __init__(self, field, field2=None, fig=None, ax=None, lw=2,
-                 fontsize=18, plot_args={}, plot_args2={}):
+    def __init__(self, ds, fields, field2=None, fig=None, ax=None, lw=2,
+                 fontsize=18, colors=None, color2='magenta'):
         if fig is None:
             fig = plt.figure(figsize=(10, 8))
-        src, fd = field
-        if "color" not in plot_args:
-            plot_args["color"] = 'b'
-        ticklocs, fig, ax = plot_cxctime(src.time, src[fd], fig=fig,
-                                         ax=ax, lw=lw, **plot_args)
+        if colors is None:
+            colors = default_colors
+        if not isinstance(fields, list):
+            fields = [fields]
+        for i, field in enumerate(fields):
+            src, fd = field
+            src = getattr(ds, src)
+            drawstyle = drawstyles.get(fd, None)
+            ticklocs, fig, ax = plot_cxctime(src.time, src[fd], fig=fig,
+                                             lw=lw, ax=ax, color=colors[i],
+                                             drawstyle=drawstyle, 
+                                             label=fd.upper())
+        if len(fields) > 1:
+            ax.legend(prop={"family": "serif"})
         self.ticklocs = ticklocs
         self.fig = fig
         self.ax = ax
@@ -34,11 +49,11 @@ class DatePlot(object):
             self.set_ylabel(fd.upper())
         if field2 is not None:
             src2, fd2 = field2
+            src2 = getattr(ds, src2)
             self.ax2 = self.ax.twinx()
-            if "color" not in plot_args2:
-                plot_args2["color"] = 'r'
+            drawstyle = drawstyles.get(fd2, None)
             plot_cxctime(src2.time, src2[fd2], fig=fig, ax=self.ax2,
-                         lw=lw, **plot_args2)
+                         lw=lw, drawstyle=drawstyle, color=color2)
             for label in self.ax2.get_xticklabels():
                 label.set_fontproperties(fontProperties)
             for label in self.ax2.get_yticklabels():
@@ -74,7 +89,7 @@ class DatePlot(object):
         self.fig.savefig(filename, **kwargs)
 
 class MultiDatePlot(object):
-    def __init__(self, fields, fig=None, subplots=None,
+    def __init__(self, ds, fields, fig=None, subplots=None,
                  fontsize=15):
         if fig is None:
             fig = plt.figure(figsize=(12, 12))
@@ -83,7 +98,7 @@ class MultiDatePlot(object):
         self.plots = []
         for i, field in enumerate(fields):
             ax = fig.add_subplot(subplots[0], subplots[1], i+1)
-            self.plots.append(DatePlot(field, fig=fig, ax=ax, lw=1.5))
+            self.plots.append(DatePlot(ds, field, fig=fig, ax=ax, lw=1.5))
             ax.xaxis.label.set_size(fontsize)
             ax.yaxis.label.set_size(fontsize)
             ax.xaxis.set_tick_params(labelsize=fontsize)

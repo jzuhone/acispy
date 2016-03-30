@@ -12,9 +12,6 @@ def get_time(time):
         time = DateTime(time)
     return time
 
-def convert_decyear_to_yday(time):
-    return Time(time, format='decimalyear').replicate(format='yday')
-
 def calc_off_nom_rolls(states):
     off_nom_rolls = []
     for state in states:
@@ -51,5 +48,7 @@ state_labels = {"ccd_count": "CCD Count",
                 "off_nominal_roll": "Off-Nominal Roll (deg)"}
 
 msid_units = {'1deamzt': '$\mathrm{^\circ{C}}$',
-              '1dpamzt': '$\mathrm{^\circ{C}}$'}
+              '1dpamzt': '$\mathrm{^\circ{C}}$',
+              '1pdeaat': '$\mathrm{^\circ{C}}$'}
+
 
