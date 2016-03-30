@@ -1,14 +1,15 @@
 from __future__ import print_function
-from astropy.time import Time
+
+from Chandra.Time import DateTime
 import Ska.Sun
 import numpy as np
 
 def get_time(time):
     if time is "now":
-        time = Time.now()
-        print("Current time is %s UTC." % time.yday)
+        time = DateTime()
+        print("Current time is %s UTC." % time.date)
     else:
-        time = Time(time)
+        time = DateTime(time)
     return time
 
 def convert_decyear_to_yday(time):
@@ -17,9 +18,38 @@ def convert_decyear_to_yday(time):
 def calc_off_nom_rolls(states):
     off_nom_rolls = []
     for state in states:
-        att = [state[x] for x in ['q1', 'q2', 'q3', 'q4']]
-        time = (state['tstart'] + state['tstop']) / 2
-        off_nom_rolls.append(Ska.Sun.off_nominal_roll(att, time))
+        try:
+            att = [state[x] for x in ['q1', 'q2', 'q3', 'q4']]
+            time = (state['tstart'] + state['tstop']) / 2
+            off_nom_rolls.append(Ska.Sun.off_nominal_roll(att, time))
+        except KeyError:
+            return None
     return np.array(off_nom_rolls)
 
+state_labels = {"ccd_count": "CCD Count",
+                "clocking": "Clocking",
+                "ra": "RA (deg)",
+                "dec": "Dec (deg)",
+                "dither": None,
+                "fep_count": "FEP Count",
+                "hetg": None,
+                "letg": None,
+                "obsid": "ObsID",
+                "pcad_mode": None,
+                "pitch": "Pitch (deg)",
+                "power_cmd": None,
+                "roll": "Roll (deg)",
+                "si_mode": None,
+                "simfa_pos": None,
+                "simpos": "SIM-Z (steps)",
+                "q1": "q1",
+                "q2": "q2",
+                "q3": "q3",
+                "q4": "q4",
+                "trans_keys": None,
+                "vid_board": None,
+                "off_nominal_roll": "Off-Nominal Roll (deg)"}
+
+msid_units = {'1deamzt': '$\mathrm{^\circ{C}}$',
+              '1dpamzt': '$\mathrm{^\circ{C}}$'}
 
