@@ -3,11 +3,16 @@ from matplotlib import font_manager
 import matplotlib.pyplot as plt
 from matplotlib.dates import num2date
 from acis.utils import state_labels, msid_units
-from astropy.time import Time
+from Chandra.Time import DateTime
+from datetime import datetime
 
 drawstyles = {"simpos": "steps",
               "pitch": "steps",
               "ccd_count": "steps"}
+
+type_map = {"$\mathrm{^\circ{C}}$": "Temperature",
+            "V": "Voltage",
+            "A": "Current"}
 
 default_colors = ["b","r","g","k"]
 
@@ -41,12 +46,15 @@ class DatePlot(object):
             label.set_fontproperties(fontProperties)
         for label in self.ax.get_yticklabels():
             label.set_fontproperties(fontProperties)
-        if fd in state_labels:
-            self.set_ylabel(state_labels[fd])
-        elif fd in msid_units:
-            self.set_ylabel(fd.upper()+" (%s)" % msid_units[fd])
+        if len(fields) > 1:
+            self.set_ylabel(type_map[msid_units[fields[0][1]]]+" (%s)" % msid_units[fields[0][1]])
         else:
-            self.set_ylabel(fd.upper())
+            if fd in state_labels:
+                self.set_ylabel(state_labels[fd])
+            elif fd in msid_units:
+                self.set_ylabel(fd.upper()+" (%s)" % msid_units[fd])
+            else:
+                self.set_ylabel(fd.upper())
         if field2 is not None:
             src2, fd2 = field2
             src2 = getattr(ds, src2)
@@ -66,8 +74,9 @@ class DatePlot(object):
                 self.set_ylabel(fd2.upper())
 
     def set_xlim(self, xmin, xmax):
-        self.ax.set_xlim(Time(xmin).to_datetime(),
-                         Time(xmax).to_datetime())
+        dmin = datetime.strptime(DateTime(xmin).iso, "%Y-%m-%d %H:%M:%S.%f")
+        dmax = datetime.strptime(DateTime(xmax).iso, "%Y-%m-%d %H:%M:%S.%f")
+        self.ax.set_xlim(dmin, dmax)
 
     def set_ylim(self, ymin, ymax):
         self.ax.set_ylim(ymin, ymax)
