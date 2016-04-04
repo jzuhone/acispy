@@ -49,6 +49,14 @@ state_labels = {"ccd_count": "CCD Count",
 
 msid_units = {'1deamzt': '$\mathrm{^\circ{C}}$',
               '1dpamzt': '$\mathrm{^\circ{C}}$',
-              '1pdeaat': '$\mathrm{^\circ{C}}$'}
+              '1pdeaat': '$\mathrm{^\circ{C}}$',
+              '1pin1at': '$\mathrm{^\circ{C}}$',
+              '1pdeabt': '$\mathrm{^\circ{C}}$',
+              '1dp28avo': 'V',
+              '1dp28bvo': 'V',
+              '1dpicacu': 'A',
+              '1dpicbcu': 'A',
+              '1dpp0avo': 'V',
+              '1dpp0bvo': 'V'}
 
 
