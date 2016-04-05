@@ -46,7 +46,7 @@ class States(object):
     def keys(self):
         return self._keys
 
-    def get_state(self, time):
+    def get_states(self, time):
         """
         Get the state data at a particular time.
         :param time: The time to get the states at. Can be in 
@@ -71,7 +71,7 @@ class States(object):
         return state
 
     @property
-    def current_state(self):
+    def current_states(self):
         return self.get_state("now")
 
     def write_ascii(self, filename):

@@ -17,7 +17,7 @@ ds = acis.DataSource()
 ds.get_model.from_load(args.load, ["fptemp"])
 ds.get_states.from_load(args.load)
 
-states = ds.states.get_state(args.time)
+states = ds.states.get_states(args.time)
 values = ds.model.get_values(args.time)
 for k, v in states.items():
     if k not in dont_use:
