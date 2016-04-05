@@ -45,7 +45,7 @@ state_labels = {"ccd_count": "CCD Count",
                 "q4": "q4",
                 "trans_keys": None,
                 "vid_board": None,
-                "off_nominal_roll": "Off-Nominal Roll (deg)"}
+                "off_nominal_roll": "Off-Nominal\nRoll (deg)"}
 
 msid_units = {'1deamzt': '$\mathrm{^\circ{C}}$',
               '1dpamzt': '$\mathrm{^\circ{C}}$',
