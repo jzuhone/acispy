@@ -16,7 +16,11 @@ class States(object):
 
     @classmethod
     def from_database(cls, states, tstart, tstop):
-        t = fetch_states(tstart, tstop, vals=states)
+        st = states[:]
+        if "off_nominal_roll" in states:
+            st.remove("off_nominal_roll")
+            st += ["q1", "q2", "q3", "q4"]
+        t = fetch_states(tstart, tstop, vals=st)
         return cls(t, t.dtype.names)
 
     @classmethod
