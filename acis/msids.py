@@ -2,6 +2,7 @@ from utils import get_time
 import Ska.engarchive.fetch_sci as fetch
 from astropy.io import ascii
 from astropy.table import Table
+import numpy as np
 
 class MSIDs(object):
     def __init__(self, time, table, keys):
@@ -11,9 +12,19 @@ class MSIDs(object):
 
     @classmethod
     def from_tracelog(cls, filename):
-        data = ascii.read(filename, format='csv', delimiter="\t", guess=False)
-        table = dict((k.lower(), data[k]) for k in data.keys())
-        return cls(data["TIME"]-410227200., table, table.keys())
+        f = open(filename, "r")
+        header = f.readline().split()
+        dtype = [(msid.lower(), '<f8') for msid in header]
+        data = []
+        for line in f:
+            words = line.split()
+            if len(words) == len(header):
+                data.append(tuple(map(float, words)))
+        f.close()
+        data = np.array(data, dtype=dtype)
+        # Convert times in the TIME column to Chandra 1998 time
+        data['time'] -= 410227200.
+        return cls(data["time"], data, header)
 
     @classmethod
     def from_archive(cls, msids, tstart, tstop=None, filter_bad=False,
