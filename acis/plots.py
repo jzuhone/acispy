@@ -5,6 +5,12 @@ from matplotlib.dates import num2date
 from acis.utils import state_labels, msid_units
 from Chandra.Time import DateTime
 from datetime import datetime
+import numpy as np
+
+def pointpair(x, y=None):
+    if y is None:
+        y = x
+    return np.array([x, y]).reshape(-1, order='F')
 
 drawstyles = {"simpos": "steps",
               "pitch": "steps",
@@ -29,8 +35,14 @@ class DatePlot(object):
             src_name, fd = field
             src = getattr(ds, src_name)
             drawstyle = drawstyles.get(fd, None)
-            ticklocs, fig, ax = plot_cxctime(src.time, src[fd], fig=fig,
-                                             lw=lw, ax=ax, color=colors[i],
+            if src_name == "states":
+                x = pointpair(src["tstart"], src["tstop"])
+                y = pointpair(src[fd])
+            else:
+                x = src.time
+                y = src[fd]
+            ticklocs, fig, ax = plot_cxctime(x, y, fig=fig, lw=lw, ax=ax,
+                                             color=colors[i],
                                              drawstyle=drawstyle, 
                                              label="%s %s" % (src_name, fd.upper()))
         if len(fields) > 1:
@@ -60,8 +72,14 @@ class DatePlot(object):
             src2 = getattr(ds, src_name2)
             self.ax2 = self.ax.twinx()
             drawstyle = drawstyles.get(fd2, None)
-            plot_cxctime(src2.time, src2[fd2], fig=fig, ax=self.ax2,
-                         lw=lw, drawstyle=drawstyle, color=color2)
+            if src_name2 == "states":
+                x = pointpair(src2["tstart"], src2["tstop"])
+                y = pointpair(src2[fd2])
+            else:
+                x = src2.time
+                y = src2[fd2]
+            plot_cxctime(x, y, fig=fig, ax=self.ax2, lw=lw,
+                         drawstyle=drawstyle, color=color2)
             for label in self.ax2.get_xticklabels():
                 label.set_fontproperties(fontProperties)
             for label in self.ax2.get_yticklabels():

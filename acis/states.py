@@ -8,7 +8,6 @@ from astropy.table import Table
 class States(object):
 
     def __init__(self, table, keys):
-        self.time = 0.5*(table["tstart"]+table["tstop"])
         self.table = table
         self._time_start = self.table["tstart"]
         self._off_nominal_roll = calc_off_nom_rolls(table)
