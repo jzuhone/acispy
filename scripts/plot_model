@@ -1,0 +1,31 @@
+#!/usr/bin/env python
+
+import matplotlib
+matplotlib.use("qt4agg")
+import matplotlib.pyplot as plt
+import argparse
+import acis
+from acis.utils import msid_units
+
+parser = argparse.ArgumentParser()
+parser.add_argument("load", type=str)
+parser.add_argument("y_axis", type=str)
+parser.add_argument("--y2_axis", type=str)
+args = parser.parse_args()
+
+if args.y_axis in msid_units:
+    y_axis = ("model", args.y_axis)
+else:
+    y_axis = ("states", args.y_axis)
+if args.y2_axis is not None:
+    if args.y2_axis in msid_units:
+        y2_axis = ("model", args.y2_axis)
+    else:
+        y2_axis = ("states", args.y2_axis)
+
+ds = acis.DataSource()
+ds.get_model.from_load(args.load, [args.y_axis])
+ds.get_states.from_load(args.load)
+
+cp = acis.DatePlot(ds, y_axis, field2=y2_axis)
+plt.show()
