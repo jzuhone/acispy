@@ -1,10 +1,13 @@
 import requests
 from astropy.io import ascii
 from astropy.table import Table
+import Ska.Numpy
+from acis.utils import get_time
 
 comp_map = {"1deamzt": "dea",
             "1dpamzt": "dpa",
-            "1pdeaat": "psmc"}
+            "1pdeaat": "psmc",
+            "fptemp": "fp"}
 
 class Model(object):
     def __init__(self, time, table, keys):
@@ -42,6 +45,13 @@ class Model(object):
 
     def keys(self):
         return self._keys
+
+    def get_values(self, time):
+        time = get_time(time).secs
+        values = {}
+        for key in self.keys():
+            values[key] = Ska.Numpy.interpolate(self[key], self.time, [time])
+        return values
 
     def write_ascii(self, filename):
         Table(self.table).write(filename, format='ascii')
