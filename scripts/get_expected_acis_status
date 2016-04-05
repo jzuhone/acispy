@@ -2,14 +2,24 @@
 
 from __future__ import print_function
 import argparse
-from acis import LoadReview
+import acis
+
+dont_use = ["q1","q2","q3","q4","power_cmd","datestart","datestop",
+            "tstart","tstop","trans_keys","vid_board","pcad_mode",
+            "clocking","fep_count"]
 
 parser = argparse.ArgumentParser()
-parser.add_argument("load_review", type=str)
+parser.add_argument("load", type=str)
 parser.add_argument("--time", type=str, default="now")
 args = parser.parse_args()
 
-lr = LoadReview(args.load_review)
-status = lr.get_status(args.time)
-for k, v in status.items():
-    print("%s: %s" % (k, v))
+ds = acis.DataSource()
+ds.get_model.from_load(args.load, ["fptemp"])
+ds.get_states.from_load(args.load)
+
+states = ds.states.get_state(args.time)
+values = ds.model.get_values(args.time)
+for k, v in states.items():
+    if k not in dont_use:
+        print("%s: %s" % (k, v))
+print("Focal Plane Temperature: %g deg C" % values["fptemp"])
