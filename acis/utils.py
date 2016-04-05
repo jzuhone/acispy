@@ -19,7 +19,7 @@ def calc_off_nom_rolls(states):
             att = [state[x] for x in ['q1', 'q2', 'q3', 'q4']]
             time = (state['tstart'] + state['tstop']) / 2
             off_nom_rolls.append(Ska.Sun.off_nominal_roll(att, time))
-        except KeyError:
+        except (KeyError, ValueError):
             return None
     return np.array(off_nom_rolls)
 
