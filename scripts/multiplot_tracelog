@@ -1,0 +1,35 @@
+#!/usr/bin/env python
+
+import matplotlib
+matplotlib.use("qt4agg")
+import matplotlib.pyplot as plt
+import argparse
+import acis
+from acis.utils import msid_units
+from Chandra.Time import secs2date
+
+parser = argparse.ArgumentParser()
+parser.add_argument("tracelog", type=str)
+parser.add_argument("plots", type=str)
+args = parser.parse_args()
+
+states = []
+msids = []
+
+for p in args.plots.split(','):
+    if p in msid_units:
+        msids.append(p)
+    else:
+        states.append(p)
+
+ds = acis.DataSource()
+ds.get_msids.from_tracelog(args.tracelog)
+tstart = secs2date(ds.msids.time[0])
+tstop = secs2date(ds.msids.time[-1])
+ds.get_states.from_database(states, tstart, tstop)
+
+fields = [("msids", m) for m in msids] + [("states", s) for s in states]
+
+cp = acis.MultiDatePlot(ds, fields)
+
+plt.show()
