@@ -26,13 +26,13 @@ class DatePlot(object):
         if not isinstance(fields, list):
             fields = [fields]
         for i, field in enumerate(fields):
-            src, fd = field
-            src = getattr(ds, src)
+            src_name, fd = field
+            src = getattr(ds, src_name)
             drawstyle = drawstyles.get(fd, None)
             ticklocs, fig, ax = plot_cxctime(src.time, src[fd], fig=fig,
                                              lw=lw, ax=ax, color=colors[i],
                                              drawstyle=drawstyle, 
-                                             label=fd.upper())
+                                             label="%s %s" % (src_name, fd.upper()))
         if len(fields) > 1:
             ax.legend(prop={"family": "serif"})
         self.ticklocs = ticklocs
@@ -56,8 +56,8 @@ class DatePlot(object):
             else:
                 self.set_ylabel(fd.upper())
         if field2 is not None:
-            src2, fd2 = field2
-            src2 = getattr(ds, src2)
+            src_name2, fd2 = field2
+            src2 = getattr(ds, src_name2)
             self.ax2 = self.ax.twinx()
             drawstyle = drawstyles.get(fd2, None)
             plot_cxctime(src2.time, src2[fd2], fig=fig, ax=self.ax2,
@@ -72,11 +72,18 @@ class DatePlot(object):
                 self.set_ylabel(fd2.upper()+" (%s)" % msid_units[fd])
             else:
                 self.set_ylabel(fd2.upper())
+        ymin, ymax = self.ax.get_ylim()
+        self.set_ylim(ymin*0.9, ymax*1.1)
+        if hasattr(self, 'ax2'):
+            ymin2, ymax2 = self.ax2.get_ylim()
+            self.set_ylim2(ymin2*0.9, ymax2*1.1)
 
     def set_xlim(self, xmin, xmax):
-        dmin = datetime.strptime(DateTime(xmin).iso, "%Y-%m-%d %H:%M:%S.%f")
-        dmax = datetime.strptime(DateTime(xmax).iso, "%Y-%m-%d %H:%M:%S.%f")
-        self.ax.set_xlim(dmin, dmax)
+        if not isinstance(xmin, datetime):
+            xmin = datetime.strptime(DateTime(xmin).iso, "%Y-%m-%d %H:%M:%S.%f")
+        if not isinstance(xmax, datetime):
+            xmax = datetime.strptime(DateTime(xmax).iso, "%Y-%m-%d %H:%M:%S.%f")
+        self.ax.set_xlim(xmin, xmax)
 
     def set_ylim(self, ymin, ymax):
         self.ax.set_ylim(ymin, ymax)
