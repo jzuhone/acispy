@@ -1,4 +1,4 @@
 *.pyc
 dependency_links.txt
-acis.egg-info
+acis_pytools.egg-info
 .idea

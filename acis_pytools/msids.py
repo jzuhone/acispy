@@ -1,6 +1,5 @@
 from utils import get_time
 import Ska.engarchive.fetch_sci as fetch
-from astropy.io import ascii
 from astropy.table import Table
 import numpy as np
 

@@ -4,15 +4,15 @@ import glob
 
 scripts = glob.glob("scripts/*")
 
-setup(name='acis',
-      packages=['acis'],
+setup(name='acis_pytools',
+      packages=['acis_pytools'],
       version='0.1.0',
       description='Python tools for ACIS Ops',
       author='John ZuHone',
       author_email='jzuhone@gmail.com',
-      url='http://github.com/jzuhone/acis',
-      download_url='https://github.com/jzuhone/acis/tarball/0.1.0',
-      install_requires=["six","requests","astropy","beautifulsoup4","scipy"],
+      url='http://github.com/jzuhone/acis_pytools',
+      download_url='https://github.com/jzuhone/acis_pytools/tarball/0.1.0',
+      install_requires=["six","requests","astropy"],
       scripts=scripts,
       classifiers=[
           'Intended Audience :: Science/Research',

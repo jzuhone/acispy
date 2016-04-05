@@ -4,8 +4,8 @@ import matplotlib
 matplotlib.use("qt4agg")
 import matplotlib.pyplot as plt
 import argparse
-import acis
-from acis.utils import msid_units
+import acis_pytools
+from acis_pytools.utils import msid_units
 
 parser = argparse.ArgumentParser()
 parser.add_argument("tstart", type=str)
@@ -22,12 +22,12 @@ for p in args.plots.split(','):
     else:
         states.append(p)
 
-ds = acis.DataSource()
+ds = acis_pytools.DataSource()
 ds.get_msids.from_archive(msids, args.tstart, tstop=args.tstop)
 ds.get_states.from_database(states, args.tstart, args.tstop)
 
 fields = [("msids", m) for m in msids] + [("states", s) for s in states]
 
-cp = acis.MultiDatePlot(ds, fields)
+cp = acis_pytools.MultiDatePlot(ds, fields)
 
 plt.show()

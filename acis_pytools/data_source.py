@@ -1,6 +1,6 @@
-from acis.msids import MSIDs
-from acis.states import States
-from acis.model import Model
+from acis_pytools.msids import MSIDs
+from acis_pytools.states import States
+from acis_pytools.model import Model
 
 def setup_method(obj, att, method):
     def _method(*args, **kwargs):

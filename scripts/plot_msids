@@ -4,8 +4,8 @@ import matplotlib
 matplotlib.use("qt4agg")
 import matplotlib.pyplot as plt
 import argparse
-import acis
-from acis.utils import msid_units
+import acis_pytools
+from acis_pytools.utils import msid_units
 
 parser = argparse.ArgumentParser()
 parser.add_argument("tstart", type=str)
@@ -32,9 +32,9 @@ if args.y2_axis is not None:
 else:
     y2_axis = None
 
-ds = acis.DataSource()
+ds = acis_pytools.DataSource()
 ds.get_msids.from_archive(msids, args.tstart, tstop=args.tstop)
 ds.get_states.from_database(states, args.tstart, args.tstop)
 
-cp = acis.DatePlot(ds, y_axis, field2=y2_axis)
+cp = acis_pytools.DatePlot(ds, y_axis, field2=y2_axis)
 plt.show()
