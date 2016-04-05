@@ -12,7 +12,8 @@ class MSIDs(object):
     @classmethod
     def from_tracelog(cls, filename):
         data = ascii.read(filename, format='csv', delimiter="\t", guess=False)
-        return cls(data["TIME"]-410227200., data.as_array(), data.keys())
+        table = dict((k.lower(), data[k]) for k in data.keys())
+        return cls(data["TIME"]-410227200., table, table.keys())
 
     @classmethod
     def from_archive(cls, msids, tstart, tstop=None, filter_bad=False,
