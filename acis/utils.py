@@ -57,6 +57,16 @@ msid_units = {'1deamzt': '$\mathrm{^\circ{C}}$',
               '1dpicacu': 'A',
               '1dpicbcu': 'A',
               '1dpp0avo': 'V',
-              '1dpp0bvo': 'V'}
+              '1dpp0bvo': 'V',
+              '1de28avo': 'V',
+              '1dep3avo': 'V',
+              '1dep2avo': 'V',
+              '1dep1avo': 'V',
+              '1dep0avo': 'V',
+              '1den1avo': 'V',
+              '1den0avo': 'V',
+              '1deicacu': 'A',
+              '1de28bvo': 'V',
+              '1dep3bvo': 'V'}
 
 
