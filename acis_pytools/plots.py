@@ -23,7 +23,7 @@ type_map = {"$\mathrm{^\circ{C}}$": "Temperature",
 default_colors = ["b","r","g","k"]
 
 class DatePlot(object):
-    def __init__(self, ds, fields, field2=None, fig=None, ax=None, lw=2,
+    def __init__(self, ds, fields, field2=None, fig=None, ax=None, lw=1.5,
                  fontsize=18, colors=None, color2='magenta'):
         if fig is None:
             fig = plt.figure(figsize=(10, 8))
