@@ -148,16 +148,39 @@ class MultiDatePlot(object):
     def savefig(self, filename, **kwargs):
         self.fig.savefig(filename, **kwargs)
 
-class ComparePlot(object):
-    def __init__(self, ds, fields, fig=None, ax=None):
+class PhasePlot(object):
+    def __init__(self, ds, x_field, y_field, fig=None, ax=None,
+                 fontsize=18):
         if fig is None:
             fig = plt.figure(figsize=(12, 12))
         if ax is None:
             ax = fig.add_subplot(111)
-        scp = ax.scatter()
+        x_src_name, x_fd = x_field
+        y_src_name, y_fd = y_field
+        x_src = getattr(ds, x_src_name)
+        y_src = getattr(ds, x_src_name)
+        scp = ax.scatter(x_src[x_fd], y_src[y_fd])
         self.fig = fig
         self.ax = ax
         self.scp = scp
+        fontProperties = font_manager.FontProperties(family="serif",
+                                                     size=fontsize)
+        for label in self.ax.get_xticklabels():
+            label.set_fontproperties(fontProperties)
+        for label in self.ax.get_yticklabels():
+            label.set_fontproperties(fontProperties)
+        if x_fd in state_labels:
+            self.set_xlabel(state_labels[x_fd])
+        elif x_fd in msid_units:
+            self.set_xlabel(x_fd.upper()+" (%s)" % msid_units[x_fd])
+        else:
+            self.set_xlabel(x_fd.upper())
+        if y_fd in state_labels:
+            self.set_ylabel(state_labels[y_fd])
+        elif y_fd in msid_units:
+            self.set_ylabel(y_fd.upper()+" (%s)" % msid_units[y_fd])
+        else:
+            self.set_ylabel(y_fd.upper())
 
     def set_xlabel(self, xlabel, fontdict=None, **kwargs):
         if fontdict is None:
