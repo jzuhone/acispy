@@ -23,3 +23,7 @@ class DataSource(object):
         self.get_msids = FetchObject(self, "msids", MSIDs)
         self.get_states = FetchObject(self, "states", States)
         self.get_model = FetchObject(self, "model", Model)
+
+    def __getitem__(self, item):
+        src = getattr(self, item[0])
+        return src[item[1]]
