@@ -23,7 +23,7 @@ for p in args.plots.split(','):
         states.append(p)
 
 ds = acis_pytools.DataSource()
-ds.get_msids.from_archive(msids, args.tstart, tstop=args.tstop)
+ds.get_msids.from_database(msids, args.tstart, tstop=args.tstop)
 ds.get_states.from_database(states, args.tstart, args.tstop)
 
 fields = [("msids", m) for m in msids] + [("states", s) for s in states]

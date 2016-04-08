@@ -33,7 +33,7 @@ else:
     y2_axis = None
 
 ds = acis_pytools.DataSource()
-ds.get_msids.from_archive(msids, args.tstart, tstop=args.tstop)
+ds.get_msids.from_database(msids, args.tstart, tstop=args.tstop)
 ds.get_states.from_database(states, args.tstart, args.tstop)
 
 cp = acis_pytools.DatePlot(ds, y_axis, field2=y2_axis)

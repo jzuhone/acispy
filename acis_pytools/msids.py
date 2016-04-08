@@ -26,8 +26,8 @@ class MSIDs(object):
         return cls(data["time"], data, header)
 
     @classmethod
-    def from_archive(cls, msids, tstart, tstop=None, filter_bad=False,
-                     stat=None):
+    def from_database(cls, msids, tstart, tstop=None, filter_bad=False,
+                      stat=None):
         data = fetch.MSIDset(msids, tstart, stop=tstop, filter_bad=filter_bad,
                              stat=None)
         table = dict((k, data[k].vals) for k in data.keys())
