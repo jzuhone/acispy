@@ -9,7 +9,8 @@ class States(object):
 
     def __init__(self, table, keys):
         self.table = table
-        self._time_start = self.table["tstart"]
+        self.tstart = self.table['tstart']
+        self.tstop = self.table['tstop']
         self._off_nominal_roll = calc_off_nom_rolls(table)
         self._keys = list(keys)
 
@@ -55,11 +56,11 @@ class States(object):
         time = get_time(time).secs
         # We have this if we need it
         err = "The time %s is not within the selected time frame!" % time
-        if time < self._time_start[0]:
+        if time < self.tstart[0]:
             raise RuntimeError(err)
-        idx = np.searchsorted(self._time_start, time)-1
+        idx = np.searchsorted(self.tstart, time)-1
         try:
-            self._time_start[idx]
+            self.tstart[idx]
         except IndexError:
             raise RuntimeError(err)
         state = {}
