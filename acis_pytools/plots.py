@@ -147,3 +147,24 @@ class MultiDatePlot(object):
 
     def savefig(self, filename, **kwargs):
         self.fig.savefig(filename, **kwargs)
+
+class ComparePlot(object):
+    def __init__(self, ds, fields, fig=None, ax=None):
+        if fig is None:
+            fig = plt.figure(figsize=(12, 12))
+        if ax is None:
+            ax = fig.add_subplot(111)
+        scp = ax.scatter()
+        self.fig = fig
+        self.ax = ax
+        self.scp = scp
+
+    def set_xlabel(self, xlabel, fontdict=None, **kwargs):
+        if fontdict is None:
+            fontdict = {"size": 18, "family": "serif"}
+        self.ax.set_xlabel(xlabel, fontdict=fontdict, **kwargs)
+
+    def set_ylabel(self, ylabel, fontdict=None, **kwargs):
+        if fontdict is None:
+            fontdict = {"size": 18, "family": "serif"}
+        self.ax.set_ylabel(ylabel, fontdict=fontdict, **kwargs)
