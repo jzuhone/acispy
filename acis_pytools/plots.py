@@ -6,6 +6,7 @@ from acis_pytools.utils import state_labels, msid_units
 from Chandra.Time import DateTime
 from datetime import datetime
 import numpy as np
+import Ska.Numpy
 
 def pointpair(x, y=None):
     if y is None:
@@ -157,9 +158,42 @@ class PhasePlot(object):
             ax = fig.add_subplot(111)
         x_src_name, x_fd = x_field
         y_src_name, y_fd = y_field
+        if y_src_name == "states" and x_src_name != "states":
+            raise RuntimeError("Cannot plot an MSID or model vs. a state, "
+                               "put the state on the x-axis!")
         x_src = getattr(ds, x_src_name)
-        y_src = getattr(ds, x_src_name)
-        scp = ax.scatter(x_src[x_fd], y_src[y_fd])
+        y_src = getattr(ds, y_src_name)
+        x = x_src[x_fd]
+        y = y_src[y_fd]
+        if x.size != y.size:
+            # Interpolate the y-axis to the x-axis times
+            times_in = y_src.time
+            if x_src_name == "states":
+                tstart_out = x_src.tstart
+                tstop_out = x_src.tstop
+                ok_start = (tstart_out >= times_in[0]) & (tstart_out <= times_in[-1])
+                ok_stop = (tstop_out >= times_in[0]) & (tstop_out <= times_in[-1])
+                ok = ok_start & ok_stop
+                tstart_out = tstart_out[ok]
+                tstop_out = tstop_out[ok]
+                idx_start = Ska.Numpy.interpolate(np.arange(len(times_in)),
+                                                  times_in, tstart_out,
+                                                  method='nearest', sorted=True)
+                idx_stop = Ska.Numpy.interpolate(np.arange(len(times_in)),
+                                                 times_in, tstop_out,
+                                                 method='nearest', sorted=True)
+                x = pointpair(x[ok])
+                y = pointpair(y[idx_start], y[idx_stop])
+            else:
+                times_out = x_src.time
+                ok = (times_out >= times_in[0]) & (times_out <= times_in[-1])
+                times_out = times_out[ok]
+                indexes = Ska.Numpy.interpolate(np.arange(len(times_in)),
+                                                times_in, times_out,
+                                                method='nearest', sorted=True)
+                x = x[ok]
+                y = y[indexes]
+        scp = ax.scatter(x, y)
         self.fig = fig
         self.ax = ax
         self.scp = scp
