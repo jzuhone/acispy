@@ -4,8 +4,8 @@ from astropy.table import Table
 import numpy as np
 
 class MSIDs(object):
-    def __init__(self, time, table, keys):
-        self.time = time
+    def __init__(self, times, table, keys):
+        self.times = times
         self.table = table
         self._keys = list(keys)
 
@@ -23,7 +23,8 @@ class MSIDs(object):
         data = np.array(data, dtype=dtype)
         # Convert times in the TIME column to Chandra 1998 time
         data['time'] -= 410227200.
-        return cls(data["time"], data, header)
+        times = dict((k, data["time"]) for k in data.keys() if k != "time")
+        return cls(times, data, header)
 
     @classmethod
     def from_database(cls, msids, tstart, tstop=None, filter_bad=False,
@@ -31,7 +32,8 @@ class MSIDs(object):
         data = fetch.MSIDset(msids, tstart, stop=tstop, filter_bad=filter_bad,
                              stat=None)
         table = dict((k, data[k].vals) for k in data.keys())
-        return cls(get_time(data[msids[0]].times).secs, table, data.keys())
+        times = dict((k, get_time(data[k].times).secs) for k in data.keys())
+        return cls(times, table, data.keys())
 
     def __getitem__(self, item):
         return self.table[item]

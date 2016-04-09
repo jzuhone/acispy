@@ -10,8 +10,8 @@ comp_map = {"1deamzt": "dea",
             "fptemp": "fp"}
 
 class Model(object):
-    def __init__(self, time, table, keys):
-        self.time = time
+    def __init__(self, times, table, keys):
+        self.times = times
         self.table = table
         self._keys = list(keys)
 
@@ -50,7 +50,7 @@ class Model(object):
         time = get_time(time).secs
         values = {}
         for key in self.keys():
-            values[key] = Ska.Numpy.interpolate(self[key], self.time, [time])
+            values[key] = Ska.Numpy.interpolate(self[key], self.times, [time])
         return values
 
     def write_ascii(self, filename):

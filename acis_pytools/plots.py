@@ -39,13 +39,16 @@ class DatePlot(object):
             if src_name == "states":
                 x = pointpair(src["tstart"], src["tstop"])
                 y = pointpair(src[fd])
+            elif src_name == "msids":
+                x = src.times[fd]
+                y = src[fd]
             else:
-                x = src.time
+                x = src.times
                 y = src[fd]
             ticklocs, fig, ax = plot_cxctime(x, y, fig=fig, lw=lw, ax=ax,
                                              color=colors[i],
                                              drawstyle=drawstyle, 
-                                             label="%s %s" % (src_name, fd.upper()))
+                                             label="%s" % fd.upper())
         if len(fields) > 1:
             ax.legend(prop={"family": "serif"})
         self.ticklocs = ticklocs
@@ -76,9 +79,12 @@ class DatePlot(object):
             if src_name2 == "states":
                 x = pointpair(src2["tstart"], src2["tstop"])
                 y = pointpair(src2[fd2])
+            elif src_name2 == "msids":
+                x = src2.times[fd]
+                y = src2[fd]
             else:
-                x = src2.time
-                y = src2[fd2]
+                x = src2.times
+                y = src2[fd]
             plot_cxctime(x, y, fig=fig, ax=self.ax2, lw=lw,
                          drawstyle=drawstyle, color=color2)
             for label in self.ax2.get_xticklabels():
@@ -167,7 +173,10 @@ class PhasePlot(object):
         y = y_src[y_fd]
         if x.size != y.size:
             # Interpolate the y-axis to the x-axis times
-            times_in = y_src.time
+            if y_src_name == "msids":
+                times_in = y_src.times[y_fd]
+            else:
+                times_in = y_src.times
             if x_src_name == "states":
                 tstart_out = x_src.tstart
                 tstop_out = x_src.tstop
@@ -185,7 +194,10 @@ class PhasePlot(object):
                 x = pointpair(x[ok])
                 y = pointpair(y[idx_start], y[idx_stop])
             else:
-                times_out = x_src.time
+                if x_src_name == "msids":
+                    times_out = x_src.times[x_fd]
+                else:
+                    times_out = x_src.times
                 ok = (times_out >= times_in[0]) & (times_out <= times_in[-1])
                 times_out = times_out[ok]
                 indexes = Ska.Numpy.interpolate(np.arange(len(times_in)),
