@@ -30,8 +30,8 @@ class DataSource(object):
         states = None
         msids = MSIDs.from_tracelog(filename)
         if state_keys is not None:
-            tstart = secs2date(msids.time[0])
-            tstop = secs2date(msids.time[-1])
+            tstart = secs2date(msids.times[msids.keys()[1]][0])
+            tstop = secs2date(msids.times[msids.keys()[1]][-1])
             states = States.from_database(state_keys, tstart, tstop)
         return cls(msids, states, None)
 
