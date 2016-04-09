@@ -3,3 +3,5 @@ dependency_links.txt
 acis_pytools.egg-info
 .idea
 doc/build
+build
+dist
