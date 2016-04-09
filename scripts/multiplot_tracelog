@@ -7,9 +7,9 @@ import argparse
 import acis_pytools
 from acis_pytools.utils import msid_units
 
-parser = argparse.ArgumentParser()
-parser.add_argument("tracelog", type=str)
-parser.add_argument("plots", type=str)
+parser = argparse.ArgumentParser(description='Make plots of MSIDs from a tracelog file. Commanded states will be loaded from the commanded states database.')
+parser.add_argument("tracelog", type=str, help='The tracelog file to load the MSIDs from')
+parser.add_argument("plots", type=str, help='The MSIDs and states to plot, comma-separated')
 args = parser.parse_args()
 
 states = []

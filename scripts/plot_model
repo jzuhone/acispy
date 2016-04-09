@@ -7,10 +7,10 @@ import argparse
 import acis_pytools
 from acis_pytools.utils import msid_units
 
-parser = argparse.ArgumentParser()
-parser.add_argument("load", type=str)
-parser.add_argument("y_axis", type=str)
-parser.add_argument("--y2_axis", type=str)
+parser = argparse.ArgumentParser(description='Plot a single model component with another component or state')
+parser.add_argument("load", type=str, help='The load to take the model from')
+parser.add_argument("y_axis", type=str, help='The model component to plot on the left y-axis')
+parser.add_argument("--y2_axis", type=str, help="The model component or state to plot on the right y-axis (default: none)")
 args = parser.parse_args()
 
 model = []

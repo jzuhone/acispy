@@ -7,11 +7,11 @@ import argparse
 import acis_pytools
 from acis_pytools.utils import msid_units
 
-parser = argparse.ArgumentParser()
-parser.add_argument("tstart", type=str)
-parser.add_argument("tstop", type=str)
-parser.add_argument("y_axis", type=str)
-parser.add_argument("--y2_axis", type=str)
+parser = argparse.ArgumentParser(description='Plot a single MSID with another MSID or state')
+parser.add_argument("tstart", type=str, help='The start time in YYYY:DOY:HH:MM:SS format')
+parser.add_argument("tstop", type=str, help='The stop time in YYYY:DOY:HH:MM:SS format')
+parser.add_argument("y_axis", type=str, help='The MSID to be plotted on the left y-axis')
+parser.add_argument("--y2_axis", type=str, help='The MSID or state to be plotted on the right y-axis (default: none)')
 args = parser.parse_args()
 
 msids = []
