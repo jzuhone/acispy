@@ -11,6 +11,8 @@ parser = argparse.ArgumentParser(description='Make plots of MSIDs and commanded 
 parser.add_argument("tstart", type=str, help='The start time in YYYY:DOY:HH:MM:SS format')
 parser.add_argument("tstop", type=str, help='The stop time in YYYY:DOY:HH:MM:SS format')
 parser.add_argument("plots", type=str, help="The MSIDs and states to plot, comma-separated")
+parser.add_argument("--one-panel", action='store_true', 
+                    help="Whether to make a multi-panel plot or a single-panel plot. The latter is only valid if the quantities have the same units.")
 args = parser.parse_args()
 
 states = []
@@ -30,7 +32,11 @@ if len(msids) == 0:
     msids = None
 
 ds = acis_pytools.DataSource.fetch_from_database(args.tstart, args.tstop,
-                                                 msid_keys=msids, state_keys=states)
-cp = acis_pytools.MultiDatePlot(ds, fields)
+                                                 msid_keys=msids, state_keys=states,
+                                                 filter_bad=True)
+if args.one_panel:
+    cp = acis_pytools.DatePlot(ds, fields)
+else:
+    cp = acis_pytools.MultiDatePlot(ds, fields)
 
 plt.show()
