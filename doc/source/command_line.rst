@@ -67,7 +67,7 @@ Returns:
 
 .. code::
 
-    usage: multiplot_archive [-h] tstart tstop plots
+    usage: multiplot_archive [-h] [--one-panel] tstart tstop plots
 
     Make plots of MSIDs and commanded states from the engineering archive
 
@@ -78,8 +78,10 @@ Returns:
 
     optional arguments:
       -h, --help  show this help message and exit
+      --one-panel  Whether to make a multi-panel plot or a single-panel plot. The
+                   latter is only valid if the quantities have the same units.
 
-Example:
+Example 1:
 
 .. code-block:: bash
 
@@ -89,12 +91,20 @@ Returns:
 
 .. image:: _images/multiplot_archive.png
 
+Example 2:
+
+.. code-block:: bash
+
+    [~]$ multiplot_archive 2016:091 2016:097 1pdeaat,1pdeabt,1pin1at --one-panel
+
+.. image:: _images/one_panel_multi_archive.png
+
 ``multiplot_tracelog``
 ++++++++++++++++++++++
 
 .. code::
 
-    usage: multiplot_tracelog [-h] tracelog plots
+    usage: multiplot_tracelog [-h] [--one-panel] tracelog plots
     
     Make plots of MSIDs from a tracelog file. Commanded states will be loaded from
     the commanded states database.
@@ -105,8 +115,10 @@ Returns:
     
     optional arguments:
       -h, --help  show this help message and exit
+      --one-panel  Whether to make a multi-panel plot or a single-panel plot. The
+                   latter is only valid if the quantities have the same units.
 
-Example:
+Example 1:
 
 .. code-block:: bash
     
@@ -115,6 +127,16 @@ Example:
 Returns:
 
 .. image:: _images/multiplot_tracelog.png
+
+Example 2:
+
+.. code-block:: bash
+    
+    [~]$ multiplot_tracelog acisENG10d_00985114479.70.tl 1dp28avo,1dp28bvo --one-panel
+    
+Returns:
+
+.. image:: _images/one_panel_multi_tracelog.png
 
 ``get_expected_acis_status``
 ++++++++++++++++++++++++++++

@@ -3,8 +3,26 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to acis_pytools's documentation!
-========================================
+Welcome to ``acis_pytools``'s documentation!
+============================================
+
+Activating ``acis_pytools``
+---------------------------
+
+From anywhere on the HEAD LAN, first get into the ``ska`` environment and then source 
+the activation script:
+
+bash:
+
+.. code-block:: bash
+   
+   [~]$ source /data/odin/BACKUPS/jzuhone/python/bin/activate.sh
+   
+tcsh:
+
+.. code-block:: bash
+   
+   [~]$ source /data/odin/BACKUPS/jzuhone/python/bin/activate.csh
 
 Contents:
 
