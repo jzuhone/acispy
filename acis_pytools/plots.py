@@ -97,11 +97,6 @@ class DatePlot(object):
                 self.set_ylabel(fd2.upper()+" (%s)" % msid_units[fd])
             else:
                 self.set_ylabel(fd2.upper())
-        ymin, ymax = self.ax.get_ylim()
-        self.set_ylim(ymin*0.9, ymax*1.1)
-        if hasattr(self, 'ax2'):
-            ymin2, ymax2 = self.ax2.get_ylim()
-            self.set_ylim2(ymin2*0.9, ymax2*1.1)
 
     def set_xlim(self, xmin, xmax):
         if not isinstance(xmin, datetime):
