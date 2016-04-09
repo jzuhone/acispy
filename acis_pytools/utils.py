@@ -7,7 +7,6 @@ import numpy as np
 def get_time(time):
     if time is "now":
         time = DateTime()
-        print("Current time is %s UTC." % time.date)
     else:
         time = DateTime(time)
     return time
