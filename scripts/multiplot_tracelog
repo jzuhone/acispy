@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import argparse
 import acis_pytools
 from acis_pytools.utils import msid_units
-from Chandra.Time import secs2date
 
 parser = argparse.ArgumentParser()
 parser.add_argument("tracelog", type=str)
@@ -22,14 +21,12 @@ for p in args.plots.split(','):
     else:
         states.append(p)
 
-ds = acis_pytools.DataSource()
-ds.get_msids.from_tracelog(args.tracelog)
-tstart = secs2date(ds.msids.time[0])
-tstop = secs2date(ds.msids.time[-1])
-ds.get_states.from_database(states, tstart, tstop)
-
 fields = [("msids", m) for m in msids] + [("states", s) for s in states]
 
+if len(states) == 0:
+    states = None
+
+ds = acis_pytools.DataSource.fetch_from_tracelog(args.tracelog, state_keys=states)
 cp = acis_pytools.MultiDatePlot(ds, fields)
 
 plt.show()

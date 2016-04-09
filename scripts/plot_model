@@ -29,9 +29,6 @@ if args.y2_axis is not None:
 else:
     y2_axis = None
 
-ds = acis_pytools.DataSource()
-ds.get_model.from_load(args.load, [args.y_axis])
-ds.get_states.from_load(args.load)
-
+ds = acis_pytools.DataSource.fetch_from_load(args.load, args.y_axis)
 cp = acis_pytools.DatePlot(ds, y_axis, field2=y2_axis)
 plt.show()

@@ -8,18 +8,19 @@ dont_use = ["q1","q2","q3","q4","power_cmd","datestart","datestop",
             "tstart","tstop","trans_keys","vid_board","pcad_mode",
             "clocking","fep_count"]
 
+comps = ["fptemp","1dpamzt","1deamzt","1pdeaat"]
+
 parser = argparse.ArgumentParser()
 parser.add_argument("load", type=str)
 parser.add_argument("--time", type=str, default="now")
 args = parser.parse_args()
 
-ds = acis_pytools.DataSource()
-ds.get_model.from_load(args.load, ["fptemp"])
-ds.get_states.from_load(args.load)
-
+ds = acis_pytools.DataSource.fetch_from_load(args.load, comps)
 states = ds.states.get_states(args.time)
 values = ds.model.get_values(args.time)
+
 for k, v in states.items():
     if k not in dont_use:
         print("%s: %s" % (k, v))
-print("Focal Plane Temperature: %g deg C" % values["fptemp"])
+for k, v in values.items():
+    print("%s: %s" % (k, v[0]))

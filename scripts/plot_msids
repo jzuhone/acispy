@@ -32,9 +32,9 @@ if args.y2_axis is not None:
 else:
     y2_axis = None
 
-ds = acis_pytools.DataSource()
-ds.get_msids.from_database(msids, args.tstart, tstop=args.tstop)
-ds.get_states.from_database(states, args.tstart, args.tstop)
+ds = acis_pytools.DataSource.fetch_from_database(args.tstart, args.tstop,
+                                                 msid_keys=msids, state_keys=states,
+                                                 filter_bad=True)
 
 cp = acis_pytools.DatePlot(ds, y_axis, field2=y2_axis)
 plt.show()
