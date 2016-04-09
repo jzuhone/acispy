@@ -16,9 +16,9 @@ class Model(object):
         self._keys = list(keys)
 
     @classmethod
-    def from_xija(cls, model, comps):
-        table = dict((k,  model.comp[k].mvals) for k in comps)
-        return cls(model.times, table, comps)
+    def from_xija(cls, model, components):
+        table = dict((k,  model.comp[k].mvals) for k in components)
+        return cls(model.times, table, components)
 
     @classmethod
     def from_load(cls, load, components):
@@ -33,7 +33,7 @@ class Model(object):
         data = {}
         for comp in components:
             c = comp_map[comp].upper()
-            url = "http://cxc.cfa.harvard.edu/acis_pytools/%s_thermPredic/" % c
+            url = "http://cxc.cfa.harvard.edu/acis/%s_thermPredic/" % c
             url += "%s/ofls%s/temperatures.dat" % (load[:-1].upper(), load[-1].lower())
             u = requests.get(url)
             table = ascii.read(u.text)

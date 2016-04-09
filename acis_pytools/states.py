@@ -31,7 +31,7 @@ class States(object):
         :param load: The identifier for the load, e.g. "JAN1116A"
         :return: The States instance.
         """
-        url = "http://cxc.cfa.harvard.edu/acis_pytools/DPA_thermPredic/"
+        url = "http://cxc.cfa.harvard.edu/acis/DPA_thermPredic/"
         url += "%s/ofls%s/states.dat" % (load[:-1].upper(), load[-1].lower())
         u = requests.get(url)
         t = ascii.read(u.text)
