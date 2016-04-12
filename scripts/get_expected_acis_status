@@ -3,6 +3,7 @@
 from __future__ import print_function
 import argparse
 import acis_pytools
+from acis_pytools.utils import get_time
 
 dont_use = ["q1","q2","q3","q4","power_cmd","datestart","datestop",
             "tstart","tstop","trans_keys","vid_board","pcad_mode",
@@ -17,8 +18,11 @@ parser.add_argument("--time", type=str, default="now",
 args = parser.parse_args()
 
 ds = acis_pytools.DataSource.fetch_from_load(args.load, comps)
-states = ds.states.get_states(args.time)
-values = ds.model.get_values(args.time)
+t = get_time(args.time).date
+states = ds.states.get_states(t)
+values = ds.model.get_values(t)
+
+print("Getting expected ACIS state at %s." % t)
 
 for k, v in states.items():
     if k not in dont_use:
