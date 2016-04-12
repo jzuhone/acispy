@@ -2,8 +2,8 @@
 
 from __future__ import print_function
 import argparse
-import acis_pytools
-from acis_pytools.utils import get_time
+import acispy
+from acispy.utils import get_time
 
 dont_use = ["q1","q2","q3","q4","power_cmd","datestart","datestop",
             "tstart","tstop","trans_keys","vid_board","pcad_mode",
@@ -17,7 +17,7 @@ parser.add_argument("--time", type=str, default="now",
                     help='The time to check the status at (default: current time)')
 args = parser.parse_args()
 
-ds = acis_pytools.DataSource.fetch_from_load(args.load, comps)
+ds = acispy.DataSource.fetch_from_load(args.load, comps)
 t = get_time(args.time).date
 states = ds.states.get_states(t)
 values = ds.model.get_values(t)

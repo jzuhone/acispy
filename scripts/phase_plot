@@ -4,8 +4,8 @@ import matplotlib
 matplotlib.use("qt4agg")
 import matplotlib.pyplot as plt
 import argparse
-import acis_pytools
-from acis_pytools.utils import msid_units
+import acispy
+from acispy.utils import msid_units
 
 parser = argparse.ArgumentParser(description='Make a phase plot of one MSID or state versus another within a certain time frame.')
 parser.add_argument("tstart", type=str, help='The start time in YYYY:DOY:HH:MM:SS format')
@@ -31,9 +31,9 @@ else:
     y_field = ("states", args.y_field)
     states.append(args.y_field)
 
-ds = acis_pytools.DataSource.fetch_from_database(args.tstart, args.tstop,
-                                                 msid_keys=msids, state_keys=states,
-                                                 filter_bad=True)
+ds = acispy.DataSource.fetch_from_database(args.tstart, args.tstop,
+                                           msid_keys=msids, state_keys=states,
+                                           filter_bad=True)
 
-cp = acis_pytools.PhasePlot(ds, x_field, y_field)
+cp = acispy.PhasePlot(ds, x_field, y_field)
 plt.show()

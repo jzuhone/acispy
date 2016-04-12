@@ -1,6 +1,6 @@
 from astropy.io import ascii
 import requests
-from acis_pytools.utils import get_time, calc_off_nom_rolls
+from acispy.utils import get_time, calc_off_nom_rolls
 import numpy as np
 from Chandra.cmd_states import fetch_states
 from astropy.table import Table

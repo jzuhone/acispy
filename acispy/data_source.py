@@ -1,6 +1,6 @@
-from acis_pytools.msids import MSIDs
-from acis_pytools.states import States
-from acis_pytools.model import Model
+from acispy.msids import MSIDs
+from acispy.states import States
+from acispy.model import Model
 from Chandra.Time import secs2date
 
 class DataSource(object):

@@ -50,7 +50,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'acis_pytools'
+project = 'acispy'
 copyright = '2016, John ZuHone'
 author = 'John ZuHone'
 
@@ -226,7 +226,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'acis_pytools.tex', 'acis\\_pytools Documentation',
+    (master_doc, 'acispy.tex', 'acis\\_pytools Documentation',
      'John ZuHone', 'manual'),
 ]
 
@@ -256,7 +256,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'acis_pytools', 'acis_pytools Documentation',
+    (master_doc, 'acispy', 'acispy Documentation',
      [author], 1)
 ]
 
@@ -270,8 +270,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'acis_pytools', 'acis_pytools Documentation',
-     author, 'acis_pytools', 'One line description of project.',
+    (master_doc, 'acispy', 'acispy Documentation',
+     author, 'acispy', 'One line description of project.',
      'Miscellaneous'),
 ]
 

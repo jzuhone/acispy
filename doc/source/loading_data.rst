@@ -1,4 +1,4 @@
 Loading Data
-------------
+============
 
-To 
+ACISpy can work with ACIS-related data from a variety of sources. 

@@ -4,8 +4,8 @@ import matplotlib
 matplotlib.use("qt4agg")
 import matplotlib.pyplot as plt
 import argparse
-import acis_pytools
-from acis_pytools.utils import msid_units
+import acispy
+from acispy.utils import msid_units
 
 parser = argparse.ArgumentParser(description='Plot a single model component with another component or state')
 parser.add_argument("load", type=str, help='The load to take the model from')
@@ -29,6 +29,6 @@ if args.y2_axis is not None:
 else:
     y2_axis = None
 
-ds = acis_pytools.DataSource.fetch_from_load(args.load, args.y_axis)
-cp = acis_pytools.DatePlot(ds, y_axis, field2=y2_axis)
+ds = acispy.DataSource.fetch_from_load(args.load, args.y_axis)
+cp = acispy.DatePlot(ds, y_axis, field2=y2_axis)
 plt.show()

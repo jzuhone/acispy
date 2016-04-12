@@ -4,8 +4,8 @@ import matplotlib
 matplotlib.use("qt4agg")
 import matplotlib.pyplot as plt
 import argparse
-import acis_pytools
-from acis_pytools.utils import msid_units
+import acispy
+from acispy.utils import msid_units
 
 parser = argparse.ArgumentParser(description='Make plots of MSIDs from a tracelog file. Commanded states will be loaded from the commanded states database.')
 parser.add_argument("tracelog", type=str, help='The tracelog file to load the MSIDs from')
@@ -28,10 +28,10 @@ fields = [("msids", m) for m in msids] + [("states", s) for s in states]
 if len(states) == 0:
     states = None
 
-ds = acis_pytools.DataSource.fetch_from_tracelog(args.tracelog, state_keys=states)
+ds = acispy.DataSource.fetch_from_tracelog(args.tracelog, state_keys=states)
 if args.one_panel:
-    cp = acis_pytools.DatePlot(ds, fields)
+    cp = acispy.DatePlot(ds, fields)
 else:
-    cp = acis_pytools.MultiDatePlot(ds, fields)
+    cp = acispy.MultiDatePlot(ds, fields)
 
 plt.show()

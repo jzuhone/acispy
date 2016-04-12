@@ -1,5 +1,5 @@
-Activating ``acis_pytools``
-===========================
+Activating ACISpy
+=================
 
 From anywhere on the HEAD LAN, first get into the ``ska`` environment:
 
@@ -15,7 +15,7 @@ tcsh:
    
    [~]$ unsetenv PERL5LIB; source /proj/sot/ska/bin/ska_envs.csh;
 
-Then source the activation script for ``acis_pytools``:
+Then source the activation script for ACISpy:
 
 bash:
 

@@ -4,8 +4,8 @@ import matplotlib
 matplotlib.use("qt4agg")
 import matplotlib.pyplot as plt
 import argparse
-import acis_pytools
-from acis_pytools.utils import msid_units
+import acispy
+from acispy.utils import msid_units
 
 parser = argparse.ArgumentParser(description='Make plots of MSIDs and commanded states from the engineering archive')
 parser.add_argument("tstart", type=str, help='The start time in YYYY:DOY:HH:MM:SS format')
@@ -31,12 +31,12 @@ if len(states) == 0:
 if len(msids) == 0:
     msids = None
 
-ds = acis_pytools.DataSource.fetch_from_database(args.tstart, args.tstop,
-                                                 msid_keys=msids, state_keys=states,
-                                                 filter_bad=True)
+ds = acispy.DataSource.fetch_from_database(args.tstart, args.tstop,
+                                           msid_keys=msids, state_keys=states,
+                                           filter_bad=True)
 if args.one_panel:
-    cp = acis_pytools.DatePlot(ds, fields)
+    cp = acispy.DatePlot(ds, fields)
 else:
-    cp = acis_pytools.MultiDatePlot(ds, fields)
+    cp = acispy.MultiDatePlot(ds, fields)
 
 plt.show()

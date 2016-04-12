@@ -2,7 +2,7 @@ import requests
 from astropy.io import ascii
 from astropy.table import Table
 import Ska.Numpy
-from acis_pytools.utils import get_time
+from acispy.utils import get_time
 
 comp_map = {"1deamzt": "dea",
             "1dpamzt": "dpa",

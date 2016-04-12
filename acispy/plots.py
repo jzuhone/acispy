@@ -2,7 +2,7 @@ from Ska.Matplotlib import plot_cxctime
 from matplotlib import font_manager
 import matplotlib.pyplot as plt
 from matplotlib.dates import num2date
-from acis_pytools.utils import state_labels, msid_units
+from acispy.utils import state_labels, msid_units
 from Chandra.Time import DateTime
 from datetime import datetime
 import numpy as np

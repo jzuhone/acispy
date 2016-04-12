@@ -1,4 +1,4 @@
-from acis_pytools.utils import get_time
+from acispy.utils import get_time
 import Ska.engarchive.fetch_sci as fetch
 from astropy.table import Table
 import numpy as np
