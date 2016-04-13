@@ -32,9 +32,9 @@ if args.y2_axis is not None:
 else:
     y2_axis = None
 
-ds = acispy.DataSource.fetch_from_database(args.tstart, args.tstop,
-                                           msid_keys=msids, state_keys=states,
-                                           filter_bad=True)
+ds = acispy.DataContainer.fetch_from_database(args.tstart, args.tstop,
+                                              msid_keys=msids, state_keys=states,
+                                              filter_bad=True)
 
 cp = acispy.DatePlot(ds, y_axis, field2=y2_axis)
 plt.show()

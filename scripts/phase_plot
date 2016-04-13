@@ -31,9 +31,9 @@ else:
     y_field = ("states", args.y_field)
     states.append(args.y_field)
 
-ds = acispy.DataSource.fetch_from_database(args.tstart, args.tstop,
-                                           msid_keys=msids, state_keys=states,
-                                           filter_bad=True)
+ds = acispy.DataContainer.fetch_from_database(args.tstart, args.tstop,
+                                              msid_keys=msids, state_keys=states,
+                                              filter_bad=True)
 
 cp = acispy.PhasePlot(ds, x_field, y_field)
 plt.show()

@@ -17,7 +17,7 @@ parser.add_argument("--time", type=str, default="now",
                     help='The time to check the status at (default: current time)')
 args = parser.parse_args()
 
-ds = acispy.DataSource.fetch_from_load(args.load, comps)
+ds = acispy.DataContainer.fetch_from_load(args.load, comps)
 t = get_time(args.time).date
 states = ds.states.get_states(t)
 values = ds.model.get_values(t)

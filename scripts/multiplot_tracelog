@@ -28,7 +28,7 @@ fields = [("msids", m) for m in msids] + [("states", s) for s in states]
 if len(states) == 0:
     states = None
 
-ds = acispy.DataSource.fetch_from_tracelog(args.tracelog, state_keys=states)
+ds = acispy.DataContainer.fetch_from_tracelog(args.tracelog, state_keys=states)
 if args.one_panel:
     cp = acispy.DatePlot(ds, fields)
 else:

@@ -2,16 +2,29 @@ from acispy.msids import MSIDs
 from acispy.states import States
 from acispy.model import Model
 from Chandra.Time import secs2date
+from acispy.utils import msid_units, state_units
+import astropy.units as apu
 
-class DataSource(object):
+class DataContainer(object):
     def __init__(self, msids, states, model):
         self.msids = msids
         self.states = states
         self.model = model
+        self._keys = []
+        for k in ["msids", "states", "model"]:
+            obj = getattr(self, k)
+            if obj is not None:
+                self._keys += [(k, f) for f in obj.keys()]
 
     def __getitem__(self, item):
         src = getattr(self, item[0])
-        return src[item[1]]
+        if item[0] in msid_units:
+            arr = src[item[1]]*getattr(apu, msid_units[item[1]])
+        elif item[0] in state_units:
+            arr = src[item[1]]*getattr(apu, state_units[item[1]])
+        else:
+            arr = src[item[1]]
+        return arr
 
     @classmethod
     def fetch_from_database(cls, tstart, tstop, msid_keys=None, state_keys=None, 
@@ -40,3 +53,6 @@ class DataSource(object):
         model = Model.from_load(load, comps)
         states = States.from_load(load)
         return cls(None, states, model)
+
+    def keys(self):
+        return self._keys

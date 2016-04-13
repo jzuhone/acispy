@@ -29,6 +29,6 @@ if args.y2_axis is not None:
 else:
     y2_axis = None
 
-ds = acispy.DataSource.fetch_from_load(args.load, args.y_axis)
+ds = acispy.DataContainer.fetch_from_load(args.load, args.y_axis)
 cp = acispy.DatePlot(ds, y_axis, field2=y2_axis)
 plt.show()
