@@ -18,9 +18,9 @@ class DataContainer(object):
 
     def __getitem__(self, item):
         src = getattr(self, item[0])
-        if item[0] in msid_units:
+        if item[1] in msid_units:
             arr = src[item[1]]*getattr(apu, msid_units[item[1]])
-        elif item[0] in state_units:
+        elif item[1] in state_units:
             arr = src[item[1]]*getattr(apu, state_units[item[1]])
         else:
             arr = src[item[1]]
@@ -49,10 +49,18 @@ class DataContainer(object):
         return cls(msids, states, None)
 
     @classmethod
-    def fetch_from_load(cls, load, comps):
+    def fetch_from_load(cls, load, comps, get_msids=False):
         model = Model.from_load(load, comps)
         states = States.from_load(load)
-        return cls(None, states, model)
+        tstart = states["datestart"]
+        if get_msids:
+            tstart = states["datestart"][0]
+            tstop = states["datestop"][-1]
+            msids = MSIDs.from_database(comps, tstart, tstop=tstop,
+                                        filter_bad=True)
+        else:
+            msids = None
+        return cls(msids, states, model)
 
     def keys(self):
         return self._keys
