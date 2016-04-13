@@ -2,7 +2,7 @@ from Ska.Matplotlib import plot_cxctime
 from matplotlib import font_manager
 import matplotlib.pyplot as plt
 from matplotlib.dates import num2date
-from acispy.utils import state_labels, msid_units
+from acispy.utils import state_labels, msid_units, msid_list, msid_unit_labels
 from Chandra.Time import DateTime
 from datetime import datetime
 import numpy as np
@@ -17,7 +17,7 @@ drawstyles = {"simpos": "steps",
               "pitch": "steps",
               "ccd_count": "steps"}
 
-type_map = {"$\mathrm{^\circ{C}}$": "Temperature",
+type_map = {"deg_C": "Temperature",
             "V": "Voltage",
             "A": "Current"}
 
@@ -63,12 +63,13 @@ class DatePlot(object):
         for label in self.ax.get_yticklabels():
             label.set_fontproperties(fontProperties)
         if len(fields) > 1:
-            self.set_ylabel(type_map[msid_units[fields[0][1]]]+" (%s)" % msid_units[fields[0][1]])
+            self.set_ylabel(type_map[msid_units[fields[0][1]]]+" (%s)" % 
+                            msid_unit_labels[msid_units[fields[0][1]]])
         else:
             if fd in state_labels:
                 self.set_ylabel(state_labels[fd])
-            elif fd in msid_units:
-                self.set_ylabel(fd.upper()+" (%s)" % msid_units[fd])
+            elif fd in msid_list:
+                self.set_ylabel(fd.upper()+" (%s)" % msid_unit_labels[msid_units[fd]])
             else:
                 self.set_ylabel(fd.upper())
         if field2 is not None:
@@ -93,8 +94,8 @@ class DatePlot(object):
                 label.set_fontproperties(fontProperties)
             if fd2 in state_labels:
                 self.set_ylabel2(state_labels[fd2])
-            elif fd2 in msid_units:
-                self.set_ylabel(fd2.upper()+" (%s)" % msid_units[fd])
+            elif fd2 in msid_list:
+                self.set_ylabel(fd2.upper()+" (%s)" % msid_unit_labels[msid_units[fd]])
             else:
                 self.set_ylabel(fd2.upper())
 
@@ -212,14 +213,14 @@ class PhasePlot(object):
             label.set_fontproperties(fontProperties)
         if x_fd in state_labels:
             self.set_xlabel(state_labels[x_fd])
-        elif x_fd in msid_units:
-            self.set_xlabel(x_fd.upper()+" (%s)" % msid_units[x_fd])
+        elif x_fd in msid_list:
+            self.set_xlabel(x_fd.upper()+" (%s)" % msid_unit_labels[msid_units[x_fd]])
         else:
             self.set_xlabel(x_fd.upper())
         if y_fd in state_labels:
             self.set_ylabel(state_labels[y_fd])
-        elif y_fd in msid_units:
-            self.set_ylabel(y_fd.upper()+" (%s)" % msid_units[y_fd])
+        elif y_fd in msid_list:
+            self.set_ylabel(y_fd.upper()+" (%s)" % msid_unit_labels[msid_units[y_fd]])
         else:
             self.set_ylabel(y_fd.upper())
 
