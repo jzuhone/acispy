@@ -7,12 +7,12 @@ from astropy.table import Table
 
 class States(object):
 
-    def __init__(self, table, keys):
+    def __init__(self, table):
         self.table = table
         self.tstart = self.table['tstart']
         self.tstop = self.table['tstop']
-        self._off_nominal_roll = calc_off_nom_rolls(table)
-        self._keys = list(keys)
+        if set(["q1","q2","q3","q4"]) < set(self.table.keys()):
+            self.table["off_nominal_roll"] = calc_off_nom_rolls(table)
 
     @classmethod
     def from_database(cls, states, tstart, tstop):
@@ -21,7 +21,8 @@ class States(object):
             st.remove("off_nominal_roll")
             st += ["q1", "q2", "q3", "q4"]
         t = fetch_states(tstart, tstop, vals=st)
-        return cls(t, t.dtype.names)
+        table = dict((k, t[k]) for k in t.dtype.names)
+        return cls(table, table.keys())
 
     @classmethod
     def from_load(cls, load):
@@ -35,16 +36,14 @@ class States(object):
         url += "%s/ofls%s/states.dat" % (load[:-1].upper(), load[-1].lower())
         u = requests.get(url)
         t = ascii.read(u.text)
-        return cls(t.as_array(), t.keys())
+        table = dict((k, t[k].data) for k in t.keys())
+        return cls(table)
 
     def __getitem__(self, item):
-        if item == "off_nominal_roll":
-            return self._off_nominal_roll
-        else:
-            return self.table[item]
+        return self.table[item]
 
     def keys(self):
-        return self._keys
+        return self.table.keys()
 
     def get_states(self, time):
         """
@@ -66,8 +65,6 @@ class States(object):
         state = {}
         for key in self.keys():
             state[key] = self[key][idx]
-        if self._off_nominal_roll is not None:
-            state["off_nominal_roll"] = self._off_nominal_roll[idx]
         return state
 
     @property

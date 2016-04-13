@@ -12,15 +12,10 @@ def get_time(time):
     return time
 
 def calc_off_nom_rolls(states):
-    off_nom_rolls = []
-    for state in states:
-        try:
-            att = [state[x] for x in ['q1', 'q2', 'q3', 'q4']]
-            time = (state['tstart'] + state['tstop']) / 2
-            off_nom_rolls.append(Ska.Sun.off_nominal_roll(att, time))
-        except:
-            return None
-    return np.array(off_nom_rolls)
+    times = 0.5*(states['tstart'] + states['tstop'])
+    atts = np.array([states["q%d" % x] for x in range(1, 5)]).transpose()
+    return np.array([Ska.Sun.off_nominal_roll(att, time)
+                     for time, att in zip(times, atts)])
 
 state_labels = {"ccd_count": "CCD Count",
                 "clocking": "Clocking",
@@ -46,12 +41,21 @@ state_labels = {"ccd_count": "CCD Count",
                 "vid_board": None,
                 "off_nominal_roll": "Off-Nominal\nRoll (deg)"}
 
-msid_units = {'1deamzt': '$\mathrm{^\circ{C}}$',
-              '1dpamzt': '$\mathrm{^\circ{C}}$',
-              '1pdeaat': '$\mathrm{^\circ{C}}$',
-              '1pin1at': '$\mathrm{^\circ{C}}$',
-              '1pdeabt': '$\mathrm{^\circ{C}}$',
-              'fptemp': '$\mathrm{^\circ{C}}$',
+state_list = len(state_labels.keys())
+
+state_units = {'ra': 'deg',
+               'dec': 'deg',
+               'roll': 'deg',
+               'off_nominal_roll': 'deg',
+               'tstart': 's',
+               'tstop': 's'}
+
+msid_units = {'1deamzt': 'deg_C',
+              '1dpamzt': 'deg_C',
+              '1pdeaat': 'deg_C',
+              '1pin1at': 'deg_C',
+              '1pdeabt': 'deg_C',
+              'fptemp': 'deg_C',
               '1dp28avo': 'V',
               '1dp28bvo': 'V',
               '1dpicacu': 'A',
@@ -74,36 +78,41 @@ msid_units = {'1deamzt': '$\mathrm{^\circ{C}}$',
               '1den0bvo': 'V',
               '1den1bvo': 'V',
               '1deicbcu': 'A',
-              '1crat': '$\mathrm{^\circ{C}}$',
-              '1crbt': '$\mathrm{^\circ{C}}$',
-              '1wrat': '$\mathrm{^\circ{C}}$',
-              '1wrbt': '$\mathrm{^\circ{C}}$',
-              '1dpamyt': '$\mathrm{^\circ{C}}$',
-              '1sspyt': '$\mathrm{^\circ{C}}$',
-              '1ssmyt': '$\mathrm{^\circ{C}}$',
-              '1cbat': '$\mathrm{^\circ{C}}$',
-              '1cbbt': '$\mathrm{^\circ{C}}$',
-              '1dactbt': '$\mathrm{^\circ{C}}$',
-              '3tsmydpt': '$\mathrm{^\circ{C}}$',
-              '3tspyfet': '$\mathrm{^\circ{C}}$',
-              '3tspzdet': '$\mathrm{^\circ{C}}$',
-              '3tspzspt': '$\mathrm{^\circ{C}}$',
-              '3tsmxspt': '$\mathrm{^\circ{C}}$',
-              '3tsmxcet': '$\mathrm{^\circ{C}}$',
-              '3rctubpt': '$\mathrm{^\circ{C}}$',
-              '3ttacs1t': '$\mathrm{^\circ{C}}$',
-              '3ttacs2t': '$\mathrm{^\circ{C}}$',
-              '3ttacs3t': '$\mathrm{^\circ{C}}$',
+              '1crat': 'deg_C',
+              '1crbt': 'deg_C',
+              '1wrat': 'deg_C',
+              '1wrbt': 'deg_C',
+              '1dpamyt': 'deg_C',
+              '1sspyt': 'deg_C',
+              '1ssmyt': 'deg_C',
+              '1cbat': 'deg_C',
+              '1cbbt': 'deg_C',
+              '1dactbt': 'deg_C',
+              '3tsmydpt': 'deg_C',
+              '3tspyfet': 'deg_C',
+              '3tspzdet': 'deg_C',
+              '3tspzspt': 'deg_C',
+              '3tsmxspt': 'deg_C',
+              '3tsmxcet': 'deg_C',
+              '3rctubpt': 'deg_C',
+              '3ttacs1t': 'deg_C',
+              '3ttacs2t': 'deg_C',
+              '3ttacs3t': 'deg_C',
               '1dahhavo': 'V',
               '1dahhbvo': 'V',
               '1dahavo': 'V',
               '1dahbvo': 'V',
               '1dahacu': 'A',
               '1dahbcu': 'A',
-              '1dahat': '$\mathrm{^\circ{C}}$',
-              '1dahbt': '$\mathrm{^\circ{C}}$',
-              '1oahat': '$\mathrm{^\circ{C}}$',
-              '1oahbt': '$\mathrm{^\circ{C}}$'}
+              '1dahat': 'deg_C',
+              '1dahbt': 'deg_C',
+              '1oahat': 'deg_C',
+              '1oahbt': 'deg_C'}
 
+msid_unit_labels = {"V": 'V',
+                    "A": 'A',
+                    "deg_C": '$\mathrm{^\circ{C}}$',
+                    "W": "W"}
 
+msid_list = list(msid_units.keys())
 
