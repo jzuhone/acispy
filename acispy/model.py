@@ -7,7 +7,7 @@ from acispy.utils import get_time
 comp_map = {"1deamzt": "dea",
             "1dpamzt": "dpa",
             "1pdeaat": "psmc",
-            "fptemp": "fp"}
+            "fptemp_11": "fp"}
 
 class Model(object):
     def __init__(self, times, table, keys):
@@ -33,11 +33,12 @@ class Model(object):
         data = {}
         for comp in components:
             c = comp_map[comp].upper()
+            table_key = "fptemp" if comp == "fptemp_11" else comp
             url = "http://cxc.cfa.harvard.edu/acis/%s_thermPredic/" % c
             url += "%s/ofls%s/temperatures.dat" % (load[:-1].upper(), load[-1].lower())
             u = requests.get(url)
             table = ascii.read(u.text)
-            data[comp] = table[comp].data
+            data[comp] = table[table_key].data
         return cls(table["time"].data, data, data.keys())
 
     def __getitem__(self, item):
