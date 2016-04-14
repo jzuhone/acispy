@@ -52,7 +52,6 @@ class DataContainer(object):
     def fetch_from_load(cls, load, comps, get_msids=False):
         model = Model.from_load(load, comps)
         states = States.from_load(load)
-        tstart = states["datestart"]
         if get_msids:
             tstart = states["datestart"][0]
             tstop = states["datestop"][-1]
