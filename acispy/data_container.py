@@ -49,7 +49,7 @@ class DataContainer(object):
         return cls(msids, states, None)
 
     @classmethod
-    def fetch_from_load(cls, load, comps, get_msids=False):
+    def fetch_model_from_load(cls, load, comps, get_msids=False):
         model = Model.from_load(load, comps)
         states = States.from_load(load)
         if get_msids:
