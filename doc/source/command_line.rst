@@ -1,5 +1,5 @@
-Command-Line Utilities
-======================
+Using the Command Line Tools
+============================
 
 For making quick plots and getting quick summaries of important information, the 
 following command-line utilities are provided. For finer-grained control over plots
@@ -31,6 +31,7 @@ Returns:
 
 .. code::
 
+    Getting expected ACIS state at 2016:100:18:00:00.000.
     off_nominal_roll: -0.573853195649
     pitch: 144.51
     obsid: 18430

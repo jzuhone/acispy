@@ -1,5 +1,5 @@
-Loading Data
-============
+Loading Data in Python
+======================
 
 ACISpy can work with ACIS-related data from the commanded states 
 database, the engineering archive, or thermal models produced by Xija. 
