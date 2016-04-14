@@ -49,7 +49,8 @@ state_units = {'ra': 'deg',
                'roll': 'deg',
                'off_nominal_roll': 'deg',
                'tstart': 's',
-               'tstop': 's'}
+               'tstop': 's',
+               'pitch': 'deg'}
 
 msid_units = {'1deamzt': 'deg_C',
               '1dpamzt': 'deg_C',
