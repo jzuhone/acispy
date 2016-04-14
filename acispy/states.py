@@ -22,7 +22,7 @@ class States(object):
             st += ["q1", "q2", "q3", "q4"]
         t = fetch_states(tstart, tstop, vals=st)
         table = dict((k, t[k]) for k in t.dtype.names)
-        return cls(table, table.keys())
+        return cls(table)
 
     @classmethod
     def from_load(cls, load):
