@@ -2,12 +2,11 @@ from Ska.Matplotlib import plot_cxctime
 from matplotlib import font_manager
 import matplotlib.pyplot as plt
 from matplotlib.dates import num2date
-from acispy.utils import state_labels, msid_units, msid_list, msid_unit_labels
+from acispy.utils import state_labels, msid_units, \
+    msid_list, msid_unit_labels, interpolate
 from Chandra.Time import DateTime
 from datetime import datetime
 import numpy as np
-import Ska.Numpy
-
 def pointpair(x, y=None):
     if y is None:
         y = x
@@ -176,31 +175,17 @@ class PhasePlot(object):
             if x_src_name == "states":
                 tstart_out = x_src.tstart
                 tstop_out = x_src.tstop
-                ok_start = (tstart_out >= times_in[0]) & (tstart_out <= times_in[-1])
-                ok_stop = (tstop_out >= times_in[0]) & (tstop_out <= times_in[-1])
-                ok = ok_start & ok_stop
-                tstart_out = tstart_out[ok]
-                tstop_out = tstop_out[ok]
-                idx_start = Ska.Numpy.interpolate(np.arange(len(times_in)),
-                                                  times_in, tstart_out,
-                                                  method='nearest', sorted=True)
-                idx_stop = Ska.Numpy.interpolate(np.arange(len(times_in)),
-                                                 times_in, tstop_out,
-                                                 method='nearest', sorted=True)
+                ok, idxs = interpolate(times_in, tstart_out, tstop_out)
                 x = pointpair(x[ok])
-                y = pointpair(y[idx_start], y[idx_stop])
+                y = pointpair(y[idxs[0]], y[idxs[1]])
             else:
                 if x_src_name == "msids":
                     times_out = x_src.times[x_fd]
                 else:
                     times_out = x_src.times
-                ok = (times_out >= times_in[0]) & (times_out <= times_in[-1])
-                times_out = times_out[ok]
-                indexes = Ska.Numpy.interpolate(np.arange(len(times_in)),
-                                                times_in, times_out,
-                                                method='nearest', sorted=True)
+                ok, idxs = interpolate(times_in, times_out)
                 x = x[ok]
-                y = y[indexes]
+                y = y[idxs]
         scp = ax.scatter(x, y)
         self.fig = fig
         self.ax = ax
