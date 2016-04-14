@@ -13,6 +13,7 @@ Contents:
    
    activating
    loading_data
+   plotting_data
    command_line
 
 
