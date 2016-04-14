@@ -9,7 +9,7 @@ dont_use = ["q1","q2","q3","q4","power_cmd","datestart","datestop",
             "tstart","tstop","trans_keys","vid_board","pcad_mode",
             "clocking","fep_count"]
 
-comps = ["fptemp","1dpamzt","1deamzt","1pdeaat"]
+comps = ["fptemp_11","1dpamzt","1deamzt","1pdeaat"]
 
 parser = argparse.ArgumentParser(description='Get a summary of the expected ACIS status given a load')
 parser.add_argument("load", type=str, help='The load to get the status from')
@@ -17,7 +17,7 @@ parser.add_argument("--time", type=str, default="now",
                     help='The time to check the status at (default: current time)')
 args = parser.parse_args()
 
-ds = acispy.DataContainer.fetch_from_load(args.load, comps)
+ds = acispy.DataContainer.fetch_model_from_load(args.load, comps)
 t = get_time(args.time).date
 states = ds.states.get_states(t)
 values = ds.model.get_values(t)
