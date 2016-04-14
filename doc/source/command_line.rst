@@ -126,6 +126,34 @@ Returns:
 
 .. image:: _images/one_panel_multi_tracelog.png
 
+``plot_model``
+--------------
+
+.. code::
+
+    usage: plot_model [-h] [--y2_axis Y2_AXIS] load y_axis
+    
+    Plot a single model component with another component or state
+    
+    positional arguments:
+      load               The load to take the model from
+      y_axis             The model component to plot on the left y-axis
+    
+    optional arguments:
+      -h, --help         show this help message and exit
+      --y2_axis Y2_AXIS  The model component or state to plot on the right y-axis
+                         (default: none)
+
+Example:
+
+.. code-block:: bash
+
+    [~]$ plot_model MAR0716A 1dpamzt --y2_axis=off_nominal_roll
+    
+Returns:
+
+.. image:: _images/plot_model.png
+
 ``plot_msid``
 -------------
 
@@ -155,33 +183,6 @@ Returns:
 
 .. image:: _images/plot_msid.png
 
-``plot_model``
---------------
-
-.. code::
-
-    usage: plot_model [-h] [--y2_axis Y2_AXIS] load y_axis
-    
-    Plot a single model component with another component or state
-    
-    positional arguments:
-      load               The load to take the model from
-      y_axis             The model component to plot on the left y-axis
-    
-    optional arguments:
-      -h, --help         show this help message and exit
-      --y2_axis Y2_AXIS  The model component or state to plot on the right y-axis
-                         (default: none)
-
-Example:
-
-.. code-block:: bash
-
-    [~]$ plot_model MAR0716A 1dpamzt --y2_axis=off_nominal_roll
-    
-Returns:
-
-.. image:: _images/plot_model.png
 
 
 
