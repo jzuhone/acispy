@@ -108,7 +108,14 @@ msid_units = {'1deamzt': 'deg_C',
               '1dahat': 'deg_C',
               '1dahbt': 'deg_C',
               '1oahat': 'deg_C',
-              '1oahbt': 'deg_C'}
+              '1oahbt': 'deg_C',
+              'tmp_bep_pcb': 'deg_C',
+              'tmp_bep_osc': 'deg_C',
+              'tmp_fep0_mong': 'deg_C',
+              'tmp_fep0_pcb': 'deg_C',
+              'tmp_fep0_actel': 'deg_C',
+              'tmp_fep0_ram': 'deg_C',
+              'tmp_fep0_fb': 'deg_C'}
 
 msid_unit_labels = {"V": 'V',
                     "A": 'A',
