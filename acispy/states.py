@@ -26,12 +26,6 @@ class States(object):
 
     @classmethod
     def from_load(cls, load):
-        """
-        Get the states table for a particular component and load from the web.
-        :param component: The component to get the states for, e.g. "FP" for focal plane.
-        :param load: The identifier for the load, e.g. "JAN1116A"
-        :return: The States instance.
-        """
         url = "http://cxc.cfa.harvard.edu/acis/DPA_thermPredic/"
         url += "%s/ofls%s/states.dat" % (load[:-1].upper(), load[-1].lower())
         u = requests.get(url)
@@ -46,12 +40,6 @@ class States(object):
         return self.table.keys()
 
     def get_states(self, time):
-        """
-        Get the state data at a particular time.
-        :param time: The time to get the states at. Can be in 
-            yday format, an AstroPy Time object, or "now".
-        :return: A dictionary of the states.
-        """
         time = get_time(time).secs
         # We have this if we need it
         err = "The time %s is not within the selected time frame!" % time

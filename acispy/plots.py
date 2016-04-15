@@ -23,7 +23,44 @@ type_map = {"deg_C": "Temperature",
 default_colors = ["b","r","g","k"]
 
 class DatePlot(object):
-    def __init__(self, ds, fields, field2=None, fig=None, ax=None, lw=1.5,
+    r""" Make a single-panel plot of a quantity (or multiple quantities) 
+    vs. date and time. 
+
+    Multiple quantities can be plotted on the left
+    y-axis together if they have the same units, otherwise a quantity
+    with different units can be plotted on the right y-axis. 
+
+    Parameters
+    ----------
+    dc : :class:`acispy.data_container.DataContainer`
+        The DataContainer instance to get the data to plot from.
+    fields : tuple of strings or list of tuples of strings
+        A single field or list of fields to plot on the left y-axis.
+    field2 : tuple of strings, optional
+        A single field to plot on the right y-axis. Default: None
+    fig : :class:`matplotlib.figure.Figure`, optional
+        A Figure instance to plot in. Default: None, one will be
+        created if not provided.
+    ax : :class:`matplotlib.axes.Axes`, optional
+        An Axes instance to plot in. Default: None, one will be
+        created if not provided.
+    lw : float, optional
+        The width of the lines in the plots. Default: 1.5 px.
+    fontsize : integer, optional
+        The font size for the labels in the plot. Default: 18 pt.
+    colors : list of strings, optional
+        The colors for the lines plotted on the left y-axis.
+        Default: ["blue", "red", "green", "black"]
+    color2 : string, optional
+        The color for the line plotted on the right y-axis.
+        Default: "magenta"
+
+    Examples
+    --------
+    >>> from acispy import DatePlot
+    >>> p1 = DatePlot(dc, "1dpamzt", field2="pitch", lw=2, colors="brown")
+    """
+    def __init__(self, dc, fields, field2=None, fig=None, ax=None, lw=1.5,
                  fontsize=18, colors=None, color2='magenta'):
         if fig is None:
             fig = plt.figure(figsize=(10, 8))
@@ -31,9 +68,11 @@ class DatePlot(object):
             colors = default_colors
         if not isinstance(fields, list):
             fields = [fields]
+        if not isinstance(colors, list):
+            colors = [colors]
         for i, field in enumerate(fields):
             src_name, fd = field
-            src = getattr(ds, src_name)
+            src = getattr(dc, src_name)
             drawstyle = drawstyles.get(fd, None)
             if src_name == "states":
                 x = pointpair(src["tstart"], src["tstop"])
@@ -73,7 +112,7 @@ class DatePlot(object):
                 self.set_ylabel(fd.upper())
         if field2 is not None:
             src_name2, fd2 = field2
-            src2 = getattr(ds, src_name2)
+            src2 = getattr(dc, src_name2)
             self.ax2 = self.ax.twinx()
             drawstyle = drawstyles.get(fd2, None)
             if src_name2 == "states":

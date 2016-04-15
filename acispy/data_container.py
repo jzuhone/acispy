@@ -46,8 +46,8 @@ class DataContainer(object):
         filter_bad : boolean, optional
             Whether or not to filter out bad values of MSIDs. Default: True.
         stat : string, optional
-            return 5-minute or daily statistics (‘5min’ or ‘daily’) Default: '5min'
-
+            return 5-minute or daily statistics ('5min' or 'daily') Default: '5min'
+                    
         Examples
         --------
         >>> from acispy import DataContainer

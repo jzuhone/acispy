@@ -22,12 +22,6 @@ class Model(object):
 
     @classmethod
     def from_load(cls, load, components):
-        """
-        Get the temperature model for a particular component and load from the web.
-        :param component: The component to get the temperature for, e.g. "FP" for focal plane.
-        :param load: The identifier for the load, e.g. "JAN1116A"
-        :return: The TemperatureModel instance. 
-        """
         if not isinstance(components, list):
             components = [components]
         data = {}
