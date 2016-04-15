@@ -1,5 +1,5 @@
-acispy
-======
+ACISpy API Documentation
+=======================
 
 .. toctree::
    :maxdepth: 2

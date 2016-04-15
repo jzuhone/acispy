@@ -15,12 +15,11 @@ Contents:
    loading_data
    plotting_data
    command_line
-
+   api/index
 
 Indices and tables
 ==================
 
 * :ref:`genindex`
-* :ref:`modindex`
 * :ref:`search`
 
