@@ -1,7 +1,7 @@
 #!/bin/bash
 
 export ACISPY=/home/acisdude/python/
-export SKA=/ska
+export SKA=/proj/sot/ska
 
 PATH=${ACISPY}/bin:$PATH
 

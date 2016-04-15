@@ -1,7 +1,7 @@
 #!/bin/tcsh
 
 setenv ACISPY /home/acisdude/python/
-setenv SKA /ska
+setenv SKA /proj/sot/ska
 
 set path = (${ACISPY}/bin $path)
 
