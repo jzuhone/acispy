@@ -9,8 +9,6 @@ class States(object):
 
     def __init__(self, table):
         self.table = table
-        self.tstart = self.table['tstart']
-        self.tstop = self.table['tstop']
         if set(["q1","q2","q3","q4"]) < set(self.table.keys()):
             self.table["off_nominal_roll"] = calc_off_nom_rolls(table)
 
@@ -43,11 +41,11 @@ class States(object):
         time = get_time(time).secs
         # We have this if we need it
         err = "The time %s is not within the selected time frame!" % time
-        if time < self.tstart[0]:
+        if time < self["tstart"][0]:
             raise RuntimeError(err)
-        idx = np.searchsorted(self.tstart, time)-1
+        idx = np.searchsorted(self["tstart"], time)-1
         try:
-            self.tstart[idx]
+            self["tstart"][idx]
         except IndexError:
             raise RuntimeError(err)
         state = {}
@@ -57,7 +55,7 @@ class States(object):
 
     @property
     def current_states(self):
-        return self.get_state("now")
+        return self.get_states("now")
 
     def write_ascii(self, filename):
         Table(self.table).write(filename, format='ascii')

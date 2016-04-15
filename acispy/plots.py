@@ -84,10 +84,10 @@ class DatePlot(object):
                 x = pointpair(src["tstart"], src["tstop"])
                 y = pointpair(src[fd])
             elif src_name == "msids":
-                x = src.times[fd]
+                x = src[fd+"_times"]
                 y = src[fd]
             else:
-                x = src.times
+                x = src["times"]
                 y = src[fd]
             ticklocs, fig, ax = plot_cxctime(x, y, fig=fig, lw=lw, ax=ax,
                                              color=colors[i],
@@ -125,10 +125,10 @@ class DatePlot(object):
                 x = pointpair(src2["tstart"], src2["tstop"])
                 y = pointpair(src2[fd2])
             elif src_name2 == "msids":
-                x = src2.times[fd]
+                x = src2[fd+"_times"]
                 y = src2[fd]
             else:
-                x = src2.times
+                x = src2["times"]
                 y = src2[fd]
             plot_cxctime(x, y, fig=fig, ax=self.ax2, lw=lw,
                          drawstyle=drawstyle, color=color2)
@@ -314,20 +314,20 @@ class PhasePlot(object):
         if x.size != y.size:
             # Interpolate the y-axis to the x-axis times
             if y_src_name == "msids":
-                times_in = y_src.times[y_fd]
+                times_in = y_src[y_fd+"_times"]
             else:
-                times_in = y_src.times
+                times_in = y_src["times"]
             if x_src_name == "states":
-                tstart_out = x_src.tstart
-                tstop_out = x_src.tstop
+                tstart_out = x_src["tstart"]
+                tstop_out = x_src["tstop"]
                 ok, idxs = interpolate(times_in, tstart_out, tstop_out)
                 x = pointpair(x[ok])
                 y = pointpair(y[idxs[0]], y[idxs[1]])
             else:
                 if x_src_name == "msids":
-                    times_out = x_src.times[x_fd]
+                    times_out = x_src[x_fd+"_times"]
                 else:
-                    times_out = x_src.times
+                    times_out = x_src["times"]
                 ok, idxs = interpolate(times_in, times_out)
                 x = x[ok]
                 y = y[idxs]

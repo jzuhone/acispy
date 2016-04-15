@@ -10,15 +10,15 @@ comp_map = {"1deamzt": "dea",
             "fptemp_11": "fp"}
 
 class Model(object):
-    def __init__(self, times, table, keys):
-        self.times = times
+    def __init__(self, table, keys):
         self.table = table
         self._keys = list(keys)
 
     @classmethod
     def from_xija(cls, model, components):
         table = dict((k,  model.comp[k].mvals) for k in components)
-        return cls(model.times, table, components)
+        table["times"] = model.times
+        return cls(table, components)
 
     @classmethod
     def from_load(cls, load, components):
@@ -33,7 +33,8 @@ class Model(object):
             u = requests.get(url)
             table = ascii.read(u.text)
             data[comp] = table[table_key].data
-        return cls(table["time"].data, data, data.keys())
+        data["times"] = table["time"].data
+        return cls(data, data.keys())
 
     def __getitem__(self, item):
         return self.table[item]
@@ -45,7 +46,7 @@ class Model(object):
         time = get_time(time).secs
         values = {}
         for key in self.keys():
-            values[key] = Ska.Numpy.interpolate(self[key], self.times, [time])
+            values[key] = Ska.Numpy.interpolate(self[key], self["times"], [time])
         return values
 
     def write_ascii(self, filename):

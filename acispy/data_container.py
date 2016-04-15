@@ -22,6 +22,8 @@ class DataContainer(object):
             arr = src[item[1]]*getattr(apu, msid_units[item[1]])
         elif item[1] in state_units:
             arr = src[item[1]]*getattr(apu, state_units[item[1]])
+        elif item[1].endswith("times"):
+            arr = src[item[1]]*apu.s
         else:
             arr = src[item[1]]
         return arr

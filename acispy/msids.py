@@ -4,10 +4,11 @@ from astropy.table import Table
 import numpy as np
 
 class MSIDs(object):
-    def __init__(self, times, table, keys):
-        self.times = times
+    def __init__(self, times, table):
         self.table = table
-        self._keys = list(keys)
+        for k, v in times.items():
+            self.table[k+"_times"] = times[k]
+        self._keys = list(self.table.keys())
 
     @classmethod
     def from_tracelog(cls, filename):
@@ -24,7 +25,7 @@ class MSIDs(object):
         # Convert times in the TIME column to Chandra 1998 time
         data['time'] -= 410227200.
         times = dict((k.lower(), data["time"]) for k in header if k != "TIME")
-        return cls(times, data, [h.lower() for h in header])
+        return cls(times, data)
 
     @classmethod
     def from_database(cls, msids, tstart, tstop=None, filter_bad=False,
@@ -33,7 +34,7 @@ class MSIDs(object):
                              stat=None)
         table = dict((k, data[k].vals) for k in data.keys())
         times = dict((k, get_time(data[k].times).secs) for k in data.keys())
-        return cls(times, table, data.keys())
+        return cls(times, table)
 
     def __getitem__(self, item):
         return self.table[item]
