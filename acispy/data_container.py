@@ -28,7 +28,35 @@ class DataContainer(object):
 
     @classmethod
     def fetch_from_database(cls, tstart, tstop, msid_keys=None, state_keys=None, 
-                            filter_bad=False, stat=None):
+                            filter_bad=True, stat=None):
+        """
+        Fetch MSIDs from the engineering archive and states from the commanded
+        states database. 
+
+        Parameters
+        ----------
+        tstart : string
+            The start time in YYYY:DOY:HH:MM:SS format
+        tstop : string
+            The stop time in YYYY:DOY:HH:MM:SS format
+        msid_keys : list of strings, optional
+            List of MSIDs to pull from the engineering archive.
+        state_keys : list of strings, optional
+            List of commanded states to pull from the commanded states database.
+        filter_bad : boolean, optional
+            Whether or not to filter out bad values of MSIDs. Default: True.
+        stat : string, optional
+            return 5-minute or daily statistics (‘5min’ or ‘daily’) Default: '5min'
+
+        Examples
+        --------
+        >>> from acispy import DataContainer
+        >>> tstart = "2016:091:12:05:00.100"
+        >>> tstop = "2016:100:13:07:45.234"
+        >>> states = ["pitch", "off_nominal_roll"]
+        >>> dc = DataContainer.fetch_from_database(tstart, tstop, msid_keys=msids,
+        ...                                        state_keys=states)
+        """
         msids = None
         states = None
         if msid_keys is not None:
@@ -40,6 +68,24 @@ class DataContainer(object):
 
     @classmethod
     def fetch_from_tracelog(cls, filename, state_keys=None):
+        """
+        Fetch MSIDs from a tracelog file and states from the commanded
+        states database.
+
+        Parameters
+        ----------
+        filename : string
+            The path to the tracelog file
+        state_keys : list of strings, optional
+            List of commanded states to pull from the commanded states database.
+
+        Examples
+        --------
+        >>> from acispy import DataContainer
+        >>> states = ["ccd_count", "roll"]
+        >>> dc = DataContainer.fetch_from_tracelog("acisENG10d_00985114479.70.tl",
+        ...                                        state_keys=states)
+        """
         states = None
         msids = MSIDs.from_tracelog(filename)
         if state_keys is not None:
@@ -50,6 +96,27 @@ class DataContainer(object):
 
     @classmethod
     def fetch_model_from_load(cls, load, comps, get_msids=False):
+        """
+        Fetch a temperature model and its associated commanded states
+        from a load review. Optionally get MSIDs for the same time period.
+
+        Parameters
+        ----------
+        load : string
+            The load review to get the model from, i.e. "JAN2516A"
+        comps : list of strings
+            List of temperature components to get from the load models.
+        get_msids : boolean, optional
+            Whether or not to load the MSIDs corresponding to the 
+            temperature models for the same time period from the 
+            engineering archive. Default: False.
+
+        Examples
+        --------
+        >>> from acispy import DataContainer
+        >>> comps = ["1deamzt", "1pdeaat", "fptemp_11"]
+        >>> dc = DataContainer.fetch_model_from_load("APR0416C", comps, get_msids=True)
+        """
         model = Model.from_load(load, comps)
         states = States.from_load(load)
         if get_msids:
