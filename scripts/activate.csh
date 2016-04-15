@@ -1,12 +1,13 @@
 #!/bin/tcsh
 
-setenv ACISPY /data/odin/BACKUPS/jzuhone/python/
+setenv ACISPY /home/acisdude/python/
+setenv SKA /ska
 
 set path = (${ACISPY}/bin $path)
 
-if (! $?PYTHONPATH) then       
-  setenv PYTHONPATH ${ACISPY}/lib/python2.7/site-packages
-else
-  setenv PYTHONPATH ${ACISPY}/lib/python2.7/site-packages:$PYTHONPATH
-endif
+#if (! $?PYTHONPATH) then       
+#  setenv PYTHONPATH ${ACISPY}/lib/python2.7/site-packages
+#else
+#  setenv PYTHONPATH ${ACISPY}/lib/python2.7/site-packages:$PYTHONPATH
+#endif
 
