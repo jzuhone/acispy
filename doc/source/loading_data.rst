@@ -108,3 +108,6 @@ result in the following output (or something similar):
 
     [ 22.14923096  22.14923096  22.14923096 ...,  20.17999268  
       20.17999268  20.17999268] deg_C
+
+Timing Information
+------------------
