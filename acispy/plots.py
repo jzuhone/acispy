@@ -33,16 +33,16 @@ class DatePlot(object):
 
     Parameters
     ----------
-    dc : :class:`acispy.data_container.DataContainer`
+    dc : :class:`~acispy.data_container.DataContainer`
         The DataContainer instance to get the data to plot from.
     fields : tuple of strings or list of tuples of strings
         A single field or list of fields to plot on the left y-axis.
     field2 : tuple of strings, optional
         A single field to plot on the right y-axis. Default: None
-    fig : :class:`matplotlib.figure.Figure`, optional
+    fig : :class:`~matplotlib.figure.Figure`, optional
         A Figure instance to plot in. Default: None, one will be
         created if not provided.
-    ax : :class:`matplotlib.axes.Axes`, optional
+    ax : :class:`~matplotlib.axes.Axes`, optional
         An Axes instance to plot in. Default: None, one will be
         created if not provided.
     lw : float, optional
@@ -215,11 +215,11 @@ class MultiDatePlot(object):
 
     Parameters
     ----------
-    dc : :class:`acispy.data_container.DataContainer`
+    dc : :class:`~acispy.data_container.DataContainer`
         The DataContainer instance to get the data to plot from.
     fields : list of tuples of strings
         A list of fields to plot.
-    fig : :class:`matplotlib.figure.Figure`, optional
+    fig : :class:`~matplotlib.figure.Figure`, optional
         A Figure instance to plot in. Default: None, one will be
         created if not provided.
     subplots : tuple of integers, optional
@@ -276,16 +276,16 @@ class PhasePlot(object):
 
     Parameters
     ----------
-    dc : :class:`acispy.data_container.DataContainer`
+    dc : :class:`~acispy.data_container.DataContainer`
         The DataContainer instance to get the data to plot from.
     x_field : tuple of strings
         The field to plot on the x-axis.
     y_field : tuple of strings
         The field to plot on the y-axis.
-    fig : :class:`matplotlib.figure.Figure`, optional
+    fig : :class:`~matplotlib.figure.Figure`, optional
         A Figure instance to plot in. Default: None, one will be
         created if not provided.
-    ax : :class:`matplotlib.axes.Axes`, optional
+    ax : :class:`~matplotlib.axes.Axes`, optional
         An Axes instance to plot in. Default: None, one will be
         created if not provided.
     fontsize : integer, optional

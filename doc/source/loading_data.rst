@@ -4,16 +4,18 @@ Loading Data in Python
 ACISpy can work with ACIS-related data from the commanded states 
 database, the engineering archive, or thermal models produced by Xija. 
 The first thing that must be done before any data can be worked with or 
-plotted is to ingest the data in a ``DataContainer`` object. ``DataContainer`` 
-objects can be created by a number of methods, which are documented here.
+plotted is to ingest the data in a :class:`~acispy.data_container.DataContainer` 
+object. :class:`~acispy.data_container.DataContainer` objects can be created by a 
+number of methods, which are documented here.
 
 Fetching Data from the Online Database
 --------------------------------------
 
 Often, one will want to fetch data directly from the Chandra engineering
 archive and the commanded states database within a particular date and time 
-range. The method ``fetch_from_database`` enables this functionality. The 
-MSIDs and states you want to extract must be specified:
+range. The method :meth:`~acispy.data_container.DataContainer.fetch_from_database` 
+enables this functionality. The MSIDs and states you want to extract must be 
+specified:
 
 .. code-block:: python
 
@@ -26,15 +28,17 @@ MSIDs and states you want to extract must be specified:
                                            state_keys=states)
                                            
 Additional options are provided for filtering out bad data and choosing the
-time cadence for MSIDs; for details see the API doc entry. 
+time cadence for MSIDs; for details see the API doc entry for 
+:meth:`~acispy.data_container.DataContainer.fetch_from_database`. 
 
 Reading MSID Data From a Tracelog File
 --------------------------------------
 
 If you have a real-time tracelog file or one that has been extracted from a 
-dump, you can also read MSID data from this file. In this case, the state 
-data corresponding to the times spanned by the tracelog file will be extracted
-from the commanded states database. 
+dump, you can also read MSID data from this file, using the
+:meth:`~acispy.data_container.DataContainer.fetch_from_tracelog` method. In 
+this case, the state data corresponding to the times spanned by the tracelog
+file will be extracted from the commanded states database. 
 
 .. code-block:: python
 
@@ -44,14 +48,15 @@ from the commanded states database.
                                            state_keys=states)
     
 In this case, all of the MSIDs in the tracelog are ingested into the 
-``DataContainer``, whereas the states that you want must be specified.
+:class:`~acispy.data_container.DataContainer`, whereas the states that you 
+want must be specified.
 
 Reading Model Data from a Load
 ------------------------------
 
-You can also fill a ``DataContainer`` with predicted model data for a 
-particular temperature model or multiple models corresponding to a particular
-load review:
+You can also fill a :class:`~acispy.data_container.DataContainer` with predicted
+model data for a particular temperature model or multiple models corresponding to 
+a particular load review using :meth:`~acispy.data_container.DataContainer.fetch_model_from_load`:
 
 .. code-block:: python
 
@@ -60,14 +65,16 @@ load review:
     dc = DataContainer.fetch_model_from_load("APR0416C")
 
 To get the corresponding MSIDs from the engineering archive during the same 
-time frame, pass to ``fetch_model_from_load`` the keyword argument ``get_msids=True``.
+time frame, pass to :meth:`~acispy.data_container.DataContainer.fetch_model_from_load`
+the keyword argument ``get_msids=True``.
 
 Directly Accessing Data from the Container
 ------------------------------------------
 
-The ``DataContainer`` object has dictionary-like access so that the data
-may be accessed directly. Data can be accessed by querying the ``DataContainer``
-object with a tuple giving the type of data desired and its name, for example:
+The :class:`~acispy.data_container.DataContainer` object has dictionary-like 
+access so that the data may be accessed directly. Data can be accessed by querying 
+the :class:`~acispy.data_container.DataContainer` object with a tuple giving the 
+type of data desired and its name, for example:
 
 .. code-block:: python
 
@@ -76,7 +83,7 @@ object with a tuple giving the type of data desired and its name, for example:
     dc["msids", "fptemp_11"] # gives you the "fptemp_11" pseudo-MSID
     dc["model", "1deamzt"] # gives you the "1deamzt" model component
 
-We'll use our example from before to fill up a ``DataContainer``:
+We'll use our example from before to fill up a :class:`~acispy.data_container.DataContainer`:
 
 .. code-block:: python
 
@@ -88,8 +95,9 @@ We'll use our example from before to fill up a ``DataContainer``:
     dc = DataContainer.fetch_from_database(tstart, tstop, msid_keys=msids,
                                            state_keys=states)
 
-Data are returned as NumPy arrays or AstroPy Quantities (which are just NumPy 
-arrays with units attached). The following print statements:
+Data are returned as NumPy arrays or 
+`AstroPy Quantities <http://docs.astropy.org/en/stable/units/quantity.html>`_ 
+(which are just NumPy arrays with units attached). The following print statements:
 
 .. code-block:: python
 
@@ -113,9 +121,9 @@ Timing Information
 ------------------
 
 The timing data for each model component, MSID, and state are stored in the
-``DataContainer`` as well. For model components and commanded states, the
-times are stored in ``("model", "times")`` and ``("states", "times")``. 
-respectively. For MSIDs, since the times can vary from MSID to MSID, the 
-times are stored for each one separately. For example, for the 1PIN1AT MSID,
-the time would be stored in ``("msids", "1pin1at_times")``. All times are 
-stored in seconds from the start of the mission. 
+:class:`~acispy.data_container.DataContainer` as well. For model components 
+and commanded states, the times are stored in ``("model", "times")`` and 
+``("states", "times")``, respectively. For MSIDs, since the times can vary 
+from MSID to MSID, the times are stored for each one separately. For example, 
+for the 1PIN1AT MSID, the time would be stored in ``("msids", "1pin1at_times")``. 
+All times are stored in seconds from the start of the mission. 

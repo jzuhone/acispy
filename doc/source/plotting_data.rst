@@ -9,7 +9,7 @@ To make plots appear in an interactive IPython session, do one of the following:
 Creating Plots of Data vs. Time
 -------------------------------
 
-The :class:`acispy.plots.DatePlot` object can be used to make a single-panel plot of one
+The :class:`~acispy.plots.DatePlot` object can be used to make a single-panel plot of one
 or more quantities versus the date and time. 
 
 Creating Multi-Panel Plots
@@ -18,7 +18,9 @@ Creating Multi-Panel Plots
 Creating Phase Plots
 --------------------
 
-A PhasePlot shows one quantity plotted versus another. 
+A ``PhasePlot`` shows one quantity plotted versus another. This can be helpful when trying to
+determine the behavior of one MSID versus another, or the dependence of an MSID on a 
+particular commanded state. 
 
 .. code-block:: python
 
@@ -31,4 +33,12 @@ A PhasePlot shows one quantity plotted versus another.
 .. note::
 
     It is not possible to plot an MSID or model component (such as 1DEAMZT) on the
-    x-axis vs. state (such as pitch angle) on the y-axis. Place states on the x-axis.  
+    x-axis vs. state (such as pitch angle) on the y-axis. Place states on the x-axis
+    instead.
+    
+Important Plotting Methods
+--------------------------
+
+The various plotting classes have methods to control the limits of the plots,
+change plot labels, and save plots to disk. 
+
