@@ -61,8 +61,15 @@ it. For example, the width and color of the lines can be changed:
 Creating Multi-Panel Plots
 --------------------------
 
-The :class:`~acispy.plots.MultiDatePlot` object can be used to make a single-panel plot of
+The :class:`~acispy.plots.MultiDatePlot` object can be used to make a multiple-panel plot of
 multiple quantities versus the date and time. 
+
+.. code-block:: python
+
+    mdp = acispy.MultiDatePlot(dc, [("states", "pitch"), ("msids", "1deamzt"), ("states","ccd_count")],
+                               lw=2, fontsize=17)  
+
+.. image:: _images/multidateplot.png
 
 Creating Phase Plots
 --------------------
