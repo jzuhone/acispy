@@ -45,7 +45,7 @@ Returns:
     ccd_count: 5
     dec: 26.629677143
     dither: ENAB
-    fptemp: -117.006416098
+    fptemp_11: -117.006416098
     1deamzt: 22.3543356098
     1dpamzt: 24.9379195122
     1pdeaat: 28.2671678049

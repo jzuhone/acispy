@@ -20,3 +20,15 @@ Creating Phase Plots
 
 A PhasePlot shows one quantity plotted versus another. 
 
+.. code-block:: python
+
+    msids = ["1dpamzt", "1deamzt"]
+    states = ["pitch", "off_nominal_roll", "ccd_count"]
+    dc = acispy.DataContainer.fetch_from_database("2015:001", "2016:001", 
+                                                  msid_keys=msids,
+                                                  state_keys=states)
+
+.. note::
+
+    It is not possible to plot an MSID or model component (such as 1DEAMZT) on the
+    x-axis vs. state (such as pitch angle) on the y-axis. Place states on the x-axis.  

@@ -28,4 +28,5 @@ for k, v in states.items():
     if k not in dont_use:
         print("%s: %s" % (k, v))
 for k, v in values.items():
-    print("%s: %s" % (k, v[0]))
+    if k != "times":
+        print("%s: %s" % (k, v[0]))

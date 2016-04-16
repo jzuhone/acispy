@@ -111,3 +111,11 @@ result in the following output (or something similar):
 
 Timing Information
 ------------------
+
+The timing data for each model component, MSID, and state are stored in the
+``DataContainer`` as well. For model components and commanded states, the
+times are stored in ``("model", "times")`` and ``("states", "times")``. 
+respectively. For MSIDs, since the times can vary from MSID to MSID, the 
+times are stored for each one separately. For example, for the 1PIN1AT MSID,
+the time would be stored in ``("msids", "1pin1at_times")``. All times are 
+stored in seconds from the start of the mission. 
