@@ -24,8 +24,9 @@ class MSIDs(object):
         data = np.array(data, dtype=dtype)
         # Convert times in the TIME column to Chandra 1998 time
         data['time'] -= 410227200.
+        table = dict((k, data[k]) for k in data.dtype.names)
         times = dict((k.lower(), data["time"]) for k in header if k != "TIME")
-        return cls(times, data)
+        return cls(times, table)
 
     @classmethod
     def from_database(cls, msids, tstart, tstop=None, filter_bad=False,
