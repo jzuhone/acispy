@@ -3,7 +3,7 @@ Plotting Data in Python
 
 ACISpy provides several classes for plotting various quantities. These plots can be 
 modified and saved to disk, or used in an interactive session. To make plots appear in an
-interactive IPython session, do one of the following:
+interactive `IPython <https://ipython.org/>`_ session, do one of the following:
 
 * In an IPython console: start as ``ipython --matplotlib``
 * In an IPython Qt console or notebook: start the first cell with ``%matplotlib inline``
@@ -64,12 +64,28 @@ Creating Multi-Panel Plots
 The :class:`~acispy.plots.MultiDatePlot` object can be used to make a multiple-panel plot of
 multiple quantities versus the date and time. 
 
+By default the panels are stacked vertically:
+
 .. code-block:: python
 
     mdp = acispy.MultiDatePlot(dc, [("states", "pitch"), ("msids", "1deamzt"), ("states","ccd_count")],
                                lw=2, fontsize=17)  
 
 .. image:: _images/multidateplot.png
+
+But by using the ``subplots`` keyword argument the panels can be arranged in a ``(n_plot_x, n_plot_y)``
+fashion:
+
+.. code-block:: python
+
+    mdp = acispy.MultiDatePlot(dc, [("states", "pitch"), 
+                                    ("msids", "1deamzt"), 
+                                    ("states", "ccd_count"),
+                                    ("states", "1dpamzt")],
+                               subplots=(2,2))
+
+.. image:: _images/multidateplot2x2.png
+
 
 Creating Phase Plots
 --------------------
@@ -113,4 +129,20 @@ Plot Modifications
 
 The various plotting classes have methods to control the limits of the plots,
 change plot labels, and save plots to disk. 
+
+For :class:`~acispy.plots.DatePlot` and :class:`~acispy.plots.MultiDatePlot`, the 
+date/time limits on the x-axis can be set using :meth:`~acispy.plots.DatePlot.set_xlim`. 
+For example, the single plot of 1DPAMZT above can be rescaled:
+
+.. code-block:: python
+
+    dp.set_xlim("2015:012", "2015:022")
+
+.. image:: _images/dateplot1_small.png
+
+Finally, for any of the plotting classes, call ``savefig`` to save the figure. 
+
+.. code-block:: python
+
+    pp.savefig("phase_plot.png")
 
