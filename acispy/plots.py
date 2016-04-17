@@ -242,24 +242,27 @@ class MultiDatePlot(object):
             fig = plt.figure(figsize=(12, 12))
         if subplots is None:
             subplots = len(fields), 1
-        self.plots = []
+        self.plots = {}
         for i, field in enumerate(fields):
             ax = fig.add_subplot(subplots[0], subplots[1], i+1)
-            self.plots.append(DatePlot(dc, field, fig=fig, ax=ax, lw=lw))
+            self.plots[field] = DatePlot(dc, field, fig=fig, ax=ax, lw=lw)
             ax.xaxis.label.set_size(fontsize)
             ax.yaxis.label.set_size(fontsize)
             ax.xaxis.set_tick_params(labelsize=fontsize)
             ax.yaxis.set_tick_params(labelsize=fontsize)
         self.fig = fig
-        xmin, xmax = self.plots[0].ax.get_xlim()
+        xmin, xmax = self.plots[fields[0]].ax.get_xlim()
         self.set_xlim(num2date(xmin), num2date(xmax))
+
+    def __getitem__(self, item):
+        return self.plots[item]
 
     def set_xlim(self, xmin, xmax):
         """
         Set the limits on the x-axis of the plot to *xmin* and *xmax*,
         which must be in YYYY:DOY:HH:MM:SS format.
         """
-        for plot in self.plots:
+        for plot in self.plots.values():
             plot.set_xlim(xmin, xmax)
 
     def savefig(self, filename, **kwargs):
@@ -379,7 +382,7 @@ class PhasePlot(object):
 
         Examples
         --------
-        >>> pp.set_ylabel("DEA Temperature", fontdict={"size": 15, "color": "blue"})
+        >>> pp.set_xlabel("DEA Temperature", fontdict={"size": 15, "color": "blue"})
         """
         if fontdict is None:
             fontdict = {"size": 18, "family": "serif"}

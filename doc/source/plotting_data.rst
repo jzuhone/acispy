@@ -159,13 +159,14 @@ can be used to control the labels of the left and right y-axes of the plot, resp
 .. image:: _images/dateplot3_ylabel.png
 
 Since the individual panels of each :class:`~acispy.plots.MultiDatePlot` are
-:class:`~acispy.plots.DatePlot` instances, these methods work on the individual panels as well:
+:class:`~acispy.plots.DatePlot` instances, these methods work on the individual panels as well
+(note here the limits of the bottom panel change):
 
 .. code-block:: python
 
     mdp1["states", "ccd_count"].set_ylim(0, 7) 
 
-.. images:: _images/multidateplot_ylim.png
+.. image:: _images/multidateplot_ylim.png
 
 :class:`~acispy.plots.PhasePlot` has similar methods for setting the limits and labels:
 :class:`~acispy.plots.PhasePlot.set_xlim`, :class:`~acispy.plots.PhasePlot.set_ylim`,
