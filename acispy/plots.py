@@ -354,6 +354,18 @@ class PhasePlot(object):
         else:
             self.set_ylabel(y_fd.upper())
 
+    def set_xlim(self, xmin, xmax):
+        """
+        Set the limits on the x-axis of the plot to *xmin* and *xmax*.
+        """
+        self.ax.set_xlim(xmin, xmax)
+
+    def set_ylim(self, ymin, ymax):
+        """
+        Set the limits on the y-axis of the plot to *ymin* and *ymax*.
+        """
+        self.ax.set_ylim(ymin, ymax)
+
     def set_xlabel(self, xlabel, fontdict=None, **kwargs):
         """
         Set the label of the x-axis of the plot.
