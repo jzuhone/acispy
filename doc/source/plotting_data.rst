@@ -28,7 +28,7 @@ Plot of one MSID vs. time:
 
 .. code-block:: python
 
-    dp = acispy.DatePlot(dc, ("msids", "1dpamzt"))
+    dp1 = acispy.DatePlot(dc, ("msids", "1dpamzt"))
 
 .. image:: _images/dateplot1.png
 
@@ -36,7 +36,7 @@ Plot of two MSIDs together vs. time:
 
 .. code-block:: python
 
-    dp = acispy.DatePlot(dc, [("msids", "1dpamzt"), ("msids", "1deamzt")])
+    dp2 = acispy.DatePlot(dc, [("msids", "1dpamzt"), ("msids", "1deamzt")])
     
 .. image:: _images/dateplot2.png
 
@@ -44,7 +44,7 @@ Plot of an MSID on the left y-axis and a state on the right y-axis:
 
 .. code-block:: python
 
-    dp = acispy.DatePlot(dc, ("msids", "1dpamzt"), field2=("states", "pitch"))  
+    dp3 = acispy.DatePlot(dc, ("msids", "1dpamzt"), field2=("states", "pitch"))  
 
 .. image:: _images/dateplot3.png
 
@@ -53,8 +53,8 @@ it. For example, the width and color of the lines can be changed:
 
 .. code-block:: python
 
-    dp = acispy.DatePlot(dc, ("msids", "1dpamzt"), field2=("states", "pitch"),
-                         lw=2, colors="green", color2="purple")  
+    dp4 = acispy.DatePlot(dc, ("msids", "1dpamzt"), field2=("states", "pitch"),
+                          lw=2, colors="green", color2="purple")  
 
 .. image:: _images/dateplot4.png
 
@@ -68,8 +68,8 @@ By default the panels are stacked vertically:
 
 .. code-block:: python
 
-    mdp = acispy.MultiDatePlot(dc, [("states", "pitch"), ("msids", "1deamzt"), ("states","ccd_count")],
-                               lw=2, fontsize=17)  
+    mdp1 = acispy.MultiDatePlot(dc, [("states", "pitch"), ("msids", "1deamzt"), ("states","ccd_count")],
+                                lw=2, fontsize=17)  
 
 .. image:: _images/multidateplot.png
 
@@ -78,14 +78,11 @@ fashion:
 
 .. code-block:: python
 
-    mdp = acispy.MultiDatePlot(dc, [("states", "pitch"), 
-                                    ("msids", "1deamzt"), 
-                                    ("states", "ccd_count"),
-                                    ("states", "1dpamzt")],
-                               subplots=(2,2))
+    panels = [("states", "pitch"), ("msids", "1deamzt"), 
+              ("states", "ccd_count"), ("states", "1dpamzt")]
+    mdp2 = acispy.MultiDatePlot(dc, panels, subplots=(2,2))
 
 .. image:: _images/multidateplot2x2.png
-
 
 Creating Phase Plots
 --------------------
@@ -98,7 +95,7 @@ A plot of one MSID vs. another:
 
 .. code-block:: python
 
-    pp = acispy.PhasePlot(dc, ("msids", "1dpamzt"), ("msids", "1deamzt"))
+    pp1 = acispy.PhasePlot(dc, ("msids", "1dpamzt"), ("msids", "1deamzt"))
 
 .. image:: _images/phaseplot1.png
 
@@ -106,7 +103,7 @@ A plot of a MSID vs. a state:
 
 .. code-block:: python
 
-    pp = acispy.PhasePlot(dc, ("states", "pitch"), ("msids", "1deamzt"))
+    pp2 = acispy.PhasePlot(dc, ("states", "pitch"), ("msids", "1deamzt"))
 
 .. image:: _images/phaseplot2.png
 
@@ -114,7 +111,7 @@ A plot of one state vs. another:
 
 .. code-block:: python
 
-    pp = acispy.PhasePlot(dc, ("states", "pitch"), ("states", "off_nominal_roll"))
+    pp3 = acispy.PhasePlot(dc, ("states", "pitch"), ("states", "off_nominal_roll"))
 
 .. image:: _images/phaseplot3.png
 
@@ -136,13 +133,47 @@ For example, the single plot of 1DPAMZT above can be rescaled:
 
 .. code-block:: python
 
-    dp.set_xlim("2015:012", "2015:022")
+    dp1.set_xlim("2015:012", "2015:022")
 
 .. image:: _images/dateplot1_small.png
+
+For :class:`~acispy.plots.DatePlot` objects, :class:`~acispy.plots.DatePlot.set_ylim` 
+and :class:`~acispy.plots.DatePlot.set_ylim2` can be used to control the limits of the
+left and right y-axes of the plot, respectively:
+
+.. code-block:: python
+
+    dp3.set_ylim(10, 35)
+    dp3.set_ylim2(60, 140)
+
+.. image:: _images/dateplot3_ylim.png
+
+:class:`~acispy.plots.DatePlot.set_ylabel` and :class:`~acispy.plots.DatePlot.set_ylabel2` 
+can be used to control the labels of the left and right y-axes of the plot, respectively:
+
+.. code-block:: python
+
+    dp3.set_ylabel("DPA Temperature")
+    dp3.set_ylabel2("Pitch Angle")
+
+.. image:: _images/dateplot3_ylabel.png
+
+Since the individual panels of each :class:`~acispy.plots.MultiDatePlot` are
+:class:`~acispy.plots.DatePlot` instances, these methods work on the individual panels as well:
+
+.. code-block:: python
+
+    mdp1["states", "ccd_count"].set_ylim(0, 7) 
+
+.. images:: _images/multidateplot_ylim.png
+
+:class:`~acispy.plots.PhasePlot` has similar methods for setting the limits and labels:
+:class:`~acispy.plots.PhasePlot.set_xlim`, :class:`~acispy.plots.PhasePlot.set_ylim`,
+:class:`~acispy.plots.PhasePlot.set_xlabel`, and :class:`~acispy.plots.PhasePlot.set_ylabel`.
 
 Finally, for any of the plotting classes, call ``savefig`` to save the figure. 
 
 .. code-block:: python
 
-    pp.savefig("phase_plot.png")
+    pp1.savefig("phase_plot.png")
 
