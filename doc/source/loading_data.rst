@@ -62,7 +62,7 @@ a particular load review using :meth:`~acispy.data_container.DataContainer.fetch
 
     from acispy import DataContainer
     comps = ["1deamzt","1dpamzt","fptemp_11"]
-    dc = DataContainer.fetch_model_from_load("APR0416C")
+    dc = DataContainer.fetch_model_from_load("APR0416C", comps)
 
 To get the corresponding MSIDs from the engineering archive during the same 
 time frame, pass to :meth:`~acispy.data_container.DataContainer.fetch_model_from_load`
