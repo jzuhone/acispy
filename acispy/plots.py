@@ -7,6 +7,7 @@ from acispy.utils import state_labels, msid_units, \
 from Chandra.Time import DateTime
 from datetime import datetime
 import numpy as np
+from collections import OrderedDict
 
 def pointpair(x, y=None):
     if y is None:
@@ -17,7 +18,7 @@ drawstyles = {"simpos": "steps",
               "pitch": "steps",
               "ccd_count": "steps"}
 
-type_map = {"deg_C": "Temperature",
+units_map = {"deg_C": "Temperature",
             "V": "Voltage",
             "A": "Current"}
 
@@ -74,6 +75,7 @@ class DatePlot(object):
             colors = default_colors
         if not isinstance(fields, list):
             fields = [fields]
+        num_fields = len(fields)
         if not isinstance(colors, list):
             colors = [colors]
         for i, field in enumerate(fields):
@@ -89,17 +91,21 @@ class DatePlot(object):
             else:
                 x = src["times"]
                 y = src[fd]
+            if src_name == "model":
+                label = fd.upper()+" Model"
+            else:
+                label = fd.upper()
             ticklocs, fig, ax = plot_cxctime(x, y, fig=fig, lw=lw, ax=ax,
                                              color=colors[i],
                                              drawstyle=drawstyle, 
-                                             label="%s" % fd.upper())
-        if len(fields) > 1:
-            ax.legend(prop={"family": "serif"})
+                                             label=label)
         self.ticklocs = ticklocs
         self.fig = fig
         self.ax = ax
         self.ax.set_xlabel("Date", fontdict={"size": fontsize,
                                              "family": "serif"})
+        if num_fields > 1:
+            self.ax.legend(loc=0, prop={"family": "serif"})
         fontProperties = font_manager.FontProperties(family="serif",
                                                      size=fontsize)
         for label in self.ax.get_xticklabels():
@@ -107,7 +113,7 @@ class DatePlot(object):
         for label in self.ax.get_yticklabels():
             label.set_fontproperties(fontProperties)
         if len(fields) > 1:
-            self.set_ylabel(type_map[msid_units[fields[0][1]]]+" (%s)" % 
+            self.set_ylabel(units_map[msid_units[fields[0][1]]]+" (%s)" % 
                             msid_unit_labels[msid_units[fields[0][1]]])
         else:
             if fd in state_labels:
@@ -210,6 +216,26 @@ class DatePlot(object):
         """
         self.fig.savefig(filename, **kwargs)
 
+    def set_legend(self, loc=0, prop=None, **kwargs):
+        """
+        Place or adjust a legend on the plot.
+        """
+        if prop is None:
+            prop = {"family": "serif"}
+        self.ax.legend(loc=loc, prop=prop, **kwargs)
+
+    def add_vline(self, x, ymin=0, ymax=1, **kwargs):
+        x = datetime.strptime(DateTime(x).iso, "%Y-%m-%d %H:%M:%S.%f")
+        self.ax.axvline(x=x, ymin=ymin, ymax=ymax, **kwargs)
+
+    def add_hline(self, y, xmin=0, xmax=1, **kwargs):
+        self.ax.axhline(y=y, xmin=xmin, xmax=xmax, **kwargs)
+
+    def set_title(self, label, fontdict=None, loc='center', **kwargs):
+        if fontdict is None:
+            fontdict = {"family": "serif", "size": 18}
+        self.ax.set_title(label, fontdict=fontdict, loc=loc, **kwargs)
+
 class MultiDatePlot(object):
     r""" Make a multi-panel plot of multiple quantities vs. date and time.
 
@@ -242,7 +268,7 @@ class MultiDatePlot(object):
             fig = plt.figure(figsize=(12, 12))
         if subplots is None:
             subplots = len(fields), 1
-        self.plots = {}
+        self.plots = OrderedDict()
         for i, field in enumerate(fields):
             ax = fig.add_subplot(subplots[0], subplots[1], i+1)
             self.plots[field] = DatePlot(dc, field, fig=fig, ax=ax, lw=lw)
@@ -270,6 +296,13 @@ class MultiDatePlot(object):
         Save the figure to the file specified by *filename*.
         """
         self.fig.savefig(filename, **kwargs)
+
+    def add_vline(self, x, ymin=0, ymax=1, **kwargs):
+        for plot in self.plots.values():
+            plot.add_vline(x, ymin=ymin, ymax=ymax, **kwargs)
+
+    def set_title(self, label, fontdict=None, loc='center', **kwargs):
+        self.plots.values()[0].set_title(label, fontdict=fontdict, loc=loc, **kwargs)
 
 class PhasePlot(object):
     r""" Make a single-panel plot of one quantity vs. another.
@@ -299,7 +332,7 @@ class PhasePlot(object):
     >>> from acispy import PhasePlot
     >>> pp = PhasePlot(dc, ("msids", "1deamzt"), ("msids", "1dpamzt"))
     """
-    def __init__(self, ds, x_field, y_field, fig=None, ax=None,
+    def __init__(self, dc, x_field, y_field, fig=None, ax=None,
                  fontsize=18):
         if fig is None:
             fig = plt.figure(figsize=(12, 12))
@@ -307,11 +340,19 @@ class PhasePlot(object):
             ax = fig.add_subplot(111)
         x_src_name, x_fd = x_field
         y_src_name, y_fd = y_field
+        if x_src_name == "model":
+            xlabel = x_fd.upper() + " Model"
+        else:
+            xlabel = x_fd.upper()
+        if y_src_name == "model":
+            ylabel = y_fd.upper() + " Model"
+        else:
+            ylabel = y_fd.upper()
         if y_src_name == "states" and x_src_name != "states":
             raise RuntimeError("Cannot plot an MSID or model vs. a state, "
                                "put the state on the x-axis!")
-        x_src = getattr(ds, x_src_name)
-        y_src = getattr(ds, y_src_name)
+        x_src = getattr(dc, x_src_name)
+        y_src = getattr(dc, y_src_name)
         x = x_src[x_fd]
         y = y_src[y_fd]
         if x.size != y.size:
@@ -347,15 +388,15 @@ class PhasePlot(object):
         if x_fd in state_labels:
             self.set_xlabel(state_labels[x_fd])
         elif x_fd in msid_list:
-            self.set_xlabel(x_fd.upper()+" (%s)" % msid_unit_labels[msid_units[x_fd]])
+            self.set_xlabel(xlabel+" (%s)" % msid_unit_labels[msid_units[x_fd]])
         else:
-            self.set_xlabel(x_fd.upper())
+            self.set_xlabel(xlabel)
         if y_fd in state_labels:
             self.set_ylabel(state_labels[y_fd])
         elif y_fd in msid_list:
-            self.set_ylabel(y_fd.upper()+" (%s)" % msid_unit_labels[msid_units[y_fd]])
+            self.set_ylabel(ylabel+" (%s)" % msid_unit_labels[msid_units[y_fd]])
         else:
-            self.set_ylabel(y_fd.upper())
+            self.set_ylabel(ylabel)
 
     def set_xlim(self, xmin, xmax):
         """
@@ -412,3 +453,22 @@ class PhasePlot(object):
         Save the figure to the file specified by *filename*.
         """
         self.fig.savefig(filename, **kwargs)
+
+    def set_legend(self, loc=0, prop=None, **kwargs):
+        """
+        Place or adjust a legend on the plot.
+        """
+        if prop is None:
+            prop = {"family": "serif"}
+        self.ax.legend(loc=loc, prop=prop, **kwargs)
+
+    def add_vline(self, x, ymin=0, ymax=1, **kwargs):
+        self.ax.axvline(x=x, ymin=ymin, ymax=ymax, **kwargs)
+
+    def add_hline(self, y, xmin=0, xmax=1, **kwargs):
+        self.ax.axhline(y=y, xmin=xmin, xmax=xmax, **kwargs)
+
+    def set_title(self, label, fontdict=None, loc='center', **kwargs):
+        if fontdict is None:
+            fontdict = {"family": "serif", "size": 18}
+        self.ax.set_title(label, fontdict=fontdict, loc=loc, **kwargs)
