@@ -40,12 +40,6 @@ class DatePlot(object):
         A single field or list of fields to plot on the left y-axis.
     field2 : tuple of strings, optional
         A single field to plot on the right y-axis. Default: None
-    fig : :class:`~matplotlib.figure.Figure`, optional
-        A Figure instance to plot in. Default: None, one will be
-        created if not provided.
-    ax : :class:`~matplotlib.axes.Axes`, optional
-        An Axes instance to plot in. Default: None, one will be
-        created if not provided.
     lw : float, optional
         The width of the lines in the plots. Default: 1.5 px.
     fontsize : integer, optional
@@ -56,6 +50,12 @@ class DatePlot(object):
     color2 : string, optional
         The color for the line plotted on the right y-axis.
         Default: "magenta"
+    fig : :class:`~matplotlib.figure.Figure`, optional
+        A Figure instance to plot in. Default: None, one will be
+        created if not provided.
+    ax : :class:`~matplotlib.axes.Axes`, optional
+        An Axes instance to plot in. Default: None, one will be
+        created if not provided.
 
     Examples
     --------
@@ -67,8 +67,8 @@ class DatePlot(object):
     >>> fields = [("msids", "1dpamzt"), ("msids", "1deamzt"), ("msids", "1pdeaat")]
     >>> p2 = DatePlot(dc, fields, fontsize=12, colors=["brown","black","orange"])
     """
-    def __init__(self, dc, fields, field2=None, fig=None, ax=None, lw=1.5,
-                 fontsize=18, colors=None, color2='magenta'):
+    def __init__(self, dc, fields, field2=None, lw=1.5, fontsize=18,
+                 colors=None, color2='magenta', fig=None, ax=None):
         if fig is None:
             fig = plt.figure(figsize=(10, 8))
         if colors is None:
@@ -172,7 +172,7 @@ class DatePlot(object):
         """
         self.ax2.set_ylim(ymin, ymax)
 
-    def set_ylabel(self, ylabel, fontdict=None, **kwargs):
+    def set_ylabel(self, ylabel, fontsize=18, **kwargs):
         """
         Set the label of the left y-axis of the plot.
 
@@ -180,18 +180,17 @@ class DatePlot(object):
         ----------
         ylabel : string
             The new label.
-        fontdict : dict, optional
-            A dict of font properties to use for the label. Default: None
+        fontsize : integer, optional
+            The size of the font. Default: 18 pt
 
         Examples
         --------
-        >>> p1.set_ylabel("DPA Temperature", fontdict={"size": 15, "color": "blue"})
+        >>> p1.set_ylabel("DPA Temperature", fontsize=15)
         """
-        if fontdict is None:
-            fontdict = {"size": 18, "family": "serif"}
+        fontdict = {"size": fontsize, "family": "serif"}
         self.ax.set_ylabel(ylabel, fontdict=fontdict, **kwargs)
 
-    def set_ylabel2(self, ylabel, fontdict=None, **kwargs):
+    def set_ylabel2(self, ylabel, fontsize=18, **kwargs):
         """
         Set the label of the right y-axis of the plot.
 
@@ -199,15 +198,14 @@ class DatePlot(object):
         ----------
         ylabel : string
             The new label.
-        fontdict : dict, optional
-            A dict of font properties to use for the label. Default: None
+        fontsize : integer, optional
+            The size of the font. Default: 18 pt
 
         Examples
         --------
-        >>> p1.set_ylabel2("Pitch Angle in Degrees", fontdict={"size": 14, "family": "serif"})
+        >>> p1.set_ylabel2("Pitch Angle in Degrees", fontsize=14)
         """
-        if fontdict is None:
-            fontdict = {"size": 18, "family": "serif"}
+        fontdict = {"size": fontsize, "family": "serif"}
         self.ax2.set_ylabel(ylabel, fontdict=fontdict, **kwargs)
 
     def savefig(self, filename, **kwargs):
@@ -216,25 +214,26 @@ class DatePlot(object):
         """
         self.fig.savefig(filename, **kwargs)
 
-    def set_legend(self, loc=0, prop=None, **kwargs):
+    def set_legend(self, loc='best', fontsize=16, **kwargs):
         """
         Place or adjust a legend on the plot.
         """
-        if prop is None:
-            prop = {"family": "serif"}
+        prop = {"family": "serif", "size": fontsize}
         self.ax.legend(loc=loc, prop=prop, **kwargs)
 
-    def add_vline(self, x, ymin=0, ymax=1, **kwargs):
+    def add_vline(self, x, lw=2, ls='-', color='green', **kwargs):
         x = datetime.strptime(DateTime(x).iso, "%Y-%m-%d %H:%M:%S.%f")
-        self.ax.axvline(x=x, ymin=ymin, ymax=ymax, **kwargs)
+        self.ax.axvline(x=x, lw=lw, ls=ls, color=color, **kwargs)
 
-    def add_hline(self, y, xmin=0, xmax=1, **kwargs):
-        self.ax.axhline(y=y, xmin=xmin, xmax=xmax, **kwargs)
+    def add_hline(self, y, lw=2, ls='-', color='green', **kwargs):
+        self.ax.axhline(y=y, lw=lw, ls=ls, color=color, **kwargs)
 
-    def set_title(self, label, fontdict=None, loc='center', **kwargs):
-        if fontdict is None:
-            fontdict = {"family": "serif", "size": 18}
+    def set_title(self, label, fontsize=18, loc='center', **kwargs):
+        fontdict = {"family": "serif", "size": fontsize}
         self.ax.set_title(label, fontdict=fontdict, loc=loc, **kwargs)
+
+    def set_grid(self, on):
+        self.ax.grid(on)
 
 class MultiDatePlot(object):
     r""" Make a multi-panel plot of multiple quantities vs. date and time.
@@ -245,9 +244,6 @@ class MultiDatePlot(object):
         The DataContainer instance to get the data to plot from.
     fields : list of tuples of strings
         A list of fields to plot.
-    fig : :class:`~matplotlib.figure.Figure`, optional
-        A Figure instance to plot in. Default: None, one will be
-        created if not provided.
     subplots : tuple of integers, optional
         The gridded layout of the plots, i.e. (num_x_plots, num_y_plots)
         The default is to have all plots stacked vertically.
@@ -255,6 +251,9 @@ class MultiDatePlot(object):
         The font size for the labels in the plot. Default: 15 pt.
     lw : float, optional
         The width of the lines in the plots. Default: 1.5 px.
+    fig : :class:`~matplotlib.figure.Figure`, optional
+        A Figure instance to plot in. Default: None, one will be
+        created if not provided.
 
     Examples
     --------
@@ -262,8 +261,8 @@ class MultiDatePlot(object):
     >>> fields = [("msids", "1deamzt"), ("model", "1deamzt"), ("states", "ccd_count")]
     >>> mp = MultiDatePlot(dc, fields, lw=2, subplots=(2, 2))
     """
-    def __init__(self, dc, fields, fig=None, subplots=None,
-                 fontsize=15, lw=1.5):
+    def __init__(self, dc, fields, subplots=None,
+                 fontsize=15, lw=1.5, fig=None):
         if fig is None:
             fig = plt.figure(figsize=(12, 12))
         if subplots is None:
@@ -297,12 +296,16 @@ class MultiDatePlot(object):
         """
         self.fig.savefig(filename, **kwargs)
 
-    def add_vline(self, x, ymin=0, ymax=1, **kwargs):
+    def add_vline(self, x, lw=2, ls='-', color='green', **kwargs):
         for plot in self.plots.values():
-            plot.add_vline(x, ymin=ymin, ymax=ymax, **kwargs)
+            plot.add_vline(x, lw=lw, ls=ls, color=color, **kwargs)
 
-    def set_title(self, label, fontdict=None, loc='center', **kwargs):
-        self.plots.values()[0].set_title(label, fontdict=fontdict, loc=loc, **kwargs)
+    def set_title(self, label, fontsize=18, loc='center', **kwargs):
+        self.plots.values()[0].set_title(label, fontsize=fontsize, loc=loc, **kwargs)
+
+    def set_grid(self, on):
+        for plot in self.plots.values():
+            plot.set_grid(on)
 
 class PhasePlot(object):
     r""" Make a single-panel plot of one quantity vs. another.
@@ -318,22 +321,22 @@ class PhasePlot(object):
         The field to plot on the x-axis.
     y_field : tuple of strings
         The field to plot on the y-axis.
+    fontsize : integer, optional
+        The font size for the labels in the plot. Default: 18 pt.
     fig : :class:`~matplotlib.figure.Figure`, optional
         A Figure instance to plot in. Default: None, one will be
         created if not provided.
     ax : :class:`~matplotlib.axes.Axes`, optional
         An Axes instance to plot in. Default: None, one will be
         created if not provided.
-    fontsize : integer, optional
-        The font size for the labels in the plot. Default: 18 pt.
 
     Examples
     --------
     >>> from acispy import PhasePlot
     >>> pp = PhasePlot(dc, ("msids", "1deamzt"), ("msids", "1dpamzt"))
     """
-    def __init__(self, dc, x_field, y_field, fig=None, ax=None,
-                 fontsize=18):
+    def __init__(self, dc, x_field, y_field, fontsize=18,
+                 fig=None, ax=None):
         if fig is None:
             fig = plt.figure(figsize=(12, 12))
         if ax is None:
@@ -410,7 +413,7 @@ class PhasePlot(object):
         """
         self.ax.set_ylim(ymin, ymax)
 
-    def set_xlabel(self, xlabel, fontdict=None, **kwargs):
+    def set_xlabel(self, xlabel, fontsize=18, **kwargs):
         """
         Set the label of the x-axis of the plot.
 
@@ -418,18 +421,17 @@ class PhasePlot(object):
         ----------
         xlabel : string
             The new label.
-        fontdict : dict, optional
-            A dict of font properties to use for the label. Default: None
+        fontsize : integer, optional
+            The size of the font. Default: 18 pt
 
         Examples
         --------
-        >>> pp.set_xlabel("DEA Temperature", fontdict={"size": 15, "color": "blue"})
+        >>> pp.set_xlabel("DEA Temperature", fontsize=15)
         """
-        if fontdict is None:
-            fontdict = {"size": 18, "family": "serif"}
+        fontdict = {"size": fontsize, "family": "serif"}
         self.ax.set_xlabel(xlabel, fontdict=fontdict, **kwargs)
 
-    def set_ylabel(self, ylabel, fontdict=None, **kwargs):
+    def set_ylabel(self, ylabel, fontsize=18, **kwargs):
         """
         Set the label of the y-axis of the plot.
 
@@ -437,15 +439,14 @@ class PhasePlot(object):
         ----------
         ylabel : string
             The new label.
-        fontdict : dict, optional
-            A dict of font properties to use for the label. Default: None
+        fontsize : integer, optional
+            The size of the font. Default: 18 pt
 
         Examples
         --------
-        >>> pp.set_ylabel("DPA Temperature", fontdict={"size": 15, "color": "blue"})
+        >>> pp.set_ylabel("DPA Temperature", fontsize=15)
         """
-        if fontdict is None:
-            fontdict = {"size": 18, "family": "serif"}
+        fontdict = {"size": fontsize, "family": "serif"}
         self.ax.set_ylabel(ylabel, fontdict=fontdict, **kwargs)
 
     def savefig(self, filename, **kwargs):
@@ -454,21 +455,22 @@ class PhasePlot(object):
         """
         self.fig.savefig(filename, **kwargs)
 
-    def set_legend(self, loc=0, prop=None, **kwargs):
+    def set_legend(self, loc='best', fontsize=16, **kwargs):
         """
         Place or adjust a legend on the plot.
         """
-        if prop is None:
-            prop = {"family": "serif"}
+        prop = {"family": "serif", "size": fontsize}
         self.ax.legend(loc=loc, prop=prop, **kwargs)
 
-    def add_vline(self, x, ymin=0, ymax=1, **kwargs):
-        self.ax.axvline(x=x, ymin=ymin, ymax=ymax, **kwargs)
+    def add_vline(self, x, lw=2, ls='-', color='green', **kwargs):
+        self.ax.axvline(x=x, lw=lw, ls=ls, color=color, **kwargs)
 
-    def add_hline(self, y, xmin=0, xmax=1, **kwargs):
-        self.ax.axhline(y=y, xmin=xmin, xmax=xmax, **kwargs)
+    def add_hline(self, y, lw=2, ls='-', color='green', **kwargs):
+        self.ax.axhline(y=y, lw=lw, ls=ls, color=color, **kwargs)
 
-    def set_title(self, label, fontdict=None, loc='center', **kwargs):
-        if fontdict is None:
-            fontdict = {"family": "serif", "size": 18}
+    def set_title(self, label, fontsize=18, loc='center', **kwargs):
+        fontdict = {"family": "serif", "size": fontsize}
         self.ax.set_title(label, fontdict=fontdict, loc=loc, **kwargs)
+    
+    def set_grid(self, on):
+        self.ax.grid(on)
