@@ -217,22 +217,135 @@ class DatePlot(object):
     def set_legend(self, loc='best', fontsize=16, **kwargs):
         """
         Place or adjust a legend on the plot.
+
+        Parameters
+        ----------
+        loc : string, optional
+            The location of the legend on the plot. Options are:
+            'best'
+            'upper right'
+            'upper left'
+            'lower left'
+            'lower right'
+            'right'
+            'center left'
+            'center right'
+            'lower center'
+            'upper center'
+            'center'
+            Default: 'best', which will try to find the best location for
+            the legend, e.g. away from plotted data.
+        fontsize : integer, optional
+            The size of the legend text. Default: 16 pt.
+
+        Examples
+        --------
+        >>> p.set_legend(loc='right', fontsize=18)
         """
         prop = {"family": "serif", "size": fontsize}
         self.ax.legend(loc=loc, prop=prop, **kwargs)
 
-    def add_vline(self, x, lw=2, ls='-', color='green', **kwargs):
-        x = datetime.strptime(DateTime(x).iso, "%Y-%m-%d %H:%M:%S.%f")
-        self.ax.axvline(x=x, lw=lw, ls=ls, color=color, **kwargs)
+    def add_vline(self, time, lw=2, ls='solid', color='green', **kwargs):
+        """
+        Add a vertical line on the time axis of the plot.
 
-    def add_hline(self, y, lw=2, ls='-', color='green', **kwargs):
+        Parameters
+        ----------
+        time : string
+            The time to place the vertical line at.
+            Must be in YYYY:DOY:HH:MM:SS format.
+        lw : integer, optional
+            The width of the line. Default: 2
+        ls : string, optional
+            The style of the line. Can be one of:
+            'solid', 'dashed', 'dashdot', 'dotted'.
+            Default: 'solid'
+        color : string, optional
+            The color of the line. Default: 'green'
+
+        Examples
+        --------
+        >>> p.add_vline("2016:101:12:36:10.102", lw=3, ls='dashed', color='red')
+        """
+        time = datetime.strptime(DateTime(time).iso, "%Y-%m-%d %H:%M:%S.%f")
+        self.ax.axvline(x=time, lw=lw, ls=ls, color=color, **kwargs)
+
+    def add_hline(self, y, lw=2, ls='solid', color='green', **kwargs):
+        """
+        Add a horizontal line on the left y-axis of the plot.
+
+        Parameters
+        ----------
+        y : float
+            The value to place the vertical line at.
+        lw : integer, optional
+            The width of the line. Default: 2
+        ls : string, optional
+            The style of the line. Can be one of:
+            'solid', 'dashed', 'dashdot', 'dotted'.
+            Default: 'solid'
+        color : string, optional
+            The color of the line. Default: 'green'
+
+        Examples
+        --------
+        >>> p.add_hline(36., lw=3, ls='dashed', color='red')
+        """
         self.ax.axhline(y=y, lw=lw, ls=ls, color=color, **kwargs)
 
+    def add_hline2(self, y2, lw=2, ls='solid', color='green', **kwargs):
+        """
+        Add a horizontal line on the right y-axis of the plot.
+
+        Parameters
+        ----------
+        y2 : float
+            The value to place the vertical line at.
+        lw : integer, optional
+            The width of the line. Default: 2
+        ls : string, optional
+            The style of the line. Can be one of:
+            'solid', 'dashed', 'dashdot', 'dotted'.
+            Default: 'solid'
+        color : string, optional
+            The color of the line. Default: 'green'
+
+        Examples
+        --------
+        >>> p.add_hline2(105., lw=3, ls='dashed', color='red')
+        """
+        self.ax2.axhline(y=y2, lw=lw, ls=ls, color=color, **kwargs)
+
     def set_title(self, label, fontsize=18, loc='center', **kwargs):
+        """
+        Add a title to the top of the plot.
+
+        Parameters
+        ----------
+        label : string
+            The title itself.
+        fontsize : integer, optional
+            The size of the font. Default: 18 pt
+        loc : string, optional
+            The horizontal location of the title. Options are: 'left',
+            'right', 'center'. Default: 'center'
+
+        Examples
+        --------
+        >>> p.set_title("my awesome plot", fontsize=15, loc='left')
+        """
         fontdict = {"family": "serif", "size": fontsize}
         self.ax.set_title(label, fontdict=fontdict, loc=loc, **kwargs)
 
     def set_grid(self, on):
+        """
+        Turn grid lines on or off on the plot. 
+
+        Parameters
+        ----------
+        on : boolean
+            Set to True to put the lines on, set to False to remove them.
+        """
         self.ax.grid(on)
 
 class MultiDatePlot(object):
@@ -297,13 +410,59 @@ class MultiDatePlot(object):
         self.fig.savefig(filename, **kwargs)
 
     def add_vline(self, x, lw=2, ls='-', color='green', **kwargs):
+        """
+        Add a vertical line on the time axis of the plot.
+
+        Parameters
+        ----------
+        time : string
+            The time to place the vertical line at.
+            Must be in YYYY:DOY:HH:MM:SS format.
+        lw : integer, optional
+            The width of the line. Default: 2
+        ls : string, optional
+            The style of the line. Can be one of:
+            'solid', 'dashed', 'dashdot', 'dotted'.
+            Default: 'solid'
+        color : string, optional
+            The color of the line. Default: 'green'
+
+        Examples
+        --------
+        >>> p.add_vline("2016:101:12:36:10.102", lw=3, ls='dashed', color='red')
+        """
         for plot in self.plots.values():
             plot.add_vline(x, lw=lw, ls=ls, color=color, **kwargs)
 
     def set_title(self, label, fontsize=18, loc='center', **kwargs):
+        """
+        Add a title to the top of the plot.
+
+        Parameters
+        ----------
+        label : string
+            The title itself.
+        fontsize : integer, optional
+            The size of the font. Default: 18 pt
+        loc : string, optional
+            The horizontal location of the title. Options are: 'left',
+            'right', 'center'. Default: 'center'
+
+        Examples
+        --------
+        >>> p.set_title("my awesome plot", fontsize=15, loc='left')
+        """
         self.plots.values()[0].set_title(label, fontsize=fontsize, loc=loc, **kwargs)
 
     def set_grid(self, on):
+        """
+        Turn grid lines on or off on the plot. 
+
+        Parameters
+        ----------
+        on : boolean
+            Set to True to put the lines on, set to False to remove them.
+        """
         for plot in self.plots.values():
             plot.set_grid(on)
 
@@ -458,19 +617,108 @@ class PhasePlot(object):
     def set_legend(self, loc='best', fontsize=16, **kwargs):
         """
         Place or adjust a legend on the plot.
+
+        Parameters
+        ----------
+        loc : string, optional
+            The location of the legend on the plot. Options are:
+            'best'
+            'upper right'
+            'upper left'
+            'lower left'
+            'lower right'
+            'right'
+            'center left'
+            'center right'
+            'lower center'
+            'upper center'
+            'center'
+            Default: 'best', which will try to find the best location for
+            the legend, e.g. away from plotted data.
+        fontsize : integer, optional
+            The size of the legend text. Default: 16 pt.
+
+        Examples
+        --------
+        >>> p.set_legend(loc='right', fontsize=18)
         """
         prop = {"family": "serif", "size": fontsize}
         self.ax.legend(loc=loc, prop=prop, **kwargs)
 
     def add_vline(self, x, lw=2, ls='-', color='green', **kwargs):
+        """
+        Add a vertical line on the x-axis of the plot.
+
+        Parameters
+        ----------
+        x : float
+            The value to place the vertical line at.
+        lw : integer, optional
+            The width of the line. Default: 2
+        ls : string, optional
+            The style of the line. Can be one of:
+            'solid', 'dashed', 'dashdot', 'dotted'.
+            Default: 'solid'
+        color : string, optional
+            The color of the line. Default: 'green'
+
+        Examples
+        --------
+        >>> p.add_vline(25., lw=3, ls='dashed', color='red')
+        """
         self.ax.axvline(x=x, lw=lw, ls=ls, color=color, **kwargs)
 
     def add_hline(self, y, lw=2, ls='-', color='green', **kwargs):
+        """
+        Add a horizontal line on the y-axis of the plot.
+
+        Parameters
+        ----------
+        y : float
+            The value to place the vertical line at.
+        lw : integer, optional
+            The width of the line. Default: 2
+        ls : string, optional
+            The style of the line. Can be one of:
+            'solid', 'dashed', 'dashdot', 'dotted'.
+            Default: 'solid'
+        color : string, optional
+            The color of the line. Default: 'green'
+
+        Examples
+        --------
+        >>> p.add_hline(36., lw=3, ls='dashed', color='red')
+        """
         self.ax.axhline(y=y, lw=lw, ls=ls, color=color, **kwargs)
 
     def set_title(self, label, fontsize=18, loc='center', **kwargs):
+        """
+        Add a title to the top of the plot.
+
+        Parameters
+        ----------
+        label : string
+            The title itself.
+        fontsize : integer, optional
+            The size of the font. Default: 18 pt
+        loc : string, optional
+            The horizontal location of the title. Options are: 'left',
+            'right', 'center'. Default: 'center'
+
+        Examples
+        --------
+        >>> p.set_title("my awesome plot", fontsize=15, loc='left')
+        """
         fontdict = {"family": "serif", "size": fontsize}
         self.ax.set_title(label, fontdict=fontdict, loc=loc, **kwargs)
-    
+
     def set_grid(self, on):
+        """
+        Turn grid lines on or off on the plot. 
+
+        Parameters
+        ----------
+        on : boolean
+            Set to True to put the lines on, set to False to remove them.
+        """
         self.ax.grid(on)
