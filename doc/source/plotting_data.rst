@@ -124,8 +124,12 @@ A plot of one state vs. another:
 Plot Modifications
 ------------------
 
-The various plotting classes have methods to control the limits of the plots,
-change plot labels, and save plots to disk. 
+The various plotting classes have methods to modify the plots after creating them. These
+include methods to control the limits of the plots, change plot labels, add titles, legends,
+lines, and grids, and save plots to disk. 
+
+Changing Plot Limits
+++++++++++++++++++++
 
 For :class:`~acispy.plots.DatePlot` and :class:`~acispy.plots.MultiDatePlot`, the 
 date/time limits on the x-axis can be set using :meth:`~acispy.plots.DatePlot.set_xlim`. 
@@ -148,16 +152,6 @@ left and right y-axes of the plot, respectively:
 
 .. image:: _images/dateplot3_ylim.png
 
-:class:`~acispy.plots.DatePlot.set_ylabel` and :class:`~acispy.plots.DatePlot.set_ylabel2` 
-can be used to control the labels of the left and right y-axes of the plot, respectively:
-
-.. code-block:: python
-
-    dp3.set_ylabel("DPA Temperature")
-    dp3.set_ylabel2("Pitch Angle")
-
-.. image:: _images/dateplot3_ylabel.png
-
 Since the individual panels of each :class:`~acispy.plots.MultiDatePlot` are
 :class:`~acispy.plots.DatePlot` instances, these methods work on the individual panels as well
 (note here the limits of the bottom panel change):
@@ -168,11 +162,55 @@ Since the individual panels of each :class:`~acispy.plots.MultiDatePlot` are
 
 .. image:: _images/multidateplot_ylim.png
 
-:class:`~acispy.plots.PhasePlot` has similar methods for setting the limits and labels:
-:class:`~acispy.plots.PhasePlot.set_xlim`, :class:`~acispy.plots.PhasePlot.set_ylim`,
-:class:`~acispy.plots.PhasePlot.set_xlabel`, and :class:`~acispy.plots.PhasePlot.set_ylabel`.
+:class:`~acispy.plots.PhasePlot` has similar methods for setting the limits on the x and y-axes:
+:class:`~acispy.plots.PhasePlot.set_xlim` and :class:`~acispy.plots.PhasePlot.set_ylim`.
 
-Finally, for any of the plotting classes, call ``savefig`` to save the figure. 
+Changing Plot Labels
+++++++++++++++++++++
+
+:class:`~acispy.plots.DatePlot.set_ylabel` and :class:`~acispy.plots.DatePlot.set_ylabel2` 
+can be used to control the labels of the left and right y-axes of the plot, respectively:
+
+.. code-block:: python
+
+    dp3.set_ylabel("DPA Temperature")
+    dp3.set_ylabel2("Pitch Angle")
+
+.. image:: _images/dateplot3_ylabel.png
+
+:class:`~acispy.plots.PhasePlot` has similar methods for setting the labels on the x and y-axes:
+:class:`~acispy.plots.PhasePlot.set_xlabel` and :class:`~acispy.plots.PhasePlot.set_ylabel`.
+
+Adding Horizontal and Vertical Lines to a Plot
+++++++++++++++++++++++++++++++++++++++++++++++
+
+:class:`~acispy.plots.DatePlot` and :class:`~acispy.plots.PhasePlot`
+
+Adding a Title to a Plot
+++++++++++++++++++++++++
+
+All three plot types have a method :meth:`~acispy.plots.DatePlot.set_title` to put a title
+at the top of the plot:
+
+
+ 
+Adding and Customizing a Plot Legend
+++++++++++++++++++++++++++++++++++++
+
+Adding Grid Lines to a Plot
++++++++++++++++++++++++++++
+
+For any of the plot types, call the :meth:`~acispy.plots.DatePlot.set_grid` to turn grid lines on 
+and off on the plot:
+
+.. code-block:: python
+
+    dp3.set_grid(True)
+
+Saving Plots to Disk
+++++++++++++++++++++
+
+Finally, for any of the plot types, call ``savefig`` to save the figure. 
 
 .. code-block:: python
 
