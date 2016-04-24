@@ -77,37 +77,6 @@ class ACISPlot(object):
         """
         self.ax.grid(on)
 
-    def set_legend(self, loc='best', fontsize=16, **kwargs):
-        """
-        Place or adjust a legend on the plot.
-
-        Parameters
-        ----------
-        loc : string, optional
-            The location of the legend on the plot. Options are:
-            'best'
-            'upper right'
-            'upper left'
-            'lower left'
-            'lower right'
-            'right'
-            'center left'
-            'center right'
-            'lower center'
-            'upper center'
-            'center'
-            Default: 'best', which will try to find the best location for
-            the legend, e.g. away from plotted data.
-        fontsize : integer, optional
-            The size of the legend text. Default: 16 pt.
-
-        Examples
-        --------
-        >>> p.set_legend(loc='right', fontsize=18)
-        """
-        prop = {"family": "serif", "size": fontsize}
-        self.ax.legend(loc=loc, prop=prop, **kwargs)
-
     def add_hline(self, y, lw=2, ls='-', color='green', **kwargs):
         """
         Add a horizontal line on the y-axis of the plot.
@@ -229,7 +198,7 @@ class DatePlot(ACISPlot):
             colors = default_colors
         if not isinstance(fields, list):
             fields = [fields]
-        num_fields = len(fields)
+        self.num_fields = len(fields)
         if not isinstance(colors, list):
             colors = [colors]
         for i, field in enumerate(fields):
@@ -256,7 +225,7 @@ class DatePlot(ACISPlot):
         super(DatePlot, self).__init__(fig, ax)
         self.ax.set_xlabel("Date", fontdict={"size": fontsize,
                                              "family": "serif"})
-        if num_fields > 1:
+        if self.num_fields > 1:
             self.ax.legend(loc=0, prop={"family": "serif"})
         fontProperties = font_manager.FontProperties(family="serif",
                                                      size=fontsize)
@@ -387,6 +356,40 @@ class DatePlot(ACISPlot):
         >>> p.add_hline2(105., lw=3, ls='dashed', color='red')
         """
         self.ax2.axhline(y=y2, lw=lw, ls=ls, color=color, **kwargs)
+
+    def set_legend(self, loc='best', fontsize=16, **kwargs):
+        """
+        Adjust a legend on the plot.
+
+        Parameters
+        ----------
+        loc : string, optional
+            The location of the legend on the plot. Options are:
+            'best'
+            'upper right'
+            'upper left'
+            'lower left'
+            'lower right'
+            'right'
+            'center left'
+            'center right'
+            'lower center'
+            'upper center'
+            'center'
+            Default: 'best', which will try to find the best location for
+            the legend, e.g. away from plotted data.
+        fontsize : integer, optional
+            The size of the legend text. Default: 16 pt.
+
+        Examples
+        --------
+        >>> p.set_legend(loc='right', fontsize=18)
+        """
+        if self.num_fields == 1:
+            raise RuntimeError("This plot does not have a legend because it"
+                               "has only one set of data on the left y-axis!")
+        prop = {"family": "serif", "size": fontsize}
+        self.ax.legend(loc=loc, prop=prop, **kwargs)
 
 class MultiDatePlot(object):
     r""" Make a multi-panel plot of multiple quantities vs. date and time.
