@@ -49,7 +49,7 @@ class DataContainer(object):
             Whether or not to filter out bad values of MSIDs. Default: True.
         stat : string, optional
             return 5-minute or daily statistics ('5min' or 'daily') Default: '5min'
-                    
+
         Examples
         --------
         >>> from acispy import DataContainer
@@ -89,7 +89,16 @@ class DataContainer(object):
         ...                                        state_keys=states)
         """
         states = None
-        msids = MSIDs.from_tracelog(filename)
+        # Figure out what kind of file this is
+        f = open(filename, "r")
+        line = f.readline()
+        f.close()
+        if line.startswith("TIME"):
+            msids = MSIDs.from_tracelog(filename)
+        elif line.startswith("YEAR"):
+            msids = MSIDs.from_mit_file(filename)
+        else:
+            raise RuntimeError("I cannot parse this file!")
         if state_keys is not None:
             tstart = secs2date(msids[msids.keys()[1]+"_times"][0])
             tstop = secs2date(msids[msids.keys()[1]+"_times"][-1])
