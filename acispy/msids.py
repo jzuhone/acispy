@@ -1,6 +1,7 @@
-from acispy.utils import get_time
+from acispy.utils import get_time, mit_trans_table
 import Ska.engarchive.fetch_sci as fetch
 from astropy.table import Table
+from astropy.io import ascii
 import numpy as np
 
 class MSIDs(object):
@@ -8,7 +9,28 @@ class MSIDs(object):
         self.table = table
         for k, v in times.items():
             self.table[k+"_times"] = times[k]
-        self._keys = list(self.table.keys())
+
+    @classmethod
+    def from_mit_file(cls, filename):
+        data = ascii.read(filename)
+        mins, hours = np.modf(data["SEC"].data/3600.)
+        secs, mins = np.modf(mins*60.)
+        secs *= 60.0
+        time_arr = ["%04d:%03d:%02d:%02d:%06.3f" % (y, d, h, m, s)
+                    for y, d, h, m, s in zip(data["YEAR"].data,
+                                             data["DOY"].data,
+                                             hours, mins, secs)]
+        table = {}
+        times = {}
+        for k in data.keys():
+            if k not in ["YEAR", "DOY", "SEC"]:
+                if k in mit_trans_table:
+                    key = mit_trans_table[k]
+                else:
+                    key = k.lower()
+                table[key] = data[k].data
+                times[key] = get_time(time_arr).secs
+        return cls(times, table)
 
     @classmethod
     def from_tracelog(cls, filename):
@@ -41,7 +63,7 @@ class MSIDs(object):
         return self.table[item]
 
     def keys(self):
-        return self._keys
+        return list(self.table.keys())
 
     def write_ascii(self, filename):
         Table(self.table).write(filename, format='ascii')

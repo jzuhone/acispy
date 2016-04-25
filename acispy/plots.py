@@ -233,7 +233,7 @@ class DatePlot(ACISPlot):
             label.set_fontproperties(fontProperties)
         for label in self.ax.get_yticklabels():
             label.set_fontproperties(fontProperties)
-        if len(fields) > 1:
+        if self.num_fields > 1:
             self.set_ylabel(units_map[msid_units[fields[0][1]]]+" (%s)" % 
                             msid_unit_labels[msid_units[fields[0][1]]])
         else:
