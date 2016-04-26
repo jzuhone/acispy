@@ -1,3 +1,5 @@
+.. _plotting-data:
+
 Plotting Data in Python
 =======================
 

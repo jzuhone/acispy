@@ -12,6 +12,7 @@ Contents:
    :maxdepth: 1
    
    activating
+   what_data
    loading_data
    plotting_data
    command_line

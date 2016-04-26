@@ -1,3 +1,5 @@
+.. _loading-data:
+
 Loading Data in Python
 ======================
 
