@@ -12,7 +12,17 @@ class MSIDs(object):
 
     @classmethod
     def from_mit_file(cls, filename):
-        data = ascii.read(filename)
+        f = open(filename, 'r')
+        line = f.readline()
+        f.close()
+        if "," in line:
+            delimiter = ","
+        elif "\t" in line:
+            delimiter = "\t"
+        else:
+            delimiter = " "
+        data = ascii.read(filename, guess=False, format='csv',
+                          delimiter=delimiter)
         mins, hours = np.modf(data["SEC"].data/3600.)
         secs, mins = np.modf(mins*60.)
         secs *= 60.0
