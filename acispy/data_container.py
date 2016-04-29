@@ -100,9 +100,13 @@ class DataContainer(object):
         else:
             raise RuntimeError("I cannot parse this file!")
         if state_keys is not None:
-            tstart = secs2date(msids[msids.keys()[1]+"_times"][0])
-            tstop = secs2date(msids[msids.keys()[1]+"_times"][-1])
-            states = States.from_database(state_keys, tstart, tstop)
+            tmin = 1.0e55
+            tmax = -1.0e55
+            for k in msids.keys():
+                if k.endswith("_times"):
+                    tmin = min(msids[k][0], tmin)
+                    tmax = max(msids[k][-1], tmax)
+            states = States.from_database(state_keys, secs2date(tmin), secs2date(tmax))
         return cls(msids, states, None)
 
     @classmethod
