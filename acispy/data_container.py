@@ -143,5 +143,10 @@ class DataContainer(object):
             msids = None
         return cls(msids, states, model)
 
+    @classmethod
+    def fetch_model_from_xija(cls, xija_model, comps):
+        model = Model.from_xija(xija_model, comps)
+        return cls(None, None, model)
+
     def keys(self):
         return self._keys
