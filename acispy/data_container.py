@@ -2,8 +2,9 @@ from acispy.msids import MSIDs
 from acispy.states import States
 from acispy.model import Model
 from Chandra.Time import secs2date
-from acispy.fields import derived_fields, DerivedField
-from acispy.utils import moving_average
+from acispy.fields import derived_fields, create_derived_fields
+
+create_derived_fields()
 
 class DataContainer(object):
     def __init__(self, msids, states, model):
@@ -150,11 +151,3 @@ class DataContainer(object):
             if obj is not None:
                 keys += [(k, f) for f in obj.keys()]
         return keys
-
-    def add_averaged_msid(self, msid, n=5):
-        def _avg(dc):
-            return moving_average(dc["msids", msid], n=n)*dc["msids", msid].unit
-        def _avg_times(dc):
-            return dc["msids", "%s_times" % msid][(n-1)/2:(-n+1)/2]
-        DerivedField("msids", "avg_%s" % msid, _avg)
-        DerivedField("msids", "avg_%s_times" % msid, _avg_times)
