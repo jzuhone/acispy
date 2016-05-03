@@ -1,15 +1,9 @@
 from acispy.utils import get_time, mit_trans_table
 import Ska.engarchive.fetch_sci as fetch
-from astropy.table import Table
 from astropy.io import ascii
 import numpy as np
 import astropy.units as apu
-from acispy.utils import msid_units
-
-def moving_average(a, n=5):
-    shape = a.shape[:-1] + (a.shape[-1] - n + 1, n)
-    strides = a.strides + (a.strides[-1],)
-    return np.mean(np.lib.stride_tricks.as_strided(a, shape=shape, strides=strides), -1)
+from acispy.utils import msid_units, moving_average
 
 class MSIDs(object):
     def __init__(self, times, table):

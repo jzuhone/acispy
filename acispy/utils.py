@@ -191,3 +191,8 @@ def interpolate(times_in, times_out, times_out2=None):
         return ok, (idxs, idxs2)
     else:
         return ok, idxs
+
+def moving_average(a, n=5):
+    shape = a.shape[:-1] + (a.shape[-1] - n + 1, n)
+    strides = a.strides + (a.strides[-1],)
+    return np.mean(np.lib.stride_tricks.as_strided(a, shape=shape, strides=strides), -1)
