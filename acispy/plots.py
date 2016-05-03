@@ -2,8 +2,7 @@ from Ska.Matplotlib import plot_cxctime
 from matplotlib import font_manager
 import matplotlib.pyplot as plt
 from matplotlib.dates import num2date
-from acispy.utils import state_labels, msid_units, \
-    msid_list, msid_unit_labels, interpolate
+from acispy.utils import state_labels, msid_unit_labels, interpolate
 from Chandra.Time import DateTime
 from datetime import datetime
 import numpy as np
@@ -209,10 +208,10 @@ class DatePlot(ACISPlot):
                 x = pointpair(src["tstart"], src["tstop"])
                 y = pointpair(src[fd])
             elif src_name == "msids":
-                x = src[fd+"_times"]
+                x = src[fd+"_times"].value
                 y = src[fd]
             else:
-                x = src["times"]
+                x = src["times"].value
                 y = src[fd]
             if src_name == "model":
                 label = fd.upper()+" Model"
@@ -234,13 +233,13 @@ class DatePlot(ACISPlot):
         for label in self.ax.get_yticklabels():
             label.set_fontproperties(fontProperties)
         if self.num_fields > 1:
-            self.set_ylabel(units_map[msid_units[fields[0][1]]]+" (%s)" % 
-                            msid_unit_labels[msid_units[fields[0][1]]])
+            self.set_ylabel(units_map[str(y.unit)]+" (%s)" %
+                            msid_unit_labels[str(y.unit)])
         else:
             if fd in state_labels:
                 self.set_ylabel(state_labels[fd])
-            elif fd in msid_list:
-                self.set_ylabel(fd.upper()+" (%s)" % msid_unit_labels[msid_units[fd]])
+            elif hasattr(y, 'unit'):
+                self.set_ylabel(fd.upper()+" (%s)" % msid_unit_labels[str(y.unit)])
             else:
                 self.set_ylabel(fd.upper())
         if field2 is not None:
@@ -252,10 +251,10 @@ class DatePlot(ACISPlot):
                 x = pointpair(src2["tstart"], src2["tstop"])
                 y = pointpair(src2[fd2])
             elif src_name2 == "msids":
-                x = src2[fd+"_times"]
+                x = src2[fd+"_times"].value
                 y = src2[fd]
             else:
-                x = src2["times"]
+                x = src2["times"].value
                 y = src2[fd]
             plot_cxctime(x, y, fig=fig, ax=self.ax2, lw=lw,
                          drawstyle=drawstyle, color=color2)
@@ -265,8 +264,8 @@ class DatePlot(ACISPlot):
                 label.set_fontproperties(fontProperties)
             if fd2 in state_labels:
                 self.set_ylabel2(state_labels[fd2])
-            elif fd2 in msid_list:
-                self.set_ylabel(fd2.upper()+" (%s)" % msid_unit_labels[msid_units[fd]])
+            elif hasattr(y, 'unit'):
+                self.set_ylabel(fd2.upper()+" (%s)" % msid_unit_labels[str(y.unit)])
             else:
                 self.set_ylabel(fd2.upper())
 
@@ -570,20 +569,20 @@ class PhasePlot(ACISPlot):
         if x.size != y.size:
             # Interpolate the y-axis to the x-axis times
             if y_src_name == "msids":
-                times_in = y_src[y_fd+"_times"]
+                times_in = y_src[y_fd+"_times"].value
             else:
-                times_in = y_src["times"]
+                times_in = y_src["times"].value
             if x_src_name == "states":
-                tstart_out = x_src["tstart"]
-                tstop_out = x_src["tstop"]
+                tstart_out = x_src["tstart"].value
+                tstop_out = x_src["tstop"].value
                 ok, idxs = interpolate(times_in, tstart_out, tstop_out)
                 x = pointpair(x[ok])
                 y = pointpair(y[idxs[0]], y[idxs[1]])
             else:
                 if x_src_name == "msids":
-                    times_out = x_src[x_fd+"_times"]
+                    times_out = x_src[x_fd+"_times"].value
                 else:
-                    times_out = x_src["times"]
+                    times_out = x_src["times"].value
                 ok, idxs = interpolate(times_in, times_out)
                 x = x[ok]
                 y = y[idxs]
@@ -598,14 +597,14 @@ class PhasePlot(ACISPlot):
             label.set_fontproperties(fontProperties)
         if x_fd in state_labels:
             self.set_xlabel(state_labels[x_fd])
-        elif x_fd in msid_list:
-            self.set_xlabel(xlabel+" (%s)" % msid_unit_labels[msid_units[x_fd]])
+        elif hasattr(x, 'unit'):
+            self.set_xlabel(xlabel+" (%s)" % msid_unit_labels[str(x.unit)])
         else:
             self.set_xlabel(xlabel)
         if y_fd in state_labels:
             self.set_ylabel(state_labels[y_fd])
-        elif y_fd in msid_list:
-            self.set_ylabel(ylabel+" (%s)" % msid_unit_labels[msid_units[y_fd]])
+        elif hasattr(y, 'unit'):
+            self.set_ylabel(ylabel+" (%s)" % msid_unit_labels[str(y.unit)])
         else:
             self.set_ylabel(ylabel)
 

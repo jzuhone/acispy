@@ -3,6 +3,8 @@ from astropy.io import ascii
 from astropy.table import Table
 import Ska.Numpy
 from acispy.utils import get_time
+import astropy.units as apu
+from acispy.utils import msid_units
 
 comp_map = {"1deamzt": "dea",
             "1dpamzt": "dpa",
@@ -10,15 +12,14 @@ comp_map = {"1deamzt": "dea",
             "fptemp_11": "fp"}
 
 class Model(object):
-    def __init__(self, table, keys):
-        self.table = table
-        self._keys = list(keys)
+    def __init__(self, table):
+        self.table = dict((k, v*getattr(apu, msid_units[k])) for k, v in table.items())
 
     @classmethod
     def from_xija(cls, model, components):
         table = dict((k,  model.comp[k].mvals) for k in components)
         table["times"] = model.times
-        return cls(table, components)
+        return cls(table)
 
     @classmethod
     def from_load(cls, load, components):
@@ -34,13 +35,13 @@ class Model(object):
             table = ascii.read(u.text)
             data[comp] = table[table_key].data
         data["times"] = table["time"].data
-        return cls(data, data.keys())
+        return cls(data)
 
     def __getitem__(self, item):
         return self.table[item]
 
     def keys(self):
-        return self._keys
+        return list(self.table.keys())
 
     def get_values(self, time):
         time = get_time(time).secs

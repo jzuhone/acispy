@@ -3,12 +3,25 @@ import Ska.engarchive.fetch_sci as fetch
 from astropy.table import Table
 from astropy.io import ascii
 import numpy as np
+import astropy.units as apu
+from acispy.utils import msid_units
+
+def moving_average(a, n=5):
+    shape = a.shape[:-1] + (a.shape[-1] - n + 1, n)
+    strides = a.strides + (a.strides[-1],)
+    return np.mean(np.lib.stride_tricks.as_strided(a, shape=shape, strides=strides), -1)
 
 class MSIDs(object):
     def __init__(self, times, table):
-        self.table = table
+        self.table = {}
+        for k, v in table.items():
+            if v.dtype.char != 'S':
+                unit = getattr(apu, msid_units.get(k, "dimensionless_unscaled"))
+                self.table[k] = v*unit
+            else:
+                self.table[k] = v
         for k, v in times.items():
-            self.table[k+"_times"] = times[k]
+            self.table[k+"_times"] = times[k]*apu.s
 
     @classmethod
     def from_mit_file(cls, filename):
@@ -75,5 +88,6 @@ class MSIDs(object):
     def keys(self):
         return list(self.table.keys())
 
-    def write_ascii(self, filename):
-        Table(self.table).write(filename, format='ascii')
+    def add_averaged_msid(self, msid, n=5):
+        self.table["avg_%s" % msid] = moving_average(self[msid], n=n)*self[msid].unit
+        self.table["avg_%s_times" % msid] = self["%s_times" % msid][(n-1)/2:(-n+1)/2]

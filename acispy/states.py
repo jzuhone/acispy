@@ -1,16 +1,22 @@
 from astropy.io import ascii
 import requests
-from acispy.utils import get_time, calc_off_nom_rolls
+from acispy.utils import get_time, calc_off_nom_rolls, state_units
 import numpy as np
 from Chandra.cmd_states import fetch_states
 from astropy.table import Table
+import astropy.units as apu
 
 class States(object):
 
     def __init__(self, table):
-        self.table = table
+        self.table = {}
+        for k, v in table.items():
+            if k in state_units:
+                self.table[k] = v*getattr(apu, state_units[k])
+            else:
+                self.table[k] = v
         if set(["q1","q2","q3","q4"]) < set(self.table.keys()):
-            self.table["off_nominal_roll"] = calc_off_nom_rolls(table)
+            self.table["off_nominal_roll"] = calc_off_nom_rolls(table)*apu.deg
 
     @classmethod
     def from_database(cls, states, tstart, tstop):
@@ -35,7 +41,7 @@ class States(object):
         return self.table[item]
 
     def keys(self):
-        return self.table.keys()
+        return list(self.table.keys())
 
     def get_states(self, time):
         time = get_time(time).secs
