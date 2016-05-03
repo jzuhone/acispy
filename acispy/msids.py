@@ -3,7 +3,7 @@ import Ska.engarchive.fetch_sci as fetch
 from astropy.io import ascii
 import numpy as np
 import astropy.units as apu
-from acispy.utils import msid_units, moving_average
+from acispy.utils import msid_units
 
 class MSIDs(object):
     def __init__(self, times, table):
@@ -82,6 +82,3 @@ class MSIDs(object):
     def keys(self):
         return list(self.table.keys())
 
-    def add_averaged_msid(self, msid, n=5):
-        self.table["avg_%s" % msid] = moving_average(self[msid], n=n)*self[msid].unit
-        self.table["avg_%s_times" % msid] = self["%s_times" % msid][(n-1)/2:(-n+1)/2]
