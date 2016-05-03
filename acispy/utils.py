@@ -52,7 +52,8 @@ state_units = {'ra': 'deg',
                'tstop': 's',
                'pitch': 'deg'}
 
-msid_units = {'1deamzt': 'deg_C',
+msid_units = {'times': 's',
+              '1deamzt': 'deg_C',
               '1dpamzt': 'deg_C',
               '1pdeaat': 'deg_C',
               '1pin1at': 'deg_C',

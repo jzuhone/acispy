@@ -1,6 +1,5 @@
 import requests
 from astropy.io import ascii
-from astropy.table import Table
 import Ska.Numpy
 from acispy.utils import get_time
 import astropy.units as apu
@@ -47,10 +46,7 @@ class Model(object):
         time = get_time(time).secs
         values = {}
         for key in self.keys():
-            values[key] = Ska.Numpy.interpolate(self[key], self["times"], [time])
+            values[key] = Ska.Numpy.interpolate(self[key], self["times"].value, [time])
         return values
-
-    def write_ascii(self, filename):
-        Table(self.table).write(filename, format='ascii')
 
 

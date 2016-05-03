@@ -3,7 +3,6 @@ import requests
 from acispy.utils import get_time, calc_off_nom_rolls, state_units
 import numpy as np
 from Chandra.cmd_states import fetch_states
-from astropy.table import Table
 import astropy.units as apu
 
 class States(object):
@@ -47,11 +46,11 @@ class States(object):
         time = get_time(time).secs
         # We have this if we need it
         err = "The time %s is not within the selected time frame!" % time
-        if time < self["tstart"][0]:
+        if time < self["tstart"][0].value:
             raise RuntimeError(err)
-        idx = np.searchsorted(self["tstart"], time)-1
+        idx = np.searchsorted(self["tstart"].value, time)-1
         try:
-            self["tstart"][idx]
+            self["tstart"][idx].value
         except IndexError:
             raise RuntimeError(err)
         state = {}
@@ -62,6 +61,3 @@ class States(object):
     @property
     def current_states(self):
         return self.get_states("now")
-
-    def write_ascii(self, filename):
-        Table(self.table).write(filename, format='ascii')
