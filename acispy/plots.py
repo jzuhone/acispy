@@ -1,20 +1,14 @@
-from Ska.Matplotlib import plot_cxctime
+from Ska.Matplotlib import plot_cxctime, pointpair
 from matplotlib import font_manager
 import matplotlib.pyplot as plt
 from matplotlib.dates import num2date
 from acispy.utils import state_labels, msid_unit_labels, interpolate
 from Chandra.Time import DateTime
 from datetime import datetime
-import numpy as np
 from collections import OrderedDict
 from matplotlib.backends.backend_agg import \
     FigureCanvasAgg
 from io import BytesIO
-
-def pointpair(x, y=None):
-    if y is None:
-        y = x
-    return np.array([x, y]).reshape(-1, order='F')
 
 drawstyles = {"simpos": "steps",
               "pitch": "steps",
@@ -202,17 +196,16 @@ class DatePlot(ACISPlot):
             colors = [colors]
         for i, field in enumerate(fields):
             src_name, fd = field
-            src = getattr(dc, src_name)
             drawstyle = drawstyles.get(fd, None)
             if src_name == "states":
-                x = pointpair(src["tstart"], src["tstop"])
-                y = pointpair(src[fd])
+                x = pointpair(dc["states", "tstart"], dc["states", "tstop"])
+                y = pointpair(dc[field])
             elif src_name == "msids":
-                x = src[fd+"_times"].value
-                y = src[fd]
+                x = dc["msids", fd+"_times"].value
+                y = dc[field]
             else:
-                x = src["times"].value
-                y = src[fd]
+                x = dc[src_name, "times"].value
+                y = dc[field]
             if src_name == "model":
                 label = fd.upper()+" Model"
             else:
@@ -244,18 +237,17 @@ class DatePlot(ACISPlot):
                 self.set_ylabel(fd.upper())
         if field2 is not None:
             src_name2, fd2 = field2
-            src2 = getattr(dc, src_name2)
             self.ax2 = self.ax.twinx()
             drawstyle = drawstyles.get(fd2, None)
             if src_name2 == "states":
-                x = pointpair(src2["tstart"], src2["tstop"])
-                y = pointpair(src2[fd2])
+                x = pointpair(dc["states", "tstart"], dc["states", "tstop"])
+                y = pointpair(dc[field2])
             elif src_name2 == "msids":
-                x = src2[fd+"_times"].value
-                y = src2[fd]
+                x = dc["msids", fd2+"_times"].value
+                y = dc[field2]
             else:
-                x = src2["times"].value
-                y = src2[fd]
+                x = dc[src_name2, "times"].value
+                y = dc[field2]
             plot_cxctime(x, y, fig=fig, ax=self.ax2, lw=lw,
                          drawstyle=drawstyle, color=color2)
             for label in self.ax2.get_xticklabels():
@@ -562,27 +554,25 @@ class PhasePlot(ACISPlot):
         if y_src_name == "states" and x_src_name != "states":
             raise RuntimeError("Cannot plot an MSID or model vs. a state, "
                                "put the state on the x-axis!")
-        x_src = getattr(dc, x_src_name)
-        y_src = getattr(dc, y_src_name)
-        x = x_src[x_fd]
-        y = y_src[y_fd]
+        x = dc[x_field]
+        y = dc[y_field]
         if x.size != y.size:
             # Interpolate the y-axis to the x-axis times
             if y_src_name == "msids":
-                times_in = y_src[y_fd+"_times"].value
+                times_in = dc["msids", y_fd+"_times"].value
             else:
-                times_in = y_src["times"].value
+                times_in = dc[y_src_name, "times"].value
             if x_src_name == "states":
-                tstart_out = x_src["tstart"].value
-                tstop_out = x_src["tstop"].value
+                tstart_out = dc["states", "tstart"].value
+                tstop_out = dc["states", "tstop"].value
                 ok, idxs = interpolate(times_in, tstart_out, tstop_out)
                 x = pointpair(x[ok])
                 y = pointpair(y[idxs[0]], y[idxs[1]])
             else:
                 if x_src_name == "msids":
-                    times_out = x_src[x_fd+"_times"].value
+                    times_out = dc["msids", x_fd+"_times"].value
                 else:
-                    times_out = x_src["times"].value
+                    times_out = dc[x_src_name, "times"].value
                 ok, idxs = interpolate(times_in, times_out)
                 x = x[ok]
                 y = y[idxs]
