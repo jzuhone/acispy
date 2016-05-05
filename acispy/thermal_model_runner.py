@@ -1,6 +1,7 @@
 from __future__ import print_function
 import xija
 import os
+import astropy.units as apu
 from acispy.data_container import DataContainer
 from acispy.plots import DatePlot
 import numpy as np
@@ -18,6 +19,8 @@ class ThermalModelRunner(object):
         self.tstart = tstart
         self.tstop = tstop
         self.states = states
+        if 'dh_heater' not in states:
+            self.states['dh_heater'] = 0
         self.T_init = T_init
         if model_spec is None:
             self.model_spec = os.path.join(model_root, '%s_check' % name, 
@@ -51,3 +54,11 @@ class ThermalModelRunner(object):
         msg = "The limit of %s degrees C will be reached at %s, " % (limit, date)
         msg += "after %g ksec." % ((self.model.times[idx]-start)*0.001)
         print(msg)
+
+    @property
+    def times(self):
+        return self.model.times*apu.s
+
+    @property
+    def mvals(self):
+        return self.model.mvals[0]*apu.deg_C
