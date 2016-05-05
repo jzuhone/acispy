@@ -198,7 +198,8 @@ class DatePlot(ACISPlot):
             src_name, fd = field
             drawstyle = drawstyles.get(fd, None)
             if src_name == "states":
-                x = pointpair(dc["states", "tstart"], dc["states", "tstop"])
+                tstart, tstop = dc.times(*field)
+                x = pointpair(tstart.value, tstop.value)
                 y = pointpair(dc[field])
             else:
                 x = dc.times(*field).value
@@ -237,7 +238,8 @@ class DatePlot(ACISPlot):
             self.ax2 = self.ax.twinx()
             drawstyle = drawstyles.get(fd2, None)
             if src_name2 == "states":
-                x = pointpair(dc["states", "tstart"], dc["states", "tstop"])
+                tstart, tstop = dc.times(*field2)
+                x = pointpair(tstart.value, tstop.value)
                 y = pointpair(dc[field2])
             else:
                 x = dc.times(*field2).value
@@ -552,15 +554,14 @@ class PhasePlot(ACISPlot):
         y = dc[y_field]
         if x.size != y.size:
             # Interpolate the y-axis to the x-axis times
-            times_in = dc.times(y_field).value
+            times_in = dc.times(*y_field).value
             if x_src_name == "states":
-                tstart_out = dc["states", "tstart"].value
-                tstop_out = dc["states", "tstop"].value
-                ok, idxs = interpolate(times_in, tstart_out, tstop_out)
+                tstart_out, tstop_out = dc.times(*x_field)
+                ok, idxs = interpolate(times_in, tstart_out.value, tstop_out.value)
                 x = pointpair(x[ok])
                 y = pointpair(y[idxs[0]], y[idxs[1]])
             else:
-                times_out = dc.times(x_field).value
+                times_out = dc.times(*x_field).value
                 ok, idxs = interpolate(times_in, times_out)
                 x = x[ok]
                 y = y[idxs]
