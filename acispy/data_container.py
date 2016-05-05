@@ -16,6 +16,7 @@ class DataContainer(object):
 
     def __getitem__(self, item):
         if item in derived_fields:
+            self._check_derived_field(item)
             return derived_fields[item](self)
         src = getattr(self, item[0])
         return src[item[1]]
