@@ -32,6 +32,14 @@ class DataContainer(object):
                 raise RuntimeError("Derived field %s needs field %s, but you didn't load it!" % (item, dep))
 
     def times(self, type, name):
+        """
+        Return the timing information in seconds from the beginning of the mission
+        for a field given its *type* and *name*.
+
+        Examples
+        --------
+        >>> dc.times("msids", "1deamzt")
+        """
         if (type, name) in derived_fields:
             df = derived_fields[type, name]
             return df.time_func(self)
@@ -40,6 +48,13 @@ class DataContainer(object):
             return src.times[name]
 
     def dates(self, type, name):
+        """
+        Return the timing information in date and time for a field given its *type* and *name*.
+
+        Examples
+        --------
+        >>> dc.dates("states", "pitch")
+        """
         times = self.times(type, name)
         if type == 'states':
             return (secs2date(times[0]), secs2date(times[1]))

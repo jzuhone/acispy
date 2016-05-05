@@ -172,7 +172,7 @@ will return the timing data as date/time strings:
 
     print dc.dates('msids', '1deamzt')
 
- .. code-block:: pycon
+.. code-block:: pycon
 
     array(['2016:091:01:00:00.222', '2016:091:01:00:33.022',
            '2016:091:01:01:05.822', ..., '2016:097:03:29:51.452',
