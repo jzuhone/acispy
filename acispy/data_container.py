@@ -3,6 +3,7 @@ from acispy.states import States
 from acispy.model import Model
 from Chandra.Time import secs2date
 from acispy.fields import derived_fields, create_derived_fields
+from acispy.data_collection import DataCollection
 
 create_derived_fields()
 
@@ -11,18 +12,23 @@ class DataContainer(object):
         self.msids = msids
         self.states = states
         self.model = model
+        self._field_list = []
 
     def __getitem__(self, item):
         if item in derived_fields:
             return derived_fields[item](self)
         src = getattr(self, item[0])
-        if src is not None:
-            try:
-                return src[item[1]]
-            except KeyError:
-                raise KeyError(item)
-        else:
-            raise KeyError(item)
+        return src[item[1]]
+
+    def __contains__(self, item):
+        src = getattr(self, item[0])
+        return item[1] in src
+
+    def _check_derived_field(self, item):
+        deps = derived_fields[item].get_deps()
+        for dep in deps:
+            if dep not in self:
+                raise RuntimeError("Derived field %s needs field %s, but you didn't load it!" % (item, dep))
 
     @classmethod
     def fetch_from_database(cls, tstart, tstop, msid_keys=None, state_keys=None, 
@@ -55,14 +61,17 @@ class DataContainer(object):
         >>> dc = DataContainer.fetch_from_database(tstart, tstop, msid_keys=msids,
         ...                                        state_keys=states)
         """
-        msids = None
-        states = None
         if msid_keys is not None:
             msids = MSIDs.from_database(msid_keys, tstart, tstop=tstop, 
                                        filter_bad=filter_bad, stat=stat)
+        else:
+            msids = DataCollection({})
         if state_keys is not None:
             states = States.from_database(state_keys, tstart, tstop)
-        return cls(msids, states, None)
+        else:
+            states = DataCollection({})
+        model = DataCollection({})
+        return cls(msids, states, model)
 
     @classmethod
     def fetch_from_tracelog(cls, filename, state_keys=None):
@@ -84,7 +93,7 @@ class DataContainer(object):
         >>> dc = DataContainer.fetch_from_tracelog("acisENG10d_00985114479.70.tl",
         ...                                        state_keys=states)
         """
-        states = None
+        states = DataCollection({})
         # Figure out what kind of file this is
         f = open(filename, "r")
         line = f.readline()
@@ -103,7 +112,8 @@ class DataContainer(object):
                     tmin = min(msids[k][0], tmin)
                     tmax = max(msids[k][-1], tmax)
             states = States.from_database(state_keys, secs2date(tmin), secs2date(tmax))
-        return cls(msids, states, None)
+        model = DataCollection({})
+        return cls(msids, states, model)
 
     @classmethod
     def fetch_model_from_load(cls, load, comps, get_msids=False):
@@ -136,18 +146,21 @@ class DataContainer(object):
             msids = MSIDs.from_database(comps, tstart, tstop=tstop,
                                         filter_bad=True)
         else:
-            msids = None
+            msids = DataCollection({})
         return cls(msids, states, model)
 
     @classmethod
     def fetch_model_from_xija(cls, xija_model, comps):
         model = Model.from_xija(xija_model, comps)
-        return cls(None, None, model)
+        msids = DataCollection({})
+        states = DataCollection({})
+        return cls(msids, states, model)
 
-    def keys(self):
-        keys = []
-        for k in ["msids", "states", "model"]:
-            obj = getattr(self, k)
-            if obj is not None:
-                keys += [(k, f) for f in obj.keys()]
-        return keys
+    @property
+    def field_list(self):
+        if len(self._field_list) == 0:
+            for k in ["msids", "states", "model"]:
+                obj = getattr(self, k)
+                self._field_list += [(k, f) for f in obj.keys()]
+        return self._field_list
+

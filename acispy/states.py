@@ -4,8 +4,9 @@ from acispy.utils import get_time, calc_off_nom_rolls, state_units
 import numpy as np
 from Chandra.cmd_states import fetch_states
 import astropy.units as apu
+from acispy.data_collection import DataCollection
 
-class States(object):
+class States(DataCollection):
 
     def __init__(self, table):
         self.table = {}
@@ -35,12 +36,6 @@ class States(object):
         t = ascii.read(u.text)
         table = dict((k, t[k].data) for k in t.keys())
         return cls(table)
-
-    def __getitem__(self, item):
-        return self.table[item]
-
-    def keys(self):
-        return list(self.table.keys())
 
     def get_states(self, time):
         time = get_time(time).secs

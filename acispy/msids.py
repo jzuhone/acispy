@@ -4,8 +4,9 @@ from astropy.io import ascii
 import numpy as np
 import astropy.units as apu
 from acispy.utils import msid_units
+from acispy.data_collection import DataCollection
 
-class MSIDs(object):
+class MSIDs(DataCollection):
     def __init__(self, times, table):
         self.table = {}
         for k, v in table.items():
@@ -75,10 +76,4 @@ class MSIDs(object):
         table = dict((k, data[k].vals) for k in data.keys())
         times = dict((k, get_time(data[k].times).secs) for k in data.keys())
         return cls(times, table)
-
-    def __getitem__(self, item):
-        return self.table[item]
-
-    def keys(self):
-        return list(self.table.keys())
 

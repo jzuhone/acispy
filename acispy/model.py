@@ -4,13 +4,14 @@ import Ska.Numpy
 from acispy.utils import get_time
 import astropy.units as apu
 from acispy.utils import msid_units
+from acispy.data_collection import DataCollection
 
 comp_map = {"1deamzt": "dea",
             "1dpamzt": "dpa",
             "1pdeaat": "psmc",
             "fptemp_11": "fp"}
 
-class Model(object):
+class Model(DataCollection):
     def __init__(self, table):
         self.table = dict((k, v*getattr(apu, msid_units[k])) for k, v in table.items())
 
@@ -35,12 +36,6 @@ class Model(object):
             data[comp] = table[table_key].data
         data["times"] = table["time"].data
         return cls(data)
-
-    def __getitem__(self, item):
-        return self.table[item]
-
-    def keys(self):
-        return list(self.table.keys())
 
     def get_values(self, time):
         time = get_time(time).secs
