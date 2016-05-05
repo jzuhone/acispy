@@ -12,7 +12,7 @@ class States(DataCollection):
         self.table = {}
         self.times = {}
         for k, v in table.items():
-            if k not in ["tstart","tstop"]:
+            if k not in ["tstart","tstop","datestart","datestop"]:
                 if k in state_units:
                     self.table[k] = v*getattr(apu, state_units[k])
                 else:

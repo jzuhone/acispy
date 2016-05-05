@@ -39,6 +39,13 @@ class DataContainer(object):
             src = getattr(self, type)
             return src.times[name]
 
+    def dates(self, type, name):
+        times = self.times(type, name)
+        if type == 'states':
+            return (secs2date(times[0]), secs2date(times[1]))
+        else:
+            return secs2date(times)
+
     @classmethod
     def fetch_from_database(cls, tstart, tstop, msid_keys=None, state_keys=None, 
                             filter_bad=True, stat=None):
