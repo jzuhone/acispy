@@ -253,9 +253,9 @@ class DatePlot(ACISPlot):
             if fd2 in state_labels:
                 self.set_ylabel2(state_labels[fd2])
             elif hasattr(y, 'unit'):
-                self.set_ylabel(fd2.upper()+" (%s)" % msid_unit_labels[str(y.unit)])
+                self.set_ylabel2(fd2.upper()+" (%s)" % msid_unit_labels[str(y.unit)])
             else:
-                self.set_ylabel(fd2.upper())
+                self.set_ylabel2(fd2.upper())
 
     def set_xlim(self, xmin, xmax):
         """
