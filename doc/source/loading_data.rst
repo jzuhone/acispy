@@ -85,7 +85,9 @@ type of data desired and its name, for example:
     dc["msids", "fptemp_11"] # gives you the "fptemp_11" pseudo-MSID
     dc["model", "1deamzt"] # gives you the "1deamzt" model component
 
-We'll use our example from before to fill up a :class:`~acispy.data_container.DataContainer`:
+A ``(type, name)`` pairing and its associated data are referred to as a "field". We'll
+encounter examples of :ref:`derived-fields` later, which are derivations of new fields from
+existing ones. For now, we'll use our example from before to fill up a :class:`~acispy.data_container.DataContainer`:
 
 .. code-block:: python
 
@@ -119,13 +121,60 @@ result in the following output (or something similar):
     [ 22.14923096  22.14923096  22.14923096 ...,  20.17999268  
       20.17999268  20.17999268] deg_C
 
+To see what fields are available from the :class:`~acispy.data_container.DataContainer`,
+check the `field_list` attribute:
+
+.. code-block:: python
+
+    print dc.field_list
+
+.. code-block:: pycon
+
+    [('msids', '1deamzt'),
+     ('msids', '1dpamzt'),
+     ('states', 'q1'),
+     ('states', 'q3'),
+     ('states', 'q2'),
+     ('states', 'q4'),
+     ('states', 'off_nominal_roll'),
+     ('states', 'pitch'),
+     ('states', 'ccd_count')]
+
 Timing Information
 ------------------
 
 The timing data for each model component, MSID, and state are stored in the
-:class:`~acispy.data_container.DataContainer` as well. For model components 
-and commanded states, the times are stored in ``("model", "times")`` and 
-``("states", "times")``, respectively. For MSIDs, since the times can vary 
-from MSID to MSID, the times are stored for each one separately. For example, 
-for the 1PIN1AT MSID, the time would be stored in ``("msids", "1pin1at_times")``. 
-All times are stored in seconds from the start of the mission. 
+:class:`~acispy.data_container.DataContainer` as well. Times are in units of
+seconds from the beginning of the mission. These can be obtained using the
+:meth:`~acispy.data_container.DataContainer.times` method:
+
+.. code-block:: python
+
+    print dc.times('msids', '1deamzt')
+
+.. code-block:: pycon
+
+    [  5.75773267e+08   5.75773300e+08   5.75773333e+08 ...,   5.76300659e+08   5.76300691e+08   5.76300724e+08] s
+
+Since commanded states have start times and stop times, a tuple of time arrays is
+returned in this case:
+
+.. code-block:: python
+
+    times = dc.times('states', 'pitch')
+    times[0] # Gives you the start times
+    times[1] # Gives you the stop times
+
+Similarly, calling the :meth:`~acispy.data_container.DataContainer.dates` method
+will return the timing data as date/time strings:
+
+.. code-block:: python
+
+    print dc.dates('msids', '1deamzt')
+
+ .. code-block:: pycon
+
+    array(['2016:091:01:00:00.222', '2016:091:01:00:33.022',
+           '2016:091:01:01:05.822', ..., '2016:097:03:29:51.452',
+           '2016:097:03:30:24.252', '2016:097:03:30:57.052'],
+          dtype='|S21')
