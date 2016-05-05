@@ -31,6 +31,14 @@ class DataContainer(object):
             if dep not in self:
                 raise RuntimeError("Derived field %s needs field %s, but you didn't load it!" % (item, dep))
 
+    def times(self, type, name):
+        if (type, name) in derived_fields:
+            df = derived_fields[type, name]
+            return df.time_func(self)
+        else:
+            src = getattr(self, type)
+            return src.times[name]
+
     @classmethod
     def fetch_from_database(cls, tstart, tstop, msid_keys=None, state_keys=None, 
                             filter_bad=True, stat=None):
@@ -66,12 +74,12 @@ class DataContainer(object):
             msids = MSIDs.from_database(msid_keys, tstart, tstop=tstop, 
                                        filter_bad=filter_bad, stat=stat)
         else:
-            msids = DataCollection({})
+            msids = DataCollection({}, {})
         if state_keys is not None:
             states = States.from_database(state_keys, tstart, tstop)
         else:
-            states = DataCollection({})
-        model = DataCollection({})
+            states = DataCollection({}, {})
+        model = DataCollection({}, {})
         return cls(msids, states, model)
 
     @classmethod
@@ -94,7 +102,7 @@ class DataContainer(object):
         >>> dc = DataContainer.fetch_from_tracelog("acisENG10d_00985114479.70.tl",
         ...                                        state_keys=states)
         """
-        states = DataCollection({})
+        states = DataCollection({}, {})
         # Figure out what kind of file this is
         f = open(filename, "r")
         line = f.readline()
@@ -113,7 +121,7 @@ class DataContainer(object):
                     tmin = min(msids[k][0], tmin)
                     tmax = max(msids[k][-1], tmax)
             states = States.from_database(state_keys, secs2date(tmin), secs2date(tmax))
-        model = DataCollection({})
+        model = DataCollection({}, {})
         return cls(msids, states, model)
 
     @classmethod
@@ -147,14 +155,14 @@ class DataContainer(object):
             msids = MSIDs.from_database(comps, tstart, tstop=tstop,
                                         filter_bad=True)
         else:
-            msids = DataCollection({})
+            msids = DataCollection({}, {})
         return cls(msids, states, model)
 
     @classmethod
     def fetch_model_from_xija(cls, xija_model, comps):
         model = Model.from_xija(xija_model, comps)
-        msids = DataCollection({})
-        states = DataCollection({})
+        msids = DataCollection({}, {})
+        states = DataCollection({}, {})
         return cls(msids, states, model)
 
     @property

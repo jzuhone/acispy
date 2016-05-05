@@ -200,11 +200,8 @@ class DatePlot(ACISPlot):
             if src_name == "states":
                 x = pointpair(dc["states", "tstart"], dc["states", "tstop"])
                 y = pointpair(dc[field])
-            elif src_name == "msids":
-                x = dc["msids", fd+"_times"].value
-                y = dc[field]
             else:
-                x = dc[src_name, "times"].value
+                x = dc.times(*field).value
                 y = dc[field]
             if src_name == "model":
                 label = fd.upper()+" Model"
@@ -242,11 +239,8 @@ class DatePlot(ACISPlot):
             if src_name2 == "states":
                 x = pointpair(dc["states", "tstart"], dc["states", "tstop"])
                 y = pointpair(dc[field2])
-            elif src_name2 == "msids":
-                x = dc["msids", fd2+"_times"].value
-                y = dc[field2]
             else:
-                x = dc[src_name2, "times"].value
+                x = dc.times(*field2).value
                 y = dc[field2]
             plot_cxctime(x, y, fig=fig, ax=self.ax2, lw=lw,
                          drawstyle=drawstyle, color=color2)
@@ -558,10 +552,7 @@ class PhasePlot(ACISPlot):
         y = dc[y_field]
         if x.size != y.size:
             # Interpolate the y-axis to the x-axis times
-            if y_src_name == "msids":
-                times_in = dc["msids", y_fd+"_times"].value
-            else:
-                times_in = dc[y_src_name, "times"].value
+            times_in = dc.times(y_field).value
             if x_src_name == "states":
                 tstart_out = dc["states", "tstart"].value
                 tstop_out = dc["states", "tstop"].value
@@ -569,10 +560,7 @@ class PhasePlot(ACISPlot):
                 x = pointpair(x[ok])
                 y = pointpair(y[idxs[0]], y[idxs[1]])
             else:
-                if x_src_name == "msids":
-                    times_out = dc["msids", x_fd+"_times"].value
-                else:
-                    times_out = dc[x_src_name, "times"].value
+                times_out = dc.times(x_field).value
                 ok, idxs = interpolate(times_in, times_out)
                 x = x[ok]
                 y = y[idxs]

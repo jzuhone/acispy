@@ -7,7 +7,7 @@ from acispy.utils import msid_units
 from acispy.data_collection import DataCollection
 
 class MSIDs(DataCollection):
-    def __init__(self, times, table):
+    def __init__(self, table, times):
         self.table = {}
         for k, v in table.items():
             if v.dtype.char != 'S':
@@ -15,8 +15,7 @@ class MSIDs(DataCollection):
                 self.table[k] = v*unit
             else:
                 self.table[k] = v
-        for k, v in times.items():
-            self.table[k+"_times"] = times[k]*apu.s
+        self.times = times
 
     @classmethod
     def from_mit_file(cls, filename):
@@ -47,8 +46,8 @@ class MSIDs(DataCollection):
                 else:
                     key = k.lower()
                 table[key] = data[k].data
-                times[key] = get_time(time_arr).secs
-        return cls(times, table)
+                times[key] = get_time(time_arr).secs*apu.s
+        return cls(table, times)
 
     @classmethod
     def from_tracelog(cls, filename):
@@ -65,8 +64,8 @@ class MSIDs(DataCollection):
         # Convert times in the TIME column to Chandra 1998 time
         data['time'] -= 410227200.
         table = dict((k, data[k]) for k in data.dtype.names)
-        times = dict((k.lower(), data["time"]) for k in header if k != "TIME")
-        return cls(times, table)
+        times = dict((k.lower(), data["time"]*apu.s) for k in header if k != "TIME")
+        return cls(table, times)
 
     @classmethod
     def from_database(cls, msids, tstart, tstop=None, filter_bad=False,
@@ -74,6 +73,6 @@ class MSIDs(DataCollection):
         data = fetch.MSIDset(msids, tstart, stop=tstop, filter_bad=filter_bad,
                              stat=None)
         table = dict((k, data[k].vals) for k in data.keys())
-        times = dict((k, get_time(data[k].times).secs) for k in data.keys())
-        return cls(times, table)
+        times = dict((k, get_time(data[k].times).secs*apu.s) for k in data.keys())
+        return cls(table, times)
 

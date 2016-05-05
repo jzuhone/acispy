@@ -17,6 +17,7 @@ class States(DataCollection):
                 self.table[k] = v
         if set(["q1","q2","q3","q4"]) < set(self.table.keys()):
             self.table["off_nominal_roll"] = calc_off_nom_rolls(table)*apu.deg
+        self.times = np.append(table["tstart"], table["tstop"][-1])*apu.s
 
     @classmethod
     def from_database(cls, states, tstart, tstop):

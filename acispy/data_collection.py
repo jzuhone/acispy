@@ -1,6 +1,7 @@
 class DataCollection(object):
-    def __init__(self, table):
+    def __init__(self, table, times):
         self.table = table
+        self.times = times
 
     def __getitem__(self, item):
         return self.table[item]
