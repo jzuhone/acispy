@@ -60,5 +60,9 @@ class ThermalModelRunner(object):
         return self.model.times*apu.s
 
     @property
+    def dates(self):
+        return secs2date(self.model.times)
+
+    @property
     def mvals(self):
         return self.model.mvals[0]*apu.deg_C
