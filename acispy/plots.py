@@ -9,6 +9,7 @@ from collections import OrderedDict
 from matplotlib.backends.backend_agg import \
     FigureCanvasAgg
 from io import BytesIO
+import numpy as np
 
 drawstyles = {"simpos": "steps",
               "pitch": "steps",
@@ -557,9 +558,10 @@ class PhasePlot(ACISPlot):
             times_in = dc.times(*y_field).value
             if x_src_name == "states":
                 tstart_out, tstop_out = dc.times(*x_field)
-                ok, idxs = interpolate(times_in, tstart_out.value, tstop_out.value)
-                x = pointpair(x[ok])
-                y = pointpair(y[idxs[0]], y[idxs[1]])
+                times_out = np.append(tstart_out.value, tstop_out.value[-1])
+                ok, idxs = interpolate(times_in, times_out)
+                x = np.append(x, x[-1])[ok]
+                y = y[idxs]
             else:
                 times_out = dc.times(*x_field).value
                 ok, idxs = interpolate(times_in, times_out)
