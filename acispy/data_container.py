@@ -22,6 +22,8 @@ class DataContainer(object):
         return src[item[1]]
 
     def __contains__(self, item):
+        if item in derived_fields:
+            return True
         src = getattr(self, item[0])
         return item[1] in src
 
