@@ -13,11 +13,12 @@ import numpy as np
 
 drawstyles = {"simpos": "steps",
               "pitch": "steps",
-              "ccd_count": "steps"}
+              "ccd_count": "steps",
+              "fmt": "steps"}
 
 units_map = {"deg_C": "Temperature",
-            "V": "Voltage",
-            "A": "Current"}
+             "V": "Voltage",
+             "A": "Current"}
 
 default_colors = ["b","r","g","k"]
 
