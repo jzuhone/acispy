@@ -176,6 +176,15 @@ unit_labels = {"V": 'V',
                "s": "s",
                "deg": "deg"}
 
+def get_display_name(type, name):
+    if type == "model":
+        display_name = name.upper() + " Model"
+    elif type == "states":
+        display_name = state_labels[name]
+    else:
+        display_name = name.upper()
+    return display_name
+
 def interpolate(times_in, times_out):
     ok = (times_out >= times_in[0]) & (times_out <= times_in[-1])
     times_out = times_out[ok]

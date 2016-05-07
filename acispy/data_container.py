@@ -5,7 +5,7 @@ from Chandra.Time import secs2date
 from acispy.fields import derived_fields, \
     create_derived_fields, DerivedField
 from acispy.data_collection import DataCollection
-from acispy.utils import unit_table, state_labels
+from acispy.utils import unit_table, get_display_name
 
 create_derived_fields()
 
@@ -26,12 +26,7 @@ class DataContainer(object):
             for name in obj.keys():
                 func = make_field_func(type, name)
                 unit = unit_table[type].get(name, '')
-                if type == "model":
-                    display_name = name.upper() + " Model"
-                elif type == "states":
-                    display_name = state_labels[name]
-                else:
-                    display_name = name.upper()
+                display_name = get_display_name(type, name)
                 df = DerivedField(type, name, func, [], unit,
                                   display_name=display_name)
                 self.fields[type, name] = df

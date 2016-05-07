@@ -1,5 +1,7 @@
 import numpy as np
-from acispy.utils import moving_average
+from acispy.utils import moving_average, \
+    get_display_name, interpolate, \
+    unit_table
 
 derived_fields = {}
 
@@ -31,19 +33,33 @@ class DerivedField(object):
     def get_deps(self):
         return self.deps
 
+def add_derived_field(type, name, function, deps, units, time_func=None,
+                      display_name=None):
+    df = DerivedField(type, name, function, deps, units, time_func=time_func,
+                      display_name=display_name)
+    derived_fields[type, name] = df
+
 def add_averaged_field(type, name, n=5):
     def _avg(dc):
         return moving_average(dc[type, name], n=n)*dc[type, name].unit
     def _avg_times(dc):
         return dc.times(type, name)[(n-1)/2:(-n+1)/2]
-    add_derived_field(type, "avg_%s" % name, _avg, [(type, name)],
-                      time_func=_avg_times, display_name="Average %s" % name)
+    display_name = "Average %s" % get_display_name(type, name)
+    units = unit_table[type].get(name, '')
+    add_derived_field(type, "avg_%s" % name, _avg, [(type, name)], units,
+                      time_func=_avg_times, display_name=display_name)
 
-def add_derived_field(type, name, function, deps, units, time_func=None, 
-                      display_name=None):
-    df = DerivedField(type, name, function, deps, units, time_func=time_func,
-                      display_name=display_name)
-    derived_fields[type, name] = df
+def add_interpolated_field(type, name, times):
+    def _interp(dc):
+        times_in = dc.times(type, name).value
+        ok, idxs = interpolate(times_in, times)
+        return dc[type, name][idxs]
+    def _interp_times(dc):
+        return times
+    units = unit_table[type].get(name, '')
+    add_derived_field(type, "interp_%s" % name, _interp, [(type, name)],
+                      units, time_func=_interp_times,
+                      display_name=get_display_name(type, name))
 
 def create_derived_fields():
 
