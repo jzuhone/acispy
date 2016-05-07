@@ -9,6 +9,23 @@ from acispy.utils import unit_table, get_display_name
 
 create_derived_fields()
 
+class FieldContainer(object):
+    def __init__(self):
+        self.dict = {}
+
+    def __setitem__(self, item, value):
+        self.dict[item] = value
+
+    def __getitem__(self, item):
+        if item in derived_fields:
+            return derived_fields[item]
+        else:
+            return self.dict[item]
+        raise KeyError(item)
+
+    def __contains__(self, item):
+        return item in self.dict or item in derived_fields
+
 def make_field_func(type, name):
     def _field_func(dc):
         obj = getattr(dc, type)
@@ -20,7 +37,8 @@ class DataContainer(object):
         self.msids = msids
         self.states = states
         self.model = model
-        self.fields = {}
+        self.fields = FieldContainer()
+        self.field_list = []
         for type in ["msids", "states", "model"]:
             obj = getattr(self, type)
             for name in obj.keys():
@@ -30,20 +48,17 @@ class DataContainer(object):
                 df = DerivedField(type, name, func, [], unit,
                                   display_name=display_name)
                 self.fields[type, name] = df
+                self.field_list.append((type, name))
 
     def __getitem__(self, item):
-        if item in derived_fields:
-            self._check_derived_field(item)
-            return derived_fields[item](self)
-        if item in self.fields:
-            return self.fields[item](self)
-        raise KeyError(item)
+        self._check_derived_field(item)
+        return self.fields[item](self)
 
     def __contains__(self, item):
-        return item in derived_fields or item in self.fields
+        return item in self.fields
 
     def _check_derived_field(self, item):
-        deps = derived_fields[item].get_deps()
+        deps = self.fields[item].get_deps()
         for dep in deps:
             if dep not in self:
                 raise RuntimeError("Derived field %s needs field %s, but you didn't load it!" % (item, dep))
@@ -203,7 +218,3 @@ class DataContainer(object):
         msids = DataCollection({}, {})
         states = DataCollection({}, {})
         return cls(msids, states, model)
-    
-    @property
-    def field_list(self):
-        return list(self.fields.keys())
