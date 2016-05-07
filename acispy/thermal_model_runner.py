@@ -29,7 +29,8 @@ class ThermalModelRunner(object):
             self.model_spec = model_spec
         self.model = xija.XijaModel(self.name, start=self.tstart,
                                     stop=self.tstop, model_spec=self.model_spec)
-        self.model.comp['eclipse'].set_data(False)
+        if 'eclipse' in self.model.comp:
+            self.model.comp['eclipse'].set_data(False)
         self.model.comp[msid_dict[name]].set_data(self.T_init)
         self.model.comp['sim_z'].set_data(self.states['simpos'])
         if 'roll' in self.model.comp:
@@ -37,6 +38,8 @@ class ThermalModelRunner(object):
         if 'dpa_power' in self.model.comp:
             self.model.comp['dpa_power'].set_data(0.0) # This is just a hack, we're not 
                                                        # really setting the power to zero.
+        if 'dh_heater' in self.model.comp:
+            self.model.comp['dh_heater'].set_data(self.states['dh_heater'])
         for st in ('ccd_count', 'fep_count', 'vid_board', 'clocking', 'pitch'):
             self.model.comp[st].set_data(states[st])
         self.model.make()
