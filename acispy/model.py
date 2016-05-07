@@ -19,7 +19,7 @@ class Model(DataCollection):
     @classmethod
     def from_xija(cls, model, components):
         table = dict((k, model.comp[k].mvals*getattr(apu, msid_units[k])) for k in components)
-        times = dict((k, model.times) for k in components)
+        times = dict((k, model.times*apu.s) for k in components)
         return cls(table, times)
 
     @classmethod
@@ -36,8 +36,8 @@ class Model(DataCollection):
             u = requests.get(url)
             table = ascii.read(u.text)
             data[comp] = table[table_key].data*getattr(apu, msid_units[comp])
-            times[comp] = table["time"].data
-        return cls(data)
+            times[comp] = table["time"].data*apu.s
+        return cls(data, times)
 
     def get_values(self, time):
         time = get_time(time).secs

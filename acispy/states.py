@@ -45,11 +45,11 @@ class States(DataCollection):
         time = get_time(time).secs
         # We have this if we need it
         err = "The time %s is not within the selected time frame!" % time
-        if time < self.times["datestart"][0][0].value:
+        if time < self.times[self.keys()[0]][0][0].value:
             raise RuntimeError(err)
-        idx = np.searchsorted(self.times["datestart"][0].value, time)-1
+        idx = np.searchsorted(self.times[self.keys()[0]][0].value, time)-1
         try:
-            self.times["datestart"][0][idx].value
+            self.times[self.keys()[0]][0][idx]
         except IndexError:
             raise RuntimeError(err)
         state = {}
