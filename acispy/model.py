@@ -2,7 +2,7 @@ import requests
 from astropy.io import ascii
 import Ska.Numpy
 from acispy.utils import get_time
-import astropy.units as apu
+from astropy.units import Quantity
 from acispy.utils import msid_units
 from acispy.data_collection import DataCollection
 
@@ -18,8 +18,8 @@ class Model(DataCollection):
 
     @classmethod
     def from_xija(cls, model, components):
-        table = dict((k, model.comp[k].mvals*getattr(apu, msid_units[k])) for k in components)
-        times = dict((k, model.times*apu.s) for k in components)
+        table = dict((k, Quantity(model.comp[k].mvals, msid_units[k])) for k in components)
+        times = dict((k, Quantity(model.times, 's')) for k in components)
         return cls(table, times)
 
     @classmethod
@@ -35,16 +35,17 @@ class Model(DataCollection):
             url += "%s/ofls%s/temperatures.dat" % (load[:-1].upper(), load[-1].lower())
             u = requests.get(url)
             table = ascii.read(u.text)
-            data[comp] = table[table_key].data*getattr(apu, msid_units[comp])
-            times[comp] = table["time"].data*apu.s
+            data[comp] = Quantity(table[table_key].data, msid_units[comp])
+            times[comp] = Quantity(table["time"], 's')
         return cls(data, times)
 
     def get_values(self, time):
         time = get_time(time).secs
         values = {}
         for key in self.keys():
-            values[key] = Ska.Numpy.interpolate(self[key], self.times[key].value, [time],
-                                                method='linear')
+            values[key] = Quantity(Ska.Numpy.interpolate(self[key], 
+                                                         self.times[key].value, [time],
+                                                         method='linear'), msid_units[key])
         return values
 
 

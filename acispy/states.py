@@ -3,7 +3,7 @@ import requests
 from acispy.utils import get_time, calc_off_nom_rolls, state_units
 import numpy as np
 from Chandra.cmd_states import fetch_states
-import astropy.units as apu
+from astropy.units import Quantity
 from acispy.data_collection import DataCollection
 
 class States(DataCollection):
@@ -14,13 +14,15 @@ class States(DataCollection):
         for k, v in table.items():
             if k not in ["tstart","tstop","datestart","datestop"]:
                 if k in state_units:
-                    self.table[k] = v*getattr(apu, state_units[k])
+                    self.table[k] = Quantity(v, state_units[k])
                 else:
                     self.table[k] = v
-                self.times[k] = (table["tstart"]*apu.s, table["tstop"]*apu.s)
+                self.times[k] = (Quantity(table["tstart"], 's'), 
+                                 Quantity(table["tstop"], 's'))
         if set(["q1","q2","q3","q4"]) < set(self.table.keys()):
-            self.table["off_nominal_roll"] = calc_off_nom_rolls(table)*apu.deg
-            self.times["off_nominal_roll"] = (table["tstart"]*apu.s, table["tstop"]*apu.s)
+            self.table["off_nominal_roll"] = Quantity(calc_off_nom_rolls(table), 'deg')
+            self.times["off_nominal_roll"] = (Quantity(table["tstart"], 's'), 
+                                              Quantity(table["tstop"], 's'))
 
     @classmethod
     def from_database(cls, states, tstart, tstop):

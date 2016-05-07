@@ -2,7 +2,7 @@ import numpy as np
 import Ska.Numpy
 from acispy.utils import moving_average, \
     get_display_name, unit_table
-import astropy.units as apu
+from astropy.units import Quantity
 
 derived_fields = {}
 
@@ -55,10 +55,11 @@ def add_interpolated_field(type, name, times):
     units = unit_table[type].get(name, '')
     def _interp(dc):
         times_in = dc.times(type, name).value
-        return Ska.Numpy.interpolate(dc[type, name], times_in, times_out,
-                                     method='linear')
+        return Quantity(Ska.Numpy.interpolate(dc[type, name], 
+                                              times_in, times_out,
+                                              method='linear'), units)
     def _interp_times(dc):
-        return times_out*apu.s
+        return Quantity(times_out, 's')
     add_derived_field(type, "interp_%s" % name, _interp, [(type, name)],
                       units, time_func=_interp_times,
                       display_name=get_display_name(type, name))

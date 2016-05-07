@@ -2,7 +2,7 @@ from acispy.utils import get_time, mit_trans_table
 import Ska.engarchive.fetch_sci as fetch
 from astropy.io import ascii
 import numpy as np
-import astropy.units as apu
+from astropy.units import Quantity
 from acispy.utils import msid_units
 from acispy.data_collection import DataCollection
 
@@ -11,8 +11,7 @@ class MSIDs(DataCollection):
         self.table = {}
         for k, v in table.items():
             if v.dtype.char != 'S':
-                unit = getattr(apu, msid_units.get(k, "dimensionless_unscaled"))
-                self.table[k] = v*unit
+                self.table[k] = Quantity(v, msid_units.get(k, ''))
             else:
                 self.table[k] = v
         self.times = times
@@ -46,7 +45,7 @@ class MSIDs(DataCollection):
                 else:
                     key = k.lower()
                 table[key] = data[k].data
-                times[key] = get_time(time_arr).secs*apu.s
+                times[key] = Quantity(get_time(time_arr), 's')
         return cls(table, times)
 
     @classmethod
@@ -64,7 +63,7 @@ class MSIDs(DataCollection):
         # Convert times in the TIME column to Chandra 1998 time
         data['time'] -= 410227200.
         table = dict((k, data[k]) for k in data.dtype.names)
-        times = dict((k.lower(), data["time"]*apu.s) for k in header if k != "TIME")
+        times = dict((k.lower(), Quantity(data["time"], 's')) for k in header if k != "TIME")
         return cls(table, times)
 
     @classmethod
@@ -73,6 +72,6 @@ class MSIDs(DataCollection):
         data = fetch.MSIDset(msids, tstart, stop=tstop, filter_bad=filter_bad,
                              stat=None)
         table = dict((k, data[k].vals) for k in data.keys())
-        times = dict((k, get_time(data[k].times).secs*apu.s) for k in data.keys())
+        times = dict((k, Quantity(get_time(data[k].times).secs, 's')) for k in data.keys())
         return cls(table, times)
 

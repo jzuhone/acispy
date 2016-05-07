@@ -1,7 +1,7 @@
 from __future__ import print_function
 import xija
 import os
-import astropy.units as apu
+from astropy.units import Quantity
 from acispy.data_container import DataContainer
 from acispy.plots import DatePlot
 import numpy as np
@@ -60,7 +60,7 @@ class ThermalModelRunner(object):
 
     @property
     def times(self):
-        return self.model.times*apu.s
+        return Quantity(self.model.times, 's')
 
     @property
     def dates(self):
@@ -68,4 +68,4 @@ class ThermalModelRunner(object):
 
     @property
     def mvals(self):
-        return self.model.mvals[0]*apu.deg_C
+        return Quantity(self.model.mvals[0], 'deg_C')
