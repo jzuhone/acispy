@@ -2,30 +2,50 @@ from acispy.msids import MSIDs
 from acispy.states import States
 from acispy.model import Model
 from Chandra.Time import secs2date
-from acispy.fields import derived_fields, create_derived_fields
+from acispy.fields import derived_fields, \
+    create_derived_fields, DerivedField
 from acispy.data_collection import DataCollection
+from acispy.utils import unit_table, state_labels
 
 create_derived_fields()
+
+def make_field_func(type, name):
+    def _field_func(dc):
+        obj = getattr(dc, type)
+        return obj[name]
+    return _field_func
 
 class DataContainer(object):
     def __init__(self, msids, states, model):
         self.msids = msids
         self.states = states
         self.model = model
-        self._field_list = []
+        self.fields = {}
+        for type in ["msids", "states", "model"]:
+            obj = getattr(self, type)
+            for name in obj.keys():
+                func = make_field_func(type, name)
+                unit = unit_table[type].get(name, '')
+                if type == "model":
+                    display_name = name.upper() + " Model"
+                elif type == "states":
+                    display_name = state_labels[name]
+                else:
+                    display_name = name.upper()
+                df = DerivedField(type, name, func, [], unit,
+                                  display_name=display_name)
+                self.fields[type, name] = df
 
     def __getitem__(self, item):
         if item in derived_fields:
             self._check_derived_field(item)
             return derived_fields[item](self)
-        src = getattr(self, item[0])
-        return src[item[1]]
+        if item in self.fields:
+            return self.fields[item](self)
+        raise KeyError(item)
 
     def __contains__(self, item):
-        if item in derived_fields:
-            return True
-        src = getattr(self, item[0])
-        return item[1] in src
+        return item in derived_fields or item in self.fields
 
     def _check_derived_field(self, item):
         deps = derived_fields[item].get_deps()
@@ -188,12 +208,7 @@ class DataContainer(object):
         msids = DataCollection({}, {})
         states = DataCollection({}, {})
         return cls(msids, states, model)
-
+    
     @property
     def field_list(self):
-        if len(self._field_list) == 0:
-            for k in ["msids", "states", "model"]:
-                obj = getattr(self, k)
-                self._field_list += [(k, f) for f in obj.keys()]
-        return self._field_list
-
+        return list(self.fields.keys())

@@ -20,29 +20,27 @@ def calc_off_nom_rolls(states):
 
 state_labels = {"ccd_count": "CCD Count",
                 "clocking": "Clocking",
-                "ra": "RA (deg)",
-                "dec": "Dec (deg)",
+                "ra": "RA",
+                "dec": "Dec",
                 "dither": None,
                 "fep_count": "FEP Count",
                 "hetg": None,
                 "letg": None,
                 "obsid": "ObsID",
                 "pcad_mode": None,
-                "pitch": "Pitch (deg)",
+                "pitch": "Pitch",
                 "power_cmd": None,
-                "roll": "Roll (deg)",
+                "roll": "Roll",
                 "si_mode": None,
                 "simfa_pos": None,
-                "simpos": "SIM-Z (steps)",
+                "simpos": "SIM-Z",
                 "q1": "q1",
                 "q2": "q2",
                 "q3": "q3",
                 "q4": "q4",
                 "trans_keys": None,
                 "vid_board": None,
-                "off_nominal_roll": "Off-Nominal\nRoll (deg)"}
-
-state_list = len(state_labels.keys())
+                "off_nominal_roll": "Off-Nominal\nRoll"}
 
 state_units = {'ra': 'deg',
                'dec': 'deg',
@@ -52,8 +50,7 @@ state_units = {'ra': 'deg',
                'tstop': 's',
                'pitch': 'deg'}
 
-msid_units = {'times': 's',
-              '1deamzt': 'deg_C',
+msid_units = {'1deamzt': 'deg_C',
               '1dpamzt': 'deg_C',
               '1pdeaat': 'deg_C',
               '1pin1at': 'deg_C',
@@ -143,6 +140,10 @@ msid_units = {'times': 's',
               'deap6voltb':	'V',
               'gnd_2': 'V'}
 
+unit_table = {"msids": msid_units,
+              "states": state_units,
+              "model": msid_units}
+
 mit_trans_table = {"BEP_PCB": "tmp_bep_pcb",
                    "BEP_OSC": "tmp_bep_osc",
                    "FEP0_MONG": "tmp_fep0_mong",
@@ -174,8 +175,6 @@ unit_labels = {"V": 'V',
                "W": "W",
                "s": "s",
                "deg": "deg"}
-
-msid_list = list(msid_units.keys())
 
 def interpolate(times_in, times_out):
     ok = (times_out >= times_in[0]) & (times_out <= times_in[-1])

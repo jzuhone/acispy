@@ -205,10 +205,7 @@ class DatePlot(ACISPlot):
             else:
                 x = dc.times(*field).value
                 y = dc[field]
-            if src_name == "model":
-                label = fd.upper()+" Model"
-            else:
-                label = fd.upper()
+            label = dc.fields[field].display_name
             ticklocs, fig, ax = plot_cxctime(x, y, fig=fig, lw=lw, ax=ax,
                                              color=colors[i],
                                              drawstyle=drawstyle, 
@@ -224,16 +221,18 @@ class DatePlot(ACISPlot):
             label.set_fontproperties(fontProperties)
         for label in self.ax.get_yticklabels():
             label.set_fontproperties(fontProperties)
+        units = dc.fields[fields[0]].units
         if self.num_fields > 1:
-            self.set_ylabel(units_map[str(y.unit)]+" (%s)" %
-                            unit_labels[str(y.unit)])
-        else:
-            if fd in state_labels:
-                self.set_ylabel(state_labels[fd])
-            elif hasattr(y, 'unit'):
-                self.set_ylabel(fd.upper()+" (%s)" % unit_labels[str(y.unit)])
+            if units == '':
+                ylabel = ''
             else:
-                self.set_ylabel(fd.upper())
+                ylabel = '%s (%s)' % (units_map[units], unit_labels[units])
+            self.set_ylabel(ylabel)
+        else:
+            ylabel = dc.fields[fields[0]].display_name
+            if units != '':
+                ylabel += ' (%s)' % unit_labels[units]
+            self.set_ylabel(ylabel)
         if field2 is not None:
             src_name2, fd2 = field2
             self.ax2 = self.ax.twinx()
@@ -251,12 +250,11 @@ class DatePlot(ACISPlot):
                 label.set_fontproperties(fontProperties)
             for label in self.ax2.get_yticklabels():
                 label.set_fontproperties(fontProperties)
-            if fd2 in state_labels:
-                self.set_ylabel2(state_labels[fd2])
-            elif hasattr(y, 'unit'):
-                self.set_ylabel2(fd2.upper()+" (%s)" % unit_labels[str(y.unit)])
-            else:
-                self.set_ylabel2(fd2.upper())
+            units2 = dc.fields[field2].units
+            ylabel2 = dc.fields[field2].display_name
+            if units2 != '':
+                ylabel2 += ' (%s)' % unit_labels[units2]
+            self.set_ylabel2(ylabel2)
 
     def set_xlim(self, xmin, xmax):
         """
@@ -540,27 +538,15 @@ class PhasePlot(ACISPlot):
             ax = fig.add_subplot(111)
         x_src_name, x_fd = x_field
         y_src_name, y_fd = y_field
-        if x_src_name == "model":
-            xlabel = x_fd.upper() + " Model"
-        else:
-            xlabel = x_fd.upper()
-        if y_src_name == "model":
-            ylabel = y_fd.upper() + " Model"
-        else:
-            ylabel = y_fd.upper()
+        xlabel = dc.fields[x_field].display_name
+        ylabel = dc.fields[x_field].display_name
+        xunit = dc.fields[x_field].units
+        yunit = dc.fields[y_field].units
         if y_src_name == "states" and x_src_name != "states":
             raise RuntimeError("Cannot plot an MSID or model vs. a state, "
                                "put the state on the x-axis!")
         x = dc[x_field]
         y = dc[y_field]
-        if hasattr(x, 'unit'):
-            x_unit = unit_labels.get(str(x.unit), None)
-        else:
-            x_unit = None
-        if hasattr(y, 'unit'):
-            y_unit = unit_labels.get(str(y.unit), None)
-        else:
-            y_unit = None
         if x.size != y.size:
             # Interpolate the y-axis to the x-axis times
             times_in = dc.times(*y_field).value
@@ -584,18 +570,12 @@ class PhasePlot(ACISPlot):
             label.set_fontproperties(fontProperties)
         for label in self.ax.get_yticklabels():
             label.set_fontproperties(fontProperties)
-        if x_fd in state_labels:
-            self.set_xlabel(state_labels[x_fd])
-        elif x_unit is not None:
-            self.set_xlabel(xlabel+" (%s)" % x_unit)
-        else:
-            self.set_xlabel(xlabel)
-        if y_fd in state_labels:
-            self.set_ylabel(state_labels[y_fd])
-        elif y_unit is not None:
-            self.set_ylabel(ylabel+" (%s)" % y_unit)
-        else:
-            self.set_ylabel(ylabel)
+        if xunit != '':
+            xlabel += ' (%s)' % unit_labels[xunit]
+        if yunit != '':
+            ylabel += ' (%s)' % unit_labels[yunit]
+        self.set_xlabel(xlabel)
+        self.set_ylabel(ylabel)
 
     def set_xlim(self, xmin, xmax):
         """
