@@ -168,10 +168,12 @@ mit_trans_table = {"BEP_PCB": "tmp_bep_pcb",
                    "DEAM6VDCB": "deam6voltb",
                    "DEAP6VDCB": "deap6voltb"}
 
-msid_unit_labels = {"V": 'V',
-                    "A": 'A',
-                    "deg_C": '$\mathrm{^\circ{C}}$',
-                    "W": "W"}
+unit_labels = {"V": 'V',
+               "A": 'A',
+               "deg_C": '$\mathrm{^\circ{C}}$',
+               "W": "W",
+               "s": "s",
+               "deg": "deg"}
 
 msid_list = list(msid_units.keys())
 
@@ -182,26 +184,6 @@ def interpolate(times_in, times_out):
                                  times_in, times_out,
                                  method='nearest', sorted=True)
     return ok, idxs
-
-"""
-def interpolate(times_in, times_out, method='nearest', times_out2=None):
-    ok = (times_out >= times_in[0]) & (times_out <= times_in[-1])
-    if times_out2 is not None:
-        ok2 = (times_out2 >= times_in[0]) & (times_out2 <= times_in[-1])
-        ok = ok & ok2
-    times_out = times_out[ok]
-    idxs = Ska.Numpy.interpolate(np.arange(len(times_in)),
-                                 times_in, times_out,
-                                 method=method, sorted=True)
-    if times_out2 is not None:
-        times_out2 = times_out2[ok]
-        idxs2 = Ska.Numpy.interpolate(np.arange(len(times_in)),
-                                      times_in, times_out2,
-                                      method=method, sorted=True)
-        return ok, (idxs, idxs2)
-    else:
-        return ok, idxs
-"""
 
 def moving_average(a, n=5):
     shape = a.shape[:-1] + (a.shape[-1] - n + 1, n)
