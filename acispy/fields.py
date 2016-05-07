@@ -44,7 +44,7 @@ def add_averaged_field(type, name, n=5):
     def _avg(dc):
         return moving_average(dc[type, name], n=n)
     def _avg_times(dc):
-        return dc.times(type, name)[(n-1)/2:(-n+1)/2]
+        return dc.times(type, name)[n-1:]
     display_name = "Average %s" % get_display_name(type, name)
     units = unit_table[type].get(name, '')
     add_derived_field(type, "avg_%s" % name, _avg, [(type, name)], units,
