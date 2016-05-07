@@ -1,7 +1,8 @@
 import numpy as np
+import Ska.Numpy
 from acispy.utils import moving_average, \
-    get_display_name, interpolate, \
-    unit_table
+    get_display_name, unit_table
+import astropy.units as apu
 
 derived_fields = {}
 
@@ -41,7 +42,7 @@ def add_derived_field(type, name, function, deps, units, time_func=None,
 
 def add_averaged_field(type, name, n=5):
     def _avg(dc):
-        return moving_average(dc[type, name], n=n)*dc[type, name].unit
+        return moving_average(dc[type, name], n=n)
     def _avg_times(dc):
         return dc.times(type, name)[(n-1)/2:(-n+1)/2]
     display_name = "Average %s" % get_display_name(type, name)
@@ -50,13 +51,14 @@ def add_averaged_field(type, name, n=5):
                       time_func=_avg_times, display_name=display_name)
 
 def add_interpolated_field(type, name, times):
+    times_out = np.array(times)
+    units = unit_table[type].get(name, '')
     def _interp(dc):
         times_in = dc.times(type, name).value
-        ok, idxs = interpolate(times_in, times)
-        return dc[type, name][idxs]
+        return Ska.Numpy.interpolate(dc[type, name], times_in, times_out,
+                                     method='linear')
     def _interp_times(dc):
-        return times
-    units = unit_table[type].get(name, '')
+        return times_out*apu.s
     add_derived_field(type, "interp_%s" % name, _interp, [(type, name)],
                       units, time_func=_interp_times,
                       display_name=get_display_name(type, name))

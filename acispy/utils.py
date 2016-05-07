@@ -185,7 +185,7 @@ def get_display_name(type, name):
         display_name = name.upper()
     return display_name
 
-def interpolate(times_in, times_out):
+def interpolate_indexes(times_in, times_out):
     ok = (times_out >= times_in[0]) & (times_out <= times_in[-1])
     times_out = times_out[ok]
     idxs = Ska.Numpy.interpolate(np.arange(len(times_in)),
@@ -194,6 +194,5 @@ def interpolate(times_in, times_out):
     return ok, idxs
 
 def moving_average(a, n=5):
-    shape = a.shape[:-1] + (a.shape[-1] - n + 1, n)
-    strides = a.strides + (a.strides[-1],)
-    return np.mean(np.lib.stride_tricks.as_strided(a, shape=shape, strides=strides), -1)
+    cumsum = np.cumsum(np.insert(a, 0, 0))
+    return (cumsum[n:]-cumsum[:-n])/n

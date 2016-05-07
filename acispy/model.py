@@ -43,7 +43,8 @@ class Model(DataCollection):
         time = get_time(time).secs
         values = {}
         for key in self.keys():
-            values[key] = Ska.Numpy.interpolate(self[key], self.times[key].value, [time])
+            values[key] = Ska.Numpy.interpolate(self[key], self.times[key].value, [time],
+                                                method='linear')
         return values
 
 

@@ -2,7 +2,7 @@ from Ska.Matplotlib import plot_cxctime, pointpair
 from matplotlib import font_manager
 import matplotlib.pyplot as plt
 from matplotlib.dates import num2date
-from acispy.utils import state_labels, unit_labels, interpolate
+from acispy.utils import unit_labels, interpolate_indexes
 from Chandra.Time import DateTime
 from datetime import datetime
 from collections import OrderedDict
@@ -553,13 +553,13 @@ class PhasePlot(ACISPlot):
             times_in = dc.times(*y_field).value
             if x_src_name == "states":
                 tstart_out, tstop_out = dc.times(*x_field)
-                ok1, idxs1 = interpolate(times_in, tstart_out.value)
-                ok2, idxs2 = interpolate(times_in, tstop_out.value)
+                ok1, idxs1 = interpolate_indexes(times_in, tstart_out.value)
+                ok2, idxs2 = interpolate_indexes(times_in, tstop_out.value)
                 x = np.append(x[ok1], x[ok2])
                 y = np.append(y[idxs1], y[idxs2])
             else:
                 times_out = dc.times(*x_field).value
-                ok, idxs = interpolate(times_in, times_out)
+                ok, idxs = interpolate_indexes(times_in, times_out)
                 x = x[ok]
                 y = y[idxs]
         scp = ax.scatter(x, y)
