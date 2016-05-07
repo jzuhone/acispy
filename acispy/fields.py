@@ -36,11 +36,54 @@ class DerivedField(object):
 
 def add_derived_field(type, name, function, deps, units, time_func=None,
                       display_name=None):
+    """
+    Add a new derived field.
+
+    Parameters
+    ----------
+    type : string
+        The type of the field to add.
+    name : string
+        The name of the field to add.
+    function : function
+        The function which computes the field.
+    units : string
+        The units of the field.
+    time_func : function, optional
+        A function which returns the timing data
+        for the field.
+    display_name : string, optional
+        The name to use when displaying the field in plots. 
+
+    Examples
+    --------
+    >>> def _dpaa_power(dc):
+    ...     return (dc["msids", "1dp28avo"]*dc["msids", "1dpicacu"]).to("W")
+    >>> add_derived_field("msids", "dpa_a_power", _dpaa_power, 
+    ...                   [("msids", "1dp28avo"), ("msids", "1dpicacu")],
+    ...                   "W", display_name="DPA-A Power")
+    """
     df = DerivedField(type, name, function, deps, units, time_func=time_func,
                       display_name=display_name)
     derived_fields[type, name] = df
 
 def add_averaged_field(type, name, n=5):
+    """
+    Add a new field from an average of another.
+
+    Parameters
+    ----------
+    type : string
+        The type of the field to be averaged.
+    name : string
+        The name of the field to be averaged.
+    n : integer, optional
+        The number of samples to average over. Default: 5
+
+    Examples
+    --------
+    >>> add_averaged_field("msids", "1dpicacu", n=10) 
+    """
     def _avg(dc):
         return moving_average(dc[type, name], n=n)
     def _avg_times(dc):
@@ -51,6 +94,24 @@ def add_averaged_field(type, name, n=5):
                       time_func=_avg_times, display_name=display_name)
 
 def add_interpolated_field(type, name, times):
+    """
+    Add a new field from interpolating a field to a new
+    set of times.
+
+    Parameters
+    ----------
+    type : string
+        The type of the field to be averaged.
+    name : string
+        The name of the field to be averaged.
+    times : array of times
+        The timing array to interpolate the array to.
+
+    Examples
+    --------
+    >>> times = dc.times("msids", "1pdeaat")
+    >>> add_interpolated_field("msids", "1pin1at", times) 
+    """
     times_out = np.array(times)
     units = unit_table[type].get(name, '')
     def _interp(dc):
