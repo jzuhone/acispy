@@ -1,4 +1,4 @@
-class DataCollection(object):
+class TimeSeriesData(object):
     def __init__(self, table, times):
         self.table = table
         self.times = times

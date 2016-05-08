@@ -4,9 +4,9 @@ from acispy.utils import get_time, calc_off_nom_rolls, state_units
 import numpy as np
 from Chandra.cmd_states import fetch_states
 from astropy.units import Quantity
-from acispy.data_collection import DataCollection
+from acispy.time_series import TimeSeriesData
 
-class States(DataCollection):
+class States(TimeSeriesData):
 
     def __init__(self, table):
         self.table = {}

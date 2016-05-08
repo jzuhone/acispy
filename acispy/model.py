@@ -4,14 +4,14 @@ import Ska.Numpy
 from acispy.utils import get_time
 from astropy.units import Quantity
 from acispy.utils import msid_units
-from acispy.data_collection import DataCollection
+from acispy.time_series import TimeSeriesData
 
 comp_map = {"1deamzt": "dea",
             "1dpamzt": "dpa",
             "1pdeaat": "psmc",
             "fptemp_11": "fp"}
 
-class Model(DataCollection):
+class Model(TimeSeriesData):
     def __init__(self, table, times):
         self.table = table
         self.times = times

@@ -4,7 +4,7 @@ from acispy.model import Model
 from Chandra.Time import secs2date
 from acispy.fields import derived_fields, \
     create_derived_fields, DerivedField
-from acispy.data_collection import DataCollection
+from acispy.time_series import TimeSeriesData
 from acispy.utils import unit_table, get_display_name
 
 create_derived_fields()
@@ -21,7 +21,6 @@ class FieldContainer(object):
             return derived_fields[item]
         else:
             return self.dict[item]
-        raise KeyError(item)
 
     def __contains__(self, item):
         return item in self.dict or item in derived_fields
@@ -128,12 +127,12 @@ class DataContainer(object):
             msids = MSIDs.from_database(msid_keys, tstart, tstop=tstop, 
                                        filter_bad=filter_bad, stat=stat)
         else:
-            msids = DataCollection({}, {})
+            msids = TimeSeriesData({}, {})
         if state_keys is not None:
             states = States.from_database(state_keys, tstart, tstop)
         else:
-            states = DataCollection({}, {})
-        model = DataCollection({}, {})
+            states = TimeSeriesData({}, {})
+        model = TimeSeriesData({}, {})
         return cls(msids, states, model)
 
     @classmethod
@@ -156,7 +155,7 @@ class DataContainer(object):
         >>> dc = DataContainer.fetch_from_tracelog("acisENG10d_00985114479.70.tl",
         ...                                        state_keys=states)
         """
-        states = DataCollection({}, {})
+        states = TimeSeriesData({}, {})
         # Figure out what kind of file this is
         f = open(filename, "r")
         line = f.readline()
@@ -175,7 +174,7 @@ class DataContainer(object):
                     tmin = min(msids[k][0], tmin)
                     tmax = max(msids[k][-1], tmax)
             states = States.from_database(state_keys, secs2date(tmin), secs2date(tmax))
-        model = DataCollection({}, {})
+        model = TimeSeriesData({}, {})
         return cls(msids, states, model)
 
     @classmethod
@@ -209,12 +208,12 @@ class DataContainer(object):
             msids = MSIDs.from_database(comps, tstart, tstop=tstop,
                                         filter_bad=True)
         else:
-            msids = DataCollection({}, {})
+            msids = TimeSeriesData({}, {})
         return cls(msids, states, model)
 
     @classmethod
     def fetch_model_from_xija(cls, xija_model, comps):
         model = Model.from_xija(xija_model, comps)
-        msids = DataCollection({}, {})
-        states = DataCollection({}, {})
+        msids = TimeSeriesData({}, {})
+        states = TimeSeriesData({}, {})
         return cls(msids, states, model)

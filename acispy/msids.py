@@ -4,9 +4,9 @@ from astropy.io import ascii
 import numpy as np
 from astropy.units import Quantity
 from acispy.utils import msid_units
-from acispy.data_collection import DataCollection
+from acispy.time_series import TimeSeriesData
 
-class MSIDs(DataCollection):
+class MSIDs(TimeSeriesData):
     def __init__(self, table, times):
         self.table = {}
         for k, v in table.items():
