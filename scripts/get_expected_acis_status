@@ -17,10 +17,10 @@ parser.add_argument("--time", type=str, default="now",
                     help='The time to check the status at (default: current time)')
 args = parser.parse_args()
 
-ds = acispy.DataContainer.fetch_model_from_load(args.load, comps)
+dc = acispy.DataContainer.fetch_model_from_load(args.load, comps)
 t = get_time(args.time).date
-states = ds.states.get_states(t)
-values = ds.model.get_values(t)
+states = dc.states.get_states(t)
+values = dc.model.get_values(t)
 
 print("Getting expected ACIS state at %s." % t)
 
@@ -28,5 +28,4 @@ for k, v in states.items():
     if k not in dont_use:
         print("%s: %s" % (k, v))
 for k, v in values.items():
-    if k != "times":
-        print("%s: %s" % (k, v[0]))
+    print("%s: %s" % (k, v[0]))
