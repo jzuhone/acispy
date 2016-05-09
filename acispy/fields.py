@@ -1,8 +1,4 @@
 import numpy as np
-import Ska.Numpy
-from acispy.utils import moving_average, \
-    get_display_name, unit_table
-from astropy.units import Quantity
 
 derived_fields = {}
 
@@ -12,10 +8,10 @@ def make_time_func(dep):
     return _time_func
 
 class DerivedField(object):
-    def __init__(self, type, name, function, deps, units, time_func=None,
+    def __init__(self, ftype, fname, function, deps, units, time_func=None,
                  display_name=None):
-        self.type = type
-        self.name = name
+        self.ftype = ftype
+        self.fname = fname
         self.function = function
         self.deps = deps
         self.units = units
@@ -24,7 +20,7 @@ class DerivedField(object):
         else:
             self.time_func = time_func
         if display_name is None:
-            self.display_name = name.upper()
+            self.display_name = fname.upper()
         else:
             self.display_name = display_name
 
@@ -34,16 +30,16 @@ class DerivedField(object):
     def get_deps(self):
         return self.deps
 
-def add_derived_field(type, name, function, deps, units, time_func=None,
+def add_derived_field(ftype, fname, function, deps, units, time_func=None,
                       display_name=None):
     """
     Add a new derived field.
 
     Parameters
     ----------
-    type : string
+    ftype : string
         The type of the field to add.
-    name : string
+    fname : string
         The name of the field to add.
     function : function
         The function which computes the field.
@@ -63,67 +59,9 @@ def add_derived_field(type, name, function, deps, units, time_func=None,
     ...                   [("msids", "1dp28avo"), ("msids", "1dpicacu")],
     ...                   "W", display_name="DPA-A Power")
     """
-    df = DerivedField(type, name, function, deps, units, time_func=time_func,
+    df = DerivedField(ftype, fname, function, deps, units, time_func=time_func,
                       display_name=display_name)
-    derived_fields[type, name] = df
-
-def add_averaged_field(type, name, n=5):
-    """
-    Add a new field from an average of another.
-
-    Parameters
-    ----------
-    type : string
-        The type of the field to be averaged.
-    name : string
-        The name of the field to be averaged.
-    n : integer, optional
-        The number of samples to average over. Default: 5
-
-    Examples
-    --------
-    >>> add_averaged_field("msids", "1dpicacu", n=10) 
-    """
-    def _avg(dc):
-        return moving_average(dc[type, name], n=n)
-    def _avg_times(dc):
-        return dc.times(type, name)[n-1:]
-    display_name = "Average %s" % get_display_name(type, name)
-    units = unit_table[type].get(name, '')
-    add_derived_field(type, "avg_%s" % name, _avg, [(type, name)], units,
-                      time_func=_avg_times, display_name=display_name)
-
-def add_interpolated_field(type, name, times):
-    """
-    Add a new field from interpolating a field to a new
-    set of times.
-
-    Parameters
-    ----------
-    type : string
-        The type of the field to be averaged.
-    name : string
-        The name of the field to be averaged.
-    times : array of times
-        The timing array to interpolate the array to.
-
-    Examples
-    --------
-    >>> times = dc.times("msids", "1pdeaat")
-    >>> add_interpolated_field("msids", "1pin1at", times) 
-    """
-    times_out = np.array(times)
-    units = unit_table[type].get(name, '')
-    def _interp(dc):
-        times_in = dc.times(type, name).value
-        return Quantity(Ska.Numpy.interpolate(dc[type, name], 
-                                              times_in, times_out,
-                                              method='linear'), units)
-    def _interp_times(dc):
-        return Quantity(times_out, 's')
-    add_derived_field(type, "interp_%s" % name, _interp, [(type, name)],
-                      units, time_func=_interp_times,
-                      display_name=get_display_name(type, name))
+    derived_fields[ftype, fname] = df
 
 def create_derived_fields():
 
