@@ -69,30 +69,44 @@ class ThermalModelRunner(object):
         return Quantity(self.model.mvals[0], 'deg_C')
 
 class SimulateCTIRun(ThermalModelRunner):
-    def __init__(self, name, tstart, states, T_init, days=3, model_spec=None):
+    def __init__(self, name, tstart, T_init, pitch, days=3.0, simpos=-99616, 
+                 ccd_count=6, off_nominal_roll=0.0, dh_heater=0, model_spec=None):
+        states = {"ccd_count": ccd_count,
+                  "fep_count": ccd_count,
+                  "clocking": 1,
+                  'vid_board': 1,
+                  "pitch": pitch,
+                  "simpos": simpos,
+                  "off_nominal_roll": off_nominal_roll,
+                  "dh_heater": dh_heater}
         tstart = date2secs(tstart)
         tstop = tstart + days*86400.
         super(SimulateCTIRun, self).__init__(name, tstart, tstop, states,
                                              T_init, model_spec=model_spec)
-        self.limit = limits[self.name]
-        idx = np.searchsorted(self.model.mvals[0], self.limit)-1
-        self.limit_time = self.model.times[idx]
-        self.limit_date = secs2date(self.limit_time)
-        self.duration = (self.limit_time-self.tstart)*0.001
-        msg = "The limit of %s degrees C will be reached at %s, " % (self.limit, self.limit_date)
-        msg += "after %g ksec." % self.duration
+        err = np.abs(self.asymptotic_temperature-self.mvals[-10])/self.asymptotic_temperature
+        if err > 1.0e-5:
+            raise RuntimeWarning("You may not have reached the asymptotic temperature! Suggest"
+                                 " increasing the 'days' parameter past its current value of %g!" % days)
+        self.limit = Quantity(limits[self.name], "deg_C")
+        if self.asymptotic_temperature > self.limit:
+            idx = np.searchsorted(self.model.mvals[0], self.limit.value)-1
+            self.limit_time = self.model.times[idx]
+            self.limit_date = secs2date(self.limit_time)
+            self.duration = (self.limit_time-self.tstart)*0.001
+            msg = "The limit of %s degrees C will be reached at %s, " % (self.limit, self.limit_date)
+            msg += "after %g ksec." % self.duration
+        else:
+            self.limit_time = None
+            self.limit_date = None
+            self.duration = None
+            msg = "The limit of %s degrees C is never reached!" % self.limit
         print(msg)
 
     def plot_model(self):
         dp = super(SimulateCTIRun, self).plot_model()
-        dp.add_hline(self.limit, ls='--', lw=2, color='g')
-        dp.add_vline(self.limit_date, ls='--', lw=2, color='r')
-        dp.add_text(secs2date(self.limit_time+7200.), self.limit-2, 
-                    '$\mathrm{Limit\ =\ %g ^\circ{C}}$' % self.limit, 
-                    fontsize=18, color='green')
-        dp.add_text(secs2date(self.limit_time+7200.), self.limit-4,
-                    '$\mathrm{Duration\ =\ %g\ ks}$' % self.duration,
-                    fontsize=18, color='red')
+        dp.add_hline(self.limit.value, ls='--', lw=2, color='g')
+        if self.limit_date is not None:
+            dp.add_vline(self.limit_date, ls='--', lw=2, color='r')
         return dp
 
     @property
