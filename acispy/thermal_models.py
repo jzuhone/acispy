@@ -69,7 +69,7 @@ class ThermalModelRunner(object):
         return Quantity(self.model.mvals[0], 'deg_C')
 
 class SimulateCTIRun(ThermalModelRunner):
-    def __init__(self, name, tstart, T_init, pitch, days=3.0, simpos=-99616, 
+    def __init__(self, name, tstart, T_init, pitch, days=3.0, simpos=-99616.0, 
                  ccd_count=6, off_nominal_roll=0.0, dh_heater=0, model_spec=None):
         states = {"ccd_count": ccd_count,
                   "fep_count": ccd_count,
