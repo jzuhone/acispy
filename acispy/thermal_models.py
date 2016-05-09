@@ -15,7 +15,7 @@ msid_dict = {'dea': '1deamzt',
              'dpa': '1dpamzt',
              'psmc': '1pdeaat'}
 
-model_root = "/proj/sot/ska/bin"
+default_json_path = "/ska/share/%s/%s_model_spec.json"
 
 class ThermalModelRunner(object):
     def __init__(self, name, tstart, tstop, states, T_init, model_spec=None):
@@ -27,8 +27,7 @@ class ThermalModelRunner(object):
             self.states['dh_heater'] = 0
         self.T_init = T_init
         if model_spec is None:
-            self.model_spec = os.path.join(model_root, '%s_check' % name, 
-                                           '%s_model_spec.json' % name)
+            self.model_spec = os.path.join(default_json_path % (name, name))
         else:
             self.model_spec = model_spec
         self.model = xija.XijaModel(self.name, start=self.tstart,
