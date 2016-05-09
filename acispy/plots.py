@@ -378,6 +378,32 @@ class DatePlot(ACISPlot):
         prop = {"family": "serif", "size": fontsize}
         self.ax.legend(loc=loc, prop=prop, **kwargs)
 
+    def add_text(self, time, y, text, fontsize=18, color='black', **kwargs):
+        """
+        Add text to a DatePlot.
+
+        Parameters
+        ----------
+        time : string
+            The time to place the text at.
+            Must be in YYYY:DOY:HH:MM:SS format.
+        y : float
+            The y-value to place the text at.
+        text : string
+            The text itself.
+        fontsize : integer, optional
+            The size of the font. Default: 18 pt.
+        color : string, optional
+            The color of the font. Default: black.
+
+        Examples
+        --------
+        >>> dp.add_text("2016:101:12:36:10.102", 35., "Something happened here!",
+        ...             fontsize=15, color='magenta')
+        """
+        time = datetime.strptime(DateTime(time).iso, "%Y-%m-%d %H:%M:%S.%f")
+        self.ax.text(time, y, text, fontsize=fontsize, color=color, **kwargs)
+
 class MultiDatePlot(object):
     r""" Make a multi-panel plot of multiple quantities vs. date and time.
 
@@ -624,3 +650,28 @@ class PhasePlot(ACISPlot):
         >>> p.add_vline(25., lw=3, ls='dashed', color='red')
         """
         self.ax.axvline(x=x, lw=lw, ls=ls, color=color, **kwargs)
+
+    def add_text(self, x, y, text, fontsize=18, color='black', **kwargs):
+        """
+        Add text to a PhasePlot.
+
+        Parameters
+        ----------
+        x : string
+            The x-value to place the text at.
+        y : float
+            The y-value to place the text at.
+        text : string
+            The text itself.
+        fontsize : integer, optional
+            The size of the font. Default: 18 pt.
+        color : string, optional
+            The color of the font. Default: black.
+
+        Examples
+        --------
+        >>> dp.add_text(32.7, 35., "This spot is interesting",
+        ...             fontsize=15, color='magenta')
+        """
+        self.ax.text(x, y, text, fontsize=fontsize, color=color, **kwargs)
+
