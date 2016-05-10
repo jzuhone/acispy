@@ -1,7 +1,5 @@
 import numpy as np
 
-derived_fields = {}
-
 def make_time_func(dep):
     def _time_func(dc):
         return dc.times(*dep)
@@ -30,75 +28,61 @@ class DerivedField(object):
     def get_deps(self):
         return self.deps
 
-def add_derived_field(ftype, fname, function, deps, units, time_func=None,
-                      display_name=None):
-    """
-    Add a new derived field.
+class FieldContainer(object):
+    def __init__(self):
+        self.output_fields = {}
+        self.derived_fields = {}
 
-    Parameters
-    ----------
-    ftype : string
-        The type of the field to add.
-    fname : string
-        The name of the field to add.
-    function : function
-        The function which computes the field.
-    units : string
-        The units of the field.
-    time_func : function, optional
-        A function which returns the timing data
-        for the field.
-    display_name : string, optional
-        The name to use when displaying the field in plots. 
+    def __setitem__(self, item, value):
+        self.output_fields[item] = value
 
-    Examples
-    --------
-    >>> def _dpaa_power(dc):
-    ...     return (dc["msids", "1dp28avo"]*dc["msids", "1dpicacu"]).to("W")
-    >>> add_derived_field("msids", "dpa_a_power", _dpaa_power, 
-    ...                   [("msids", "1dp28avo"), ("msids", "1dpicacu")],
-    ...                   "W", display_name="DPA-A Power")
-    """
-    df = DerivedField(ftype, fname, function, deps, units, time_func=time_func,
-                      display_name=display_name)
-    derived_fields[ftype, fname] = df
+    def __getitem__(self, item):
+        if item in self.derived_fields:
+            return self.derived_fields[item]
+        elif item in self.output_fields:
+            return self.output_fields[item]
+        else:
+            raise KeyError(item)
 
-def create_derived_fields():
+    def __contains__(self, item):
+        return item in self.output_fields or item in self.derived_fields
+
+def create_derived_fields(dcont):
 
     # Telemetry format 
     def _tel_fmt(dc):
         fmt_str = dc['msids','ccsdstmf']
         return np.char.strip(fmt_str, 'FMT').astype("int")
 
-    add_derived_field("msids", "fmt", _tel_fmt, [("msids", "ccsdstmf")],
-                      "")
+    dcont.add_derived_field("msids", "fmt", _tel_fmt, [("msids", "ccsdstmf")],
+                            "")
 
     # DPA, DEA powers
 
     def _dpaa_power(dc):
         return (dc["msids", "1dp28avo"]*dc["msids", "1dpicacu"]).to("W")
 
-    add_derived_field("msids", "dpa_a_power", _dpaa_power, 
-                      [("msids", "1dp28avo"), ("msids", "1dpicacu")],
-                      "W", display_name="DPA-A Power")
+    dcont.add_derived_field("msids", "dpa_a_power", _dpaa_power, 
+                            [("msids", "1dp28avo"), ("msids", "1dpicacu")],
+                            "W", display_name="DPA-A Power")
 
     def _dpab_power(dc):
         return (dc["msids", "1dp28bvo"]*dc["msids", "1dpicbcu"]).to("W")
 
-    add_derived_field("msids", "dpa_b_power", _dpab_power, 
-                      [("msids", "1dp28bvo"), ("msids", "1dpicbcu")],
-                      "W", display_name="DPA-B Power")
+    dcont.add_derived_field("msids", "dpa_b_power", _dpab_power, 
+                            [("msids", "1dp28bvo"), ("msids", "1dpicbcu")],
+                            "W", display_name="DPA-B Power")
 
     def _deaa_power(dc):
         return (dc["msids", "1de28avo"]*dc["msids", "1deicacu"]).to("W")
 
-    add_derived_field("msids", "dea_a_power", _deaa_power, 
-                      [("msids", "1de28avo"), ("msids", "1deicacu")],
-                      "W", display_name="DEA-A Power")
+    dcont.add_derived_field("msids", "dea_a_power", _deaa_power, 
+                            [("msids", "1de28avo"), ("msids", "1deicacu")],
+                            "W", display_name="DEA-A Power")
 
     def _deab_power(dc):
         return (dc["msids", "1de28bvo"]*dc["msids", "1deicbcu"]).to("W")
 
-    add_derived_field("msids", "dea_b_power", _deab_power, 
-                      [("msids", "1de28bvo"), ("msids", "1deicbcu")],
-                      "W", display_name="DEA-B Power")
+    dcont.add_derived_field("msids", "dea_b_power", _deab_power, 
+                            [("msids", "1de28bvo"), ("msids", "1deicbcu")],
+                            "W", display_name="DEA-B Power")
