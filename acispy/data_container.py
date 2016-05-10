@@ -156,9 +156,11 @@ class DataContainer(object):
         if (ftype, fname) in self.fields.derived_fields:
             df = self.fields.derived_fields[ftype, fname]
             return df.time_func(self)
-        else:
+        elif (ftype, fname) in self.fields.output_fields:
             src = getattr(self, ftype)
             return src.times[fname]
+        else:
+            raise KeyError((ftype, fname))
 
     def dates(self, ftype, fname):
         """
