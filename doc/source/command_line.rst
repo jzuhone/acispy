@@ -8,7 +8,7 @@ and data, it is recommended to use the Python interface.
 ``get_expected_acis_status``
 ----------------------------
 
-.. code::
+.. code-block:: text
 
     usage: get_expected_acis_status [-h] [--time TIME] load
 
@@ -29,26 +29,26 @@ Example:
     
 Returns:
 
-.. code::
+.. code-block:: text
 
     Getting expected ACIS state at 2016:100:18:00:00.000.
-    off_nominal_roll: -0.573853195649
-    pitch: 144.51
+    off_nominal_roll: -0.573853195649 deg
+    pitch: 144.51 deg
     obsid: 18430
     si_mode: TE_00458
     letg: RETR
-    ra: 207.128211876
-    roll: 164.982985296
+    ra: 207.128211876 deg
+    roll: 164.982985296 deg
     hetg: RETR
     simfa_pos: -536
     simpos: 91576
     ccd_count: 5
-    dec: 26.629677143
+    dec: 26.629677143 deg
     dither: ENAB
-    fptemp_11: -117.006416098
-    1deamzt: 22.3543356098
-    1dpamzt: 24.9379195122
-    1pdeaat: 28.2671678049
+    fptemp_11: -117.006416098 deg_C
+    1deamzt: 22.3543356098 deg_C
+    1dpamzt: 24.9379195122 deg_C
+    1pdeaat: 28.2671678049 deg_C
 
 ``multiplot_archive``
 ---------------------
