@@ -15,6 +15,7 @@ Contents:
    what_data
    loading_data
    plotting_data
+   derived_fields
    command_line
    api/index
 
