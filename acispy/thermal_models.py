@@ -37,9 +37,8 @@ class ThermalModelRunner(DataContainer):
         A dictionary of modeled commanded states required for the model. The
         states can either be a constant value or NumPy arrays. 
     state_times : array of strings
-        An array of times in YYYY:DOY:HH:MM:SS format which correspond to the
-        start and stop times of the states. For this reason, it must be the 
-        size of the state arrays + 1. 
+        A list containting two arrays of times in YYYY:DOY:HH:MM:SS format 
+        which correspond to the start and stop times of the states.
     T_init : float
         The starting temperature for the model in degrees C.
     model_spec : string, optional
@@ -48,12 +47,23 @@ class ThermalModelRunner(DataContainer):
 
     Examples
     --------
-
+    >>> states = {"ccd_count": np.array([5,6,1]),
+    ...          "pitch": np.array([150.0]*3),
+    ...          "fep_count": np.array([5,6,1]),
+    ...          "clocking": np.array([1]*3),
+    ...          "vid_board": np.array([1]*3),
+    ...          "off_nominal_roll": np.array([0.0]*3),
+    ...          "simpos": np.array([-99616.0]*3)}
+    >>> state_times = [["2015:002:00:00:00","2015:002:12:00:00","2015:003:12:00:00"],
+    ...                ["2015:002:12:00:00","2015:003:12:00:00","2015:005:00:00:00"]]
+    >>> dpa_model = ThermalModelRunner("dpa", "2015:002:00:00:00", 
+    ...                                "2016:005:00:00:00", states,
+    ...                                state_times, 10.1)
     """
     def __init__(self, name, tstart, tstop, states, state_times, 
                  T_init, model_spec=None):
-        state_times = np.array([date2secs(state_times[:-1]), 
-                                date2secs(state_times[1:])])
+        state_times = np.array([date2secs(state_times[0]),
+                                date2secs(state_times[1])])
         if model_spec is None:
             model_spec = os.path.join(default_json_path % (name, name))
         else:
@@ -138,7 +148,7 @@ class SimulateCTIRun(ThermalModelRunner):
         tstart = date2secs(tstart)
         tstop = tstart + days*86400.
         datestop = secs2date(tstop)
-        state_times = [datestart, datestop]
+        state_times = [[datestart], [datestop]]
         super(SimulateCTIRun, self).__init__(name, tstart, tstop, states,
                                              state_times, T_init, model_spec=model_spec)
         err = np.abs(self.asymptotic_temperature-self.mvals[-10])/self.asymptotic_temperature
@@ -157,7 +167,7 @@ class SimulateCTIRun(ThermalModelRunner):
             self.limit_time = None
             self.limit_date = None
             self.duration = None
-            msg = "The limit of %g degrees C is never reached!" % self.limit
+            msg = "The limit of %g degrees C is never reached!" % self.limit.value
         print(msg)
 
     def plot_model(self):
