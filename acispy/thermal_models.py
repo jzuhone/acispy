@@ -5,7 +5,8 @@ from astropy.units import Quantity
 from acispy.data_container import DataContainer
 from acispy.plots import DatePlot
 import numpy as np
-from Chandra.Time import secs2date, DateTime, date2secs
+from Chandra.Time import secs2date, date2secs
+from acispy.utils import ensure_tuple
 
 limits = {'dea': 35.5,
           'dpa': 35.5,
@@ -18,11 +19,43 @@ msid_dict = {'dea': '1deamzt',
 default_json_path = "/ska/share/%s/%s_model_spec.json"
 
 class ThermalModelRunner(object):
+    """
+    Class for running Xija thermal models.
+
+    Parameters
+    ----------
+    name : string
+        The name of the model to simulate. Can be "dea", "dpa", or "psmc".
+    tstart : string
+        The start time in YYYY:DOY:HH:MM:SS format.
+    tstop : string
+        The stop time in YYYY:DOY:HH:MM:SS format.
+    states : dict
+        A dictionary of modeled commanded states required for the model. The
+        states can either be a constant value or NumPy arrays. If the latter,
+        the states dict must contain "tstart" and "tstop" NumPy arrays
+        corresponding to the time in seconds for each state. 
+    T_init : float
+        The starting temperature for the model in degrees C.
+    model_spec : string, optional
+        Path to the model spec JSON file for the model. Default: None, the 
+        standard model path will be used. 
+
+    Examples
+    --------
+
+    """
     def __init__(self, name, tstart, tstop, states, T_init, model_spec=None):
         self.name = name
         self.tstart = tstart
         self.tstop = tstop
         self.states = states
+        times_start = self.states.pop("tstart", None)
+        times_stop = self.states.pop("tstop", None)
+        if times_start is None or times_stop is None:
+            times = None
+        else:
+            times = np.array([times_start, times_stop])
         if 'dh_heater' not in states:
             self.states['dh_heater'] = 0
         self.T_init = T_init
@@ -35,18 +68,18 @@ class ThermalModelRunner(object):
         if 'eclipse' in self.model.comp:
             self.model.comp['eclipse'].set_data(False)
         self.model.comp[msid_dict[name]].set_data(self.T_init)
-        self.model.comp['sim_z'].set_data(self.states['simpos'])
+        self.model.comp['sim_z'].set_data(self.states['simpos'], times)
         if 'roll' in self.model.comp:
-            self.model.comp['roll'].set_data(self.states['off_nominal_roll'])
+            self.model.comp['roll'].set_data(self.states['off_nominal_roll'], times)
         if 'dpa_power' in self.model.comp:
             self.model.comp['dpa_power'].set_data(0.0) # This is just a hack, we're not 
                                                        # really setting the power to zero.
         if 'pin1at' in self.model.comp:
-            self.model.comp['pin1at'].set_data(self.states['pin1at'])
+            self.model.comp['pin1at'].set_data(self.T_init-13.)
         if 'dh_heater' in self.model.comp:
-            self.model.comp['dh_heater'].set_data(self.states['dh_heater'])
+            self.model.comp['dh_heater'].set_data(self.states['dh_heater'], times)
         for st in ('ccd_count', 'fep_count', 'vid_board', 'clocking', 'pitch'):
-            self.model.comp[st].set_data(states[st])
+            self.model.comp[st].set_data(self.states[st], times)
         self.model.make()
         self.model.calc()
 
@@ -68,6 +101,39 @@ class ThermalModelRunner(object):
         return Quantity(self.model.mvals[0], 'deg_C')
 
 class SimulateCTIRun(ThermalModelRunner):
+    """
+    Class for simulating thermal models during CTI runs under constant conditions.
+
+    Parameters
+    ----------
+    name : string
+        The name of the model to simulate. Can be "dea", "dpa", or "psmc".
+    tstart : string
+        The start time in YYYY:DOY:HH:MM:SS format.
+    T_init : float
+        The starting temperature for the model in degrees C.
+    pitch : float
+        The pitch at which to run the model in degrees. 
+    days : float, optional
+        The number of days to run the model. Default: 3.0
+    simpos : float, optional
+        The SIM position at which to run the model. Default: -99616.0
+    ccd_count : integer, optional
+        The number of CCDs to clock. Default: 6
+    off_nominal_roll : float, optional
+        The off-nominal roll in degrees for the model. Default: 0.0
+    dh_heater: integer, optional
+        Flag to set whether (1) or not (0) the detector housing heater is on. 
+        Default: 0
+    model_spec : string, optional
+        Path to the model spec JSON file for the model. Default: None, the 
+        standard model path will be used. 
+
+    Examples
+    --------
+    >>> dea_run = SimulateCTIRun("dea", "2016:201:05:12:03", 14.0, 150.,
+    ...                          ccd_count=5, off_nominal_roll=-6.0, dh_heater=1)
+    """
     def __init__(self, name, tstart, T_init, pitch, days=3.0, simpos=-99616.0, 
                  ccd_count=6, off_nominal_roll=0.0, dh_heater=0, model_spec=None):
         states = {"ccd_count": ccd_count,
@@ -102,6 +168,9 @@ class SimulateCTIRun(ThermalModelRunner):
         print(msg)
 
     def plot_model(self):
+        """
+        Plot the simulated model run.
+        """
         dp = super(SimulateCTIRun, self).plot_model()
         dp.add_hline(self.limit.value, ls='--', lw=2, color='g')
         if self.limit_date is not None:
