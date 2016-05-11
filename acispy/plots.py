@@ -2,7 +2,8 @@ from Ska.Matplotlib import plot_cxctime, pointpair
 from matplotlib import font_manager
 import matplotlib.pyplot as plt
 from matplotlib.dates import num2date
-from acispy.utils import unit_labels, interpolate_indexes
+from acispy.utils import unit_labels, interpolate_indexes, \
+    ensure_list
 from Chandra.Time import DateTime
 from datetime import datetime
 from collections import OrderedDict
@@ -191,11 +192,9 @@ class DatePlot(ACISPlot):
             fig = plt.figure(figsize=(10, 8))
         if colors is None:
             colors = default_colors
-        if not isinstance(fields, list):
-            fields = [fields]
+        fields = ensure_list(fields)
         self.num_fields = len(fields)
-        if not isinstance(colors, list):
-            colors = [colors]
+        colors = ensure_list(colors)
         for i, field in enumerate(fields):
             src_name, fd = field
             drawstyle = drawstyles.get(fd, None)

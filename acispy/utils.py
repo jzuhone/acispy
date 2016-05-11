@@ -196,3 +196,29 @@ def interpolate_indexes(times_in, times_out):
 def moving_average(a, n=5):
     cumsum = np.cumsum(np.insert(a, 0, 0))
     return (cumsum[n:]-cumsum[:-n])/n
+
+def ensure_tuple(obj):
+    """
+    This function ensures that *obj* is a tuple.  Typically used to convert
+    scalar, list, or array arguments specified by a user in a context where
+    we assume a tuple internally
+    """
+    if isinstance(obj, tuple):
+        return obj
+    elif isinstance(obj, (list, np.ndarray)):
+        return tuple(obj)
+    else:
+        return (obj,)
+
+def ensure_list(obj):
+    """
+    This function ensures that *obj* is a list.  Typically used to convert a
+    string to a list, for instance ensuring the *fields* as an argument is a
+    list.
+    """
+    if obj is None:
+        return [obj]
+    if not isinstance(obj, list):
+        return [obj]
+    return obj
+
