@@ -6,3 +6,4 @@ ACISpy API Documentation
 
    data_container
    plots
+   thermal_models

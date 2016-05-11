@@ -1,4 +1,4 @@
-Running Thermal Models
-======================
+Thermal Models
+==============
 
 .. notebook:: Thermal_Models.ipynb

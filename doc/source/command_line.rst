@@ -53,7 +53,7 @@ Returns:
 ``multiplot_archive``
 ---------------------
 
-.. code::
+.. code-block:: text
 
     usage: multiplot_archive [-h] [--one-panel] tstart tstop plots
 
@@ -90,7 +90,7 @@ Example 2:
 ``multiplot_tracelog``
 ----------------------
 
-.. code::
+.. code-block:: text
 
     usage: multiplot_tracelog [-h] [--one-panel] tracelog plots
     
@@ -129,7 +129,7 @@ Returns:
 ``plot_model``
 --------------
 
-.. code::
+.. code-block:: text
 
     usage: plot_model [-h] [--y2_axis Y2_AXIS] load y_axis
     
@@ -157,7 +157,7 @@ Returns:
 ``plot_msid``
 -------------
 
-.. code::
+.. code-block:: text
 
     usage: plot_msid [-h] [--y2_axis Y2_AXIS] tstart tstop y_axis
     
@@ -183,6 +183,28 @@ Returns:
 
 .. image:: _images/plot_msid.png
 
+``simulate_cti_run``
+--------------------
 
+.. code-block:: text
 
+    usage: simulate_cti_run [-h] [--days DAYS] [--simpos SIMPOS]
+                            [--ccd_count CCD_COUNT]
+                            [--off_nominal_roll OFF_NOMINAL_ROLL]
+                            [--dh_heater DH_HEATER]
+                            component tstart T_init pitch
+
+Example: 
+
+.. code-block:: bash
+
+    [~]$ simulate_cti_run dpa 2015:100:12:45:30 10.0 150. --ccd_count 6 --off_nominal_roll 12.0
+
+Returns:
+
+.. code-block:: text
+
+    The limit of 35.5 degrees C will be reached at 2015:100:21:07:04.816, after 30.0948 ksec.
+
+.. image:: _images/cti_run.png
 

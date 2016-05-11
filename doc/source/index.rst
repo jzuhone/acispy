@@ -16,6 +16,7 @@ Contents:
    loading_data
    plotting_data
    derived_fields
+   thermal_models
    command_line
    api/index
 
