@@ -6,7 +6,6 @@ from acispy.data_container import DataContainer
 from acispy.plots import DatePlot
 import numpy as np
 from Chandra.Time import secs2date, date2secs
-from acispy.msids import MSIDs
 from acispy.states import States
 from acispy.model import Model
 from acispy.time_series import TimeSeriesData
@@ -19,7 +18,7 @@ msid_dict = {'dea': '1deamzt',
              'dpa': '1dpamzt',
              'psmc': '1pdeaat'}
 
-default_json_path = "/ska/share/%s/%s_model_spec.json"
+default_json_path = os.path.join(os.environ["SKA"], "ska/share/%s/%s_model_spec.json")
 
 class ThermalModelRunner(DataContainer):
     """
