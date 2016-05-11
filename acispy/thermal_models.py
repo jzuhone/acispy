@@ -150,9 +150,9 @@ class SimulateCTIRun(ThermalModelRunner):
             idx = np.searchsorted(self.mvals.value, self.limit.value)-1
             self.limit_time = self.times('model', msid_dict[self.name])[idx]
             self.limit_date = secs2date(self.limit_time)
-            self.duration = (self.limit_time.value-tstart)*0.001
+            self.duration = Quantity((self.limit_time.value-tstart)*0.001, "ks")
             msg = "The limit of %g degrees C will be reached at %s, " % (self.limit.value, self.limit_date)
-            msg += "after %g ksec." % self.duration
+            msg += "after %g ksec." % self.duration.value
         else:
             self.limit_time = None
             self.limit_date = None
