@@ -6,7 +6,10 @@ from acispy.data_container import DataContainer
 from acispy.plots import DatePlot
 import numpy as np
 from Chandra.Time import secs2date, date2secs
-from acispy.utils import ensure_tuple
+from acispy.msids import MSIDs
+from acispy.states import States
+from acispy.model import Model
+from acispy.time_series import TimeSeriesData
 
 limits = {'dea': 35.5,
           'dpa': 35.5,
@@ -18,7 +21,7 @@ msid_dict = {'dea': '1deamzt',
 
 default_json_path = "/ska/share/%s/%s_model_spec.json"
 
-class ThermalModelRunner(object):
+class ThermalModelRunner(DataContainer):
     """
     Class for running Xija thermal models.
 
@@ -32,9 +35,11 @@ class ThermalModelRunner(object):
         The stop time in YYYY:DOY:HH:MM:SS format.
     states : dict
         A dictionary of modeled commanded states required for the model. The
-        states can either be a constant value or NumPy arrays. If the latter,
-        the states dict must contain "tstart" and "tstop" NumPy arrays
-        corresponding to the time in seconds for each state. 
+        states can either be a constant value or NumPy arrays. 
+    state_times : array of strings
+        An array of times in YYYY:DOY:HH:MM:SS format which correspond to the
+        start and stop times of the states. For this reason, it must be the 
+        size of the state arrays + 1. 
     T_init : float
         The starting temperature for the model in degrees C.
     model_spec : string, optional
@@ -45,60 +50,45 @@ class ThermalModelRunner(object):
     --------
 
     """
-    def __init__(self, name, tstart, tstop, states, T_init, model_spec=None):
-        self.name = name
-        self.tstart = tstart
-        self.tstop = tstop
-        self.states = states
-        times_start = self.states.pop("tstart", None)
-        times_stop = self.states.pop("tstop", None)
-        if times_start is None or times_stop is None:
-            times = None
-        else:
-            times = np.array([times_start, times_stop])
-        if 'dh_heater' not in states:
-            self.states['dh_heater'] = 0
-        self.T_init = T_init
+    def __init__(self, name, tstart, tstop, states, state_times, 
+                 T_init, model_spec=None):
+        state_times = np.array([date2secs(state_times[:-1]), 
+                                date2secs(state_times[1:])])
         if model_spec is None:
-            self.model_spec = os.path.join(default_json_path % (name, name))
+            model_spec = os.path.join(default_json_path % (name, name))
         else:
-            self.model_spec = model_spec
-        self.model = xija.XijaModel(self.name, start=self.tstart,
-                                    stop=self.tstop, model_spec=self.model_spec)
-        if 'eclipse' in self.model.comp:
-            self.model.comp['eclipse'].set_data(False)
-        self.model.comp[msid_dict[name]].set_data(self.T_init)
-        self.model.comp['sim_z'].set_data(self.states['simpos'], times)
-        if 'roll' in self.model.comp:
-            self.model.comp['roll'].set_data(self.states['off_nominal_roll'], times)
-        if 'dpa_power' in self.model.comp:
-            self.model.comp['dpa_power'].set_data(0.0) # This is just a hack, we're not 
-                                                       # really setting the power to zero.
-        if 'pin1at' in self.model.comp:
-            self.model.comp['pin1at'].set_data(self.T_init-13.)
-        if 'dh_heater' in self.model.comp:
-            self.model.comp['dh_heater'].set_data(self.states['dh_heater'], times)
+            model_spec = model_spec
+        model = xija.XijaModel(name, start=tstart, stop=tstop, model_spec=model_spec)
+        if 'eclipse' in model.comp:
+            model.comp['eclipse'].set_data(False)
+        model.comp[msid_dict[name]].set_data(T_init)
+        model.comp['sim_z'].set_data(states['simpos'], state_times)
+        if 'roll' in model.comp:
+            model.comp['roll'].set_data(states['off_nominal_roll'], state_times)
+        if 'dpa_power' in model.comp:
+            model.comp['dpa_power'].set_data(0.0) # This is just a hack, we're not 
+                                                  # really setting the power to zero.
+        if 'pin1at' in model.comp:
+            model.comp['pin1at'].set_data(T_init-13.)
+        if 'dh_heater' in model.comp:
+            model.comp['dh_heater'].set_data(states.get("dh_heater", 0), state_times)
         for st in ('ccd_count', 'fep_count', 'vid_board', 'clocking', 'pitch'):
-            self.model.comp[st].set_data(self.states[st], times)
-        self.model.make()
-        self.model.calc()
+            model.comp[st].set_data(states[st], state_times)
+        model.make()
+        model.calc()
 
-    def plot_model(self):
-        dc = DataContainer.fetch_model_from_xija(self.model, [msid_dict[self.name]])
-        dp = DatePlot(dc, [("model", msid_dict[self.name])])
-        return dp
+        states["tstart"] = state_times[0,:]
+        states["tstop"] = state_times[1,:]
+        states.pop("dh_heater", None)
 
-    @property
-    def times(self):
-        return Quantity(self.model.times, 's')
+        self.name = name
+        self.model_spec = model_spec
 
-    @property
-    def dates(self):
-        return secs2date(self.model.times)
+        model_obj = Model.from_xija(model, [msid_dict[name]])
+        msids_obj = TimeSeriesData({}, {})
+        states_obj = States(states)
 
-    @property
-    def mvals(self):
-        return Quantity(self.model.mvals[0], 'deg_C')
+        super(ThermalModelRunner, self).__init__(msids_obj, states_obj, model_obj)
 
 class SimulateCTIRun(ThermalModelRunner):
     """
@@ -135,7 +125,7 @@ class SimulateCTIRun(ThermalModelRunner):
     ...                          ccd_count=5, off_nominal_roll=-6.0, dh_heater=1)
     """
     def __init__(self, name, tstart, T_init, pitch, days=3.0, simpos=-99616.0, 
-                 ccd_count=6, off_nominal_roll=0.0, dh_heater=0, model_spec=None):
+                ccd_count=6, off_nominal_roll=0.0, dh_heater=0, model_spec=None):
         states = {"ccd_count": ccd_count,
                   "fep_count": ccd_count,
                   "clocking": 1,
@@ -144,38 +134,45 @@ class SimulateCTIRun(ThermalModelRunner):
                   "simpos": simpos,
                   "off_nominal_roll": off_nominal_roll,
                   "dh_heater": dh_heater}
+        datestart = tstart
         tstart = date2secs(tstart)
         tstop = tstart + days*86400.
+        datestop = secs2date(tstop)
+        state_times = [datestart, datestop]
         super(SimulateCTIRun, self).__init__(name, tstart, tstop, states,
-                                             T_init, model_spec=model_spec)
+                                             state_times, T_init, model_spec=model_spec)
         err = np.abs(self.asymptotic_temperature-self.mvals[-10])/self.asymptotic_temperature
         if err > 1.0e-5:
             raise RuntimeWarning("You may not have reached the asymptotic temperature! Suggest"
                                  " increasing the 'days' parameter past its current value of %g!" % days)
         self.limit = Quantity(limits[self.name], "deg_C")
         if self.asymptotic_temperature > self.limit:
-            idx = np.searchsorted(self.model.mvals[0], self.limit.value)-1
-            self.limit_time = self.model.times[idx]
+            idx = np.searchsorted(self.mvals.value, self.limit.value)-1
+            self.limit_time = self.times('model', msid_dict[self.name])[idx]
             self.limit_date = secs2date(self.limit_time)
-            self.duration = (self.limit_time-self.tstart)*0.001
-            msg = "The limit of %s degrees C will be reached at %s, " % (self.limit, self.limit_date)
+            self.duration = (self.limit_time.value-tstart)*0.001
+            msg = "The limit of %g degrees C will be reached at %s, " % (self.limit.value, self.limit_date)
             msg += "after %g ksec." % self.duration
         else:
             self.limit_time = None
             self.limit_date = None
             self.duration = None
-            msg = "The limit of %s degrees C is never reached!" % self.limit
+            msg = "The limit of %g degrees C is never reached!" % self.limit
         print(msg)
 
     def plot_model(self):
         """
         Plot the simulated model run.
         """
-        dp = super(SimulateCTIRun, self).plot_model()
+        dp = DatePlot(self, [("model", msid_dict[self.name])])
         dp.add_hline(self.limit.value, ls='--', lw=2, color='g')
         if self.limit_date is not None:
             dp.add_vline(self.limit_date, ls='--', lw=2, color='r')
         return dp
+
+    @property
+    def mvals(self):
+        return self['model', msid_dict[self.name]]
 
     @property
     def asymptotic_temperature(self):

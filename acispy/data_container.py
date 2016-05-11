@@ -294,10 +294,3 @@ class DataContainer(object):
         else:
             msids = TimeSeriesData({}, {})
         return cls(msids, states, model)
-
-    @classmethod
-    def fetch_model_from_xija(cls, xija_model, comps):
-        model = Model.from_xija(xija_model, comps)
-        msids = TimeSeriesData({}, {})
-        states = TimeSeriesData({}, {})
-        return cls(msids, states, model)
