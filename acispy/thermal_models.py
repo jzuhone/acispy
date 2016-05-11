@@ -18,7 +18,7 @@ msid_dict = {'dea': '1deamzt',
              'dpa': '1dpamzt',
              'psmc': '1pdeaat'}
 
-default_json_path = os.path.join(os.environ["SKA"], "ska/share/%s/%s_model_spec.json")
+default_json_path = os.path.join(os.environ["SKA"], "share/%s/%s_model_spec.json")
 
 class ThermalModelRunner(DataContainer):
     """
