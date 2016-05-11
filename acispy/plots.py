@@ -201,10 +201,10 @@ class DatePlot(ACISPlot):
             if src_name == "states":
                 tstart, tstop = dc.times(*field)
                 x = pointpair(tstart.value, tstop.value)
-                y = pointpair(dc[field])
+                y = pointpair(dc[field].value)
             else:
                 x = dc.times(*field).value
-                y = dc[field]
+                y = dc[field].value
             label = dc.fields[field].display_name
             ticklocs, fig, ax = plot_cxctime(x, y, fig=fig, lw=lw, ax=ax,
                                              color=colors[i],
@@ -240,10 +240,10 @@ class DatePlot(ACISPlot):
             if src_name2 == "states":
                 tstart, tstop = dc.times(*field2)
                 x = pointpair(tstart.value, tstop.value)
-                y = pointpair(dc[field2])
+                y = pointpair(dc[field2].value)
             else:
                 x = dc.times(*field2).value
-                y = dc[field2]
+                y = dc[field2].value
             plot_cxctime(x, y, fig=fig, ax=self.ax2, lw=lw,
                          drawstyle=drawstyle, color=color2)
             for label in self.ax2.get_xticklabels():
@@ -575,8 +575,8 @@ class PhasePlot(ACISPlot):
         if y_src_name == "states" and x_src_name != "states":
             raise RuntimeError("Cannot plot an MSID or model vs. a state, "
                                "put the state on the x-axis!")
-        x = dc[x_field]
-        y = dc[y_field]
+        x = dc[x_field].value
+        y = dc[y_field].value
         if x.size != y.size:
             # Interpolate the y-axis to the x-axis times
             times_in = dc.times(*y_field).value
