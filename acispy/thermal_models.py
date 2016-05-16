@@ -64,7 +64,11 @@ class ThermalModelRunner(DataContainer):
         state_times = np.array([date2secs(state_times[0]),
                                 date2secs(state_times[1])])
         if model_spec is None:
-            model_spec = os.path.join(default_json_path % (name, name))
+            if name == "psmc":
+                path = "psmc_check"
+            else:
+                path = name
+            model_spec = os.path.join(default_json_path % (path, name))
         else:
             model_spec = model_spec
         model = xija.XijaModel(name, start=tstart, stop=tstop, model_spec=model_spec)
