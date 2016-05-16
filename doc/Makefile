@@ -51,6 +51,11 @@ help:
 clean:
 	rm -rf $(BUILDDIR)/*
 
+.PHONY: cxchtml
+cxchtml: html
+    rm -rf /proj/web-cxc-dmz/htdocs/acis/acispy/
+    cp -rf build/html /proj/web-cxc-dmz/htdocs/acis/acispy/
+
 .PHONY: html
 html:
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
