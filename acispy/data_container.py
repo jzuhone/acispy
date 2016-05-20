@@ -127,7 +127,7 @@ class DataContainer(object):
         times_out = np.array(times)
         units = unit_table[ftype].get(fname, '')
         def _interp(dc):
-            times_in = dc.fields[ftype, fname].times.value
+            times_in = dc.times(ftype, fname).value
             return Quantity(Ska.Numpy.interpolate(dc[ftype, fname],
                                                   times_in, times_out,
                                                   method='linear'), units)
