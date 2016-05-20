@@ -22,6 +22,7 @@ class OutputTimeFunction(object):
 def dummy_time_function(times):
     def _tfunc(dc):
         return Quantity(times, 's')
+    return _tfunc
 
 class DerivedField(object):
     def __init__(self, ftype, fname, function, units, time_func, display_name=None):
