@@ -3,19 +3,14 @@ from acispy.states import States
 from acispy.model import Model
 from Chandra.Time import secs2date
 from acispy.fields import create_derived_fields, \
-    DerivedField, FieldContainer
+    DerivedField, FieldContainer, OutputFieldFunction, \
+    OutputTimeFunction, dummy_time_function
 from acispy.time_series import TimeSeriesData
 from acispy.utils import unit_table, \
     get_display_name, moving_average
 import Ska.Numpy
 from astropy.units import Quantity
 import numpy as np
-
-def make_field_func(ftype, fname):
-    def _field_func(dc):
-        obj = getattr(dc, ftype)
-        return obj[fname]
-    return _field_func
 
 class DataContainer(object):
     def __init__(self, msids, states, model):
@@ -27,33 +22,27 @@ class DataContainer(object):
         for ftype in ["msids", "states", "model"]:
             obj = getattr(self, ftype)
             for fname in obj.keys():
-                func = make_field_func(ftype, fname)
+                func = OutputFieldFunction(ftype, fname)
                 unit = unit_table[ftype].get(fname, '')
                 display_name = get_display_name(ftype, fname)
-                df = DerivedField(ftype, fname, func, [], unit,
-                                  display_name=display_name)
-                self.fields[ftype, fname] = df
+                tfunc = OutputTimeFunction(ftype, fname)
+                df = DerivedField(ftype, fname, func, unit,
+                                  tfunc, display_name=display_name)
+                self.fields.output_fields[ftype, fname] = df
                 self.field_list.append((ftype, fname))
         create_derived_fields(self)
 
     def __getitem__(self, item):
-        self._check_derived_field(item)
         return self.fields[item](self)
 
     def __contains__(self, item):
         return item in self.fields
 
-    def _check_derived_field(self, item):
-        deps = self.fields[item].get_deps()
-        for dep in deps:
-            if dep not in self:
-                raise RuntimeError("Derived field %s needs field %s, but you didn't load it!" % (item, dep))
-
     @property
     def derived_field_list(self):
         return list(self.fields.derived_fields.keys())
 
-    def add_derived_field(self, ftype, fname, function, deps, units, time_func=None,
+    def add_derived_field(self, ftype, fname, function, units, times,
                           display_name=None):
         """
         Add a new derived field.
@@ -68,9 +57,11 @@ class DataContainer(object):
             The function which computes the field.
         units : string
             The units of the field.
-        time_func : function, optional
-            A function which returns the timing data
-            for the field.
+        times : array or tuple
+            The timing data for the field in seconds from the
+            beginning of the mission. Can supply a array of times
+            or a field specification. If the latter, then the
+            times for this field will be used.
         display_name : string, optional
             The name to use when displaying the field in plots. 
 
@@ -79,11 +70,14 @@ class DataContainer(object):
         >>> def _dpaa_power(dc):
         ...     return (dc["msids", "1dp28avo"]*dc["msids", "1dpicacu"]).to("W")
         >>> dc.add_derived_field("msids", "dpa_a_power", _dpaa_power, 
-        ...                      [("msids", "1dp28avo"), ("msids", "1dpicacu")],
-        ...                      "W", display_name="DPA-A Power")
+        ...                      ("msids", "1dp28avo"), "W",
+        ...                      display_name="DPA-A Power")
         """
-        df = DerivedField(ftype, fname, function, deps, units, time_func=time_func,
-                          display_name=display_name)
+        if isinstance(times, tuple):
+            tfunc = OutputTimeFunction(times[0], times[1])
+        else:
+            tfunc = dummy_time_function(times)
+        df = DerivedField(ftype, fname, function, units, tfunc, display_name=display_name)
         self.fields.derived_fields[ftype, fname] = df
 
     def add_averaged_field(self, ftype, fname, n=10):
@@ -101,16 +95,15 @@ class DataContainer(object):
 
         Examples
         --------
-        >>> add_averaged_field("msids", "1dpicacu", n=10) 
+        >>> dc.add_averaged_field("msids", "1dpicacu", n=10) 
         """
         def _avg(dc):
             return moving_average(dc[ftype, fname], n=n)
-        def _avg_times(dc):
-            return dc.times(ftype, fname)[n-1:]
+        avg_times = self.fields[ftype, fname].times[n-1:]
         display_name = "Average %s" % self.fields[ftype, fname].display_name
         units = unit_table[ftype].get(fname, '')
-        self.add_derived_field(ftype, "avg_%s" % fname, _avg, [(ftype, fname)], units,
-                               time_func=_avg_times, display_name=display_name)
+        self.add_derived_field(ftype, "avg_%s" % fname, _avg, units,
+                               avg_times, display_name=display_name)
 
     def add_interpolated_field(self, ftype, fname, times):
         """
@@ -134,15 +127,13 @@ class DataContainer(object):
         times_out = np.array(times)
         units = unit_table[ftype].get(fname, '')
         def _interp(dc):
-            times_in = dc.times(ftype, fname).value
+            times_in = dc.fields[ftype, fname].times.value
             return Quantity(Ska.Numpy.interpolate(dc[ftype, fname],
                                                   times_in, times_out,
                                                   method='linear'), units)
-        def _interp_times(dc):
-            return Quantity(times_out, 's')
         display_name = self.fields[ftype, fname].display_name
-        self.add_derived_field(ftype, "interp_%s" % fname, _interp, [(ftype, fname)],
-                               units, time_func=_interp_times, display_name=display_name)
+        self.add_derived_field(ftype, "interp_%s" % fname, _interp, units,
+                               times_out, display_name=display_name)
 
     def times(self, ftype, fname):
         """
@@ -153,14 +144,7 @@ class DataContainer(object):
         --------
         >>> dc.times("msids", "1deamzt")
         """
-        if (ftype, fname) in self.fields.derived_fields:
-            df = self.fields.derived_fields[ftype, fname]
-            return df.time_func(self)
-        elif (ftype, fname) in self.fields.output_fields:
-            src = getattr(self, ftype)
-            return src.times[fname]
-        else:
-            raise KeyError((ftype, fname))
+        return self.fields[ftype, fname].time_func(self)
 
     def dates(self, ftype, fname):
         """

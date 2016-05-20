@@ -17,12 +17,12 @@ class States(TimeSeriesData):
                     self.table[k] = Quantity(v, state_units[k])
                 else:
                     self.table[k] = v
-                self.times[k] = (Quantity(table["tstart"], 's'), 
-                                 Quantity(table["tstop"], 's'))
+                self.times[k] = Quantity(np.array([table["tstart"],
+                                                   table['tstop']]), 's')
         if set(["q1","q2","q3","q4"]) < set(self.table.keys()):
             self.table["off_nominal_roll"] = Quantity(calc_off_nom_rolls(table), 'deg')
-            self.times["off_nominal_roll"] = (Quantity(table["tstart"], 's'), 
-                                              Quantity(table["tstop"], 's'))
+            self.times["off_nominal_roll"] = Quantity(np.array([table["tstart"],
+                                                                table['tstop']]), 's')
 
     @classmethod
     def from_database(cls, states, tstart, tstop):
