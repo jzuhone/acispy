@@ -59,7 +59,7 @@ class DataContainer(object):
             The units of the field.
         times : array or tuple
             The timing data for the field in seconds from the
-            beginning of the mission. Can supply a array of times
+            beginning of the mission. Can supply an array of times
             or a field specification. If the latter, then the
             times for this field will be used.
         display_name : string, optional
@@ -116,14 +116,19 @@ class DataContainer(object):
             The type of the field to be averaged.
         fname : string
             The name of the field to be averaged.
-        times : array of times
-            The timing array to interpolate the array to.
+        times : array or tuple
+            The timing array to interpolate the data to. In units
+            of seconds from the beginning of the mission. Can supply 
+            an array of times or a field specification. If the latter
+            then the times for this field will be used.
 
         Examples
         --------
         >>> times = dc.times("msids", "1pdeaat")
         >>> add_interpolated_field("msids", "1pin1at", times) 
         """
+        if isinstance(times, tuple):
+            times = self.times(times[0], times[1])
         times_out = np.array(times)
         units = unit_table[ftype].get(fname, '')
         def _interp(dc):
