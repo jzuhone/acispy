@@ -35,12 +35,24 @@ class States(TimeSeriesData):
         return cls(table)
 
     @classmethod
-    def from_load(cls, load):
+    def from_load_page(cls, load):
         url = "http://cxc.cfa.harvard.edu/acis/DPA_thermPredic/"
         url += "%s/ofls%s/states.dat" % (load[:-1].upper(), load[-1].lower())
         u = requests.get(url)
         t = ascii.read(u.text)
         table = dict((k, t[k].data) for k in t.keys())
+        # hack
+        if 'T_pin1at' in table:
+            table.pop("T_pin1at")
+        return cls(table)
+
+    @classmethod
+    def from_load_file(cls, states_file):
+        t = ascii.read(states_file)
+        table = dict((k, t[k].data) for k in t.keys())
+        # hack
+        if 'T_pin1at' in table:
+            table.pop("T_pin1at")
         return cls(table)
 
     def get_states(self, time):

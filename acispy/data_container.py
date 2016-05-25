@@ -251,17 +251,21 @@ class DataContainer(object):
         return cls(msids, states, model)
 
     @classmethod
-    def fetch_model_from_load(cls, load, comps, get_msids=False):
+    def fetch_model_from_load(cls, load, comps=None, get_msids=False):
         """
         Fetch a temperature model and its associated commanded states
         from a load review. Optionally get MSIDs for the same time period.
 
         Parameters
         ----------
-        load : string
-            The load review to get the model from, i.e. "JAN2516A"
-        comps : list of strings
-            List of temperature components to get from the load models.
+        load : string or tuple of files
+            The load review to get the model from, i.e. "JAN2516A", or
+            ("temperatures.dat", "states.dat")
+        comps : list of strings, optional
+            List of temperature components to get from the load models. If
+            not specified all four components will be loaded, unless you are
+            loading the model from a single temperatures.dat file, in which
+            case this keyword will be ignored. 
         get_msids : boolean, optional
             Whether or not to load the MSIDs corresponding to the 
             temperature models for the same time period from the 
@@ -273,12 +277,18 @@ class DataContainer(object):
         >>> comps = ["1deamzt", "1pdeaat", "fptemp_11"]
         >>> dc = DataContainer.fetch_model_from_load("APR0416C", comps, get_msids=True)
         """
-        model = Model.from_load(load, comps)
-        states = States.from_load(load)
+        if isinstance(load, tuple):
+            model = Model.from_load_file(load[0])
+            states = States.from_load_file(load[1])
+        else:
+            if comps is None:
+                comps = ["1deamzt","1dpamzt","1pdeaat","fptemp_11"]
+            model = Model.from_load_page(load, comps)
+            states = States.from_load_page(load)
         if get_msids:
             tstart = states["datestart"][0]
             tstop = states["datestop"][-1]
-            msids = MSIDs.from_database(comps, tstart, tstop=tstop,
+            msids = MSIDs.from_database(model.keys(), tstart, tstop=tstop,
                                         filter_bad=True)
         else:
             msids = TimeSeriesData({}, {})

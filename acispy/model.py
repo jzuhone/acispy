@@ -23,7 +23,7 @@ class Model(TimeSeriesData):
         return cls(table, times)
 
     @classmethod
-    def from_load(cls, load, components):
+    def from_load_page(cls, load, components):
         if not isinstance(components, list):
             components = [components]
         data = {}
@@ -39,6 +39,17 @@ class Model(TimeSeriesData):
             times[comp] = Quantity(table["time"], 's')
         return cls(data, times)
 
+    @classmethod
+    def from_load_file(cls, temps_file):
+        data = {}
+        times = {}
+        table = ascii.read(temps_file)
+        comp = list(table.keys())[-1]
+        key = "fptemp_11" if comp == "fptemp" else comp
+        data[key] = Quantity(table[comp].data, msid_units[comp])
+        times[key] = Quantity(table["time"], 's')
+        return cls(data, times)
+
     def get_values(self, time):
         time = get_time(time).secs
         values = {}
@@ -47,5 +58,8 @@ class Model(TimeSeriesData):
                                                          self.times[key].value, [time],
                                                          method='linear'), msid_units[key])
         return values
+    
+    def keys(self):
+        return self.table.keys()
 
 
