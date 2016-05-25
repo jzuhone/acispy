@@ -58,8 +58,15 @@ class Model(TimeSeriesData):
                                                          self.times[key].value, [time],
                                                          method='linear'), msid_units[key])
         return values
-    
+
     def keys(self):
         return self.table.keys()
 
-
+    @classmethod
+    def join_models(cls, model_list):
+        table = {}
+        times = {}
+        for model in model_list:
+            table.update(model.table)
+            times.update(model.times)
+        return cls(table, times)

@@ -177,8 +177,10 @@ unit_labels = {"V": 'V',
                "deg": "deg"}
 
 def get_display_name(type, name):
-    if type == "model":
+    if type.startswith("model"):
         display_name = name.upper() + " Model"
+        if type != "model":
+            display_name += str(type[-1])
     elif type == "states":
         display_name = state_labels[name]
     else:
