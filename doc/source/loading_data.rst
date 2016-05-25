@@ -70,6 +70,35 @@ To get the corresponding MSIDs from the engineering archive during the same
 time frame, pass to :meth:`~acispy.data_container.DataContainer.fetch_model_from_load`
 the keyword argument ``get_msids=True``.
 
+Reading Model Data from Files
+-----------------------------
+The model validation tools (such as `dea_check <http://github.com/acisops/dea_check>`_)
+output ASCII table files ``"temperatures.dat"`` and ``"states.dat"`` that contain the 
+temperature and commanded state information as a function of time. If you have these
+files and would like to load them in, this can be done using the
+:meth:`~acispy.data_container.DataContainer.fetch_models_from_files` method:
+
+.. code-block:: python
+
+    from acispy import DataContainer
+    model_files = ["dea_model/temperatures.dat", "dpa_model/temperatures.dat",
+                   "fp_model/temperatures.dat"]
+    dc = DataContainer.fetch_models_from_files(model_files, "dea_model/states.dat",
+                                               get_msids=True)
+                                               
+Like the previous method, this one takes the ``get_msids`` keyword argument to 
+obtain the corresponding MSIDs from the archive if desired. 
+
+This method can also be used to import model data for the same MSID for different
+model runs:
+
+.. code-block:: python
+
+    from acispy import DataContainer
+    model_files = ["old_model/temperatures.dat", "new_model/temperatures.dat"]
+    dc = DataContainer.fetch_models_from_files(model_files, "old_model/states.dat",
+                                               get_msids=True)
+
 Directly Accessing Data from the Container
 ------------------------------------------
 
@@ -140,6 +169,33 @@ check the `field_list` attribute:
      ('states', 'pitch'),
      ('states', 'ccd_count')]
 
+If you have loaded data for the same model component from more than one model, then
+these will appear in the :class:`~acispy.data_container.DataContainer` with field types
+of the form ``"model[n]"``, where ``n`` is a a zero-based integer:
+
+.. code-block:: python
+
+    from acispy import DataContainer
+    model_files = ["old_model/temperatures.dat", "new_model/temperatures.dat"]
+    dc = DataContainer.fetch_models_from_files(model_files, "old_model/states.dat",
+                                               get_msids=True)
+    print dc.field_list
+
+gives:
+
+.. code-block:: pycon
+
+    [('model0', '1pdeaat'),
+     ('model1', '1pdeaat'),
+     ('states', 'q1'),
+     ('states', 'q3'),
+     ('states', 'q2'),
+     ('states', 'q4'),
+     ...
+     ('states', 'off_nominal_roll'),
+     ('states', 'pitch'),
+     ('states', 'ccd_count')]
+    
 Timing Information
 ------------------
 
