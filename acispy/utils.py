@@ -187,13 +187,14 @@ def get_display_name(type, name):
         display_name = name.upper()
     return display_name
 
-def interpolate_indexes(times_in, times_out):
+def bracket_times(times_in, times_out):
     ok = (times_out >= times_in[0]) & (times_out <= times_in[-1])
-    times_out = times_out[ok]
-    idxs = Ska.Numpy.interpolate(np.arange(len(times_in)),
-                                 times_in, times_out,
-                                 method='nearest', sorted=True)
-    return ok, idxs
+    return ok
+
+def interpolate(times_in, times_out, data_in):
+    data_out = Ska.Numpy.interpolate(data_in, times_in, times_out,
+                                     method='linear', sorted=True)
+    return data_out
 
 def moving_average(a, n=5):
     cumsum = np.cumsum(np.insert(a, 0, 0))

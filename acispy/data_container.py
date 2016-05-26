@@ -8,8 +8,7 @@ from acispy.fields import create_derived_fields, \
 from acispy.time_series import TimeSeriesData
 from acispy.utils import unit_table, \
     get_display_name, moving_average, \
-    ensure_list
-import Ska.Numpy
+    ensure_list, interpolate, bracket_times
 from astropy.units import Quantity
 import numpy as np
 
@@ -143,13 +142,15 @@ class DataContainer(object):
         """
         if isinstance(times, tuple):
             times = self.times(times[0], times[1])
-        times_out = np.array(times)
+        ok = bracket_times(self.times(ftype, fname), times)
+        if ok.sum() != times.size:
+            raise RuntimeError("The given times array does not fully span the times "
+                               "array for the field you want to interpolate!")
+        times_out = np.array(times[ok])
         units = unit_table[ftype].get(fname, '')
         def _interp(dc):
             times_in = dc.times(ftype, fname).value
-            return Quantity(Ska.Numpy.interpolate(dc[ftype, fname],
-                                                  times_in, times_out,
-                                                  method='linear'), units)
+            return Quantity(interpolate(times_in, times_out, dc[ftype, fname]), units)
         display_name = self.fields[ftype, fname].display_name
         self.add_derived_field(ftype, "interp_%s" % fname, _interp, units,
                                times_out, display_name=display_name)
