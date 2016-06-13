@@ -82,7 +82,7 @@ class ThermalModelRunner(DataContainer):
             model.comp['dpa_power'].set_data(0.0) # This is just a hack, we're not 
                                                   # really setting the power to zero.
         if 'pin1at' in model.comp:
-            model.comp['pin1at'].set_data(T_init-13.)
+            model.comp['pin1at'].set_data(T_init-10.)
         if 'dh_heater' in model.comp:
             model.comp['dh_heater'].set_data(states.get("dh_heater", 0), state_times)
         for st in ('ccd_count', 'fep_count', 'vid_board', 'clocking', 'pitch'):
