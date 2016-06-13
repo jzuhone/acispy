@@ -4,6 +4,24 @@ from Chandra.Time import DateTime
 import Ska.Sun
 import Ska.Numpy
 import numpy as np
+import logging
+import sys
+
+acispyLogger = logging.getLogger("acispy")
+
+ufstring = "%(name)-3s: [%(levelname)-9s] %(asctime)s %(message)s"
+cfstring = "%(name)-3s: [%(levelname)-18s] %(asctime)s %(message)s"
+
+acispy_sh = logging.StreamHandler(stream=sys.stderr)
+# create formatter and add it to the handlers
+formatter = logging.Formatter(ufstring)
+acispy_sh.setFormatter(formatter)
+# add the handler to the logger
+acispyLogger.addHandler(acispy_sh)
+acispyLogger.setLevel(20)
+acispyLogger.propagate = False
+
+mylog = acispyLogger
 
 def get_time(time):
     if time is "now":

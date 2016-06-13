@@ -9,6 +9,7 @@ from Chandra.Time import secs2date, date2secs
 from acispy.states import States
 from acispy.model import Model
 from acispy.time_series import TimeSeriesData
+from acispy.utils import mylog
 
 limits = {'dea': 35.5,
           'dpa': 35.5,
@@ -171,7 +172,7 @@ class SimulateCTIRun(ThermalModelRunner):
             self.limit_date = None
             self.duration = None
             msg = "The limit of %g degrees C is never reached!" % self.limit.value
-        print(msg)
+        mylog.info(msg)
 
     def plot_model(self):
         """
