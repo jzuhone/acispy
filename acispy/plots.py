@@ -143,6 +143,12 @@ class ACISPlot(object):
         fontdict = {"size": fontsize, "family": "serif"}
         self.ax.set_ylabel(ylabel, fontdict=fontdict, **kwargs)
 
+    def redraw(self):
+        """
+        Re-draw the plot.
+        """
+        self.fig.canvas.draw()
+
 class DatePlot(ACISPlot):
     r""" Make a single-panel plot of a quantity (or multiple quantities) 
     vs. date and time. 
@@ -432,6 +438,10 @@ class MultiDatePlot(object):
     >>> from acispy import MultiDatePlot
     >>> fields = [("msids", "1deamzt"), ("model", "1deamzt"), ("states", "ccd_count")]
     >>> mp = MultiDatePlot(dc, fields, lw=2, subplots=(2, 2))
+
+    >>> from acispy import MultiDatePlot
+    >>> fields = [[("msids", "1deamzt"), ("model", "1deamzt")], ("states", "ccd_count")]
+    >>> mp = MultiDatePlot(dc, fields, lw=2)
     """
     def __init__(self, dc, fields, subplots=None,
                  fontsize=15, lw=1.5, fig=None):
@@ -442,13 +452,17 @@ class MultiDatePlot(object):
         self.plots = OrderedDict()
         for i, field in enumerate(fields):
             ax = fig.add_subplot(subplots[0], subplots[1], i+1)
-            self.plots[field] = DatePlot(dc, field, fig=fig, ax=ax, lw=lw)
+            if isinstance(field, list):
+                fd = field[0]
+            else:
+                fd = field
+            self.plots[fd] = DatePlot(dc, field, fig=fig, ax=ax, lw=lw)
             ax.xaxis.label.set_size(fontsize)
             ax.yaxis.label.set_size(fontsize)
             ax.xaxis.set_tick_params(labelsize=fontsize)
             ax.yaxis.set_tick_params(labelsize=fontsize)
         self.fig = fig
-        xmin, xmax = self.plots[fields[0]].ax.get_xlim()
+        xmin, xmax = self.plots[self.plots.keys()[0]].ax.get_xlim()
         self.set_xlim(num2date(xmin), num2date(xmax))
 
     def __getitem__(self, item):
@@ -531,6 +545,12 @@ class MultiDatePlot(object):
         canvas.print_figure(f)
         f.seek(0)
         return f.read()
+
+    def redraw(self):
+        """
+        Re-draw the plot.
+        """
+        self.fig.canvas.draw()
 
 class PhasePlot(ACISPlot):
     r""" Make a single-panel plot of one quantity vs. another.
