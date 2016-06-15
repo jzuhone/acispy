@@ -5,7 +5,7 @@ from Chandra.Time import secs2date
 from acispy.fields import create_derived_fields, \
     DerivedField, FieldContainer, OutputFieldFunction, \
     OutputTimeFunction, dummy_time_function
-from acispy.time_series import TimeSeriesData
+from acispy.time_series import TimeSeriesData, EmptyTimeSeries
 from acispy.utils import unit_table, \
     get_display_name, moving_average, \
     ensure_list, interpolate, bracket_times
@@ -215,12 +215,12 @@ class DataContainer(object):
             msids = MSIDs.from_database(msid_keys, tstart, tstop=tstop, 
                                        filter_bad=filter_bad, stat=stat)
         else:
-            msids = TimeSeriesData({}, {})
+            msids = EmptyTimeSeries()
         if state_keys is not None:
             states = States.from_database(state_keys, tstart, tstop)
         else:
-            states = TimeSeriesData({}, {})
-        model = TimeSeriesData({}, {})
+            states = EmptyTimeSeries()
+        model = EmptyTimeSeries()
         return cls(msids, states, model)
 
     @classmethod
@@ -243,7 +243,7 @@ class DataContainer(object):
         >>> dc = DataContainer.fetch_from_tracelog("acisENG10d_00985114479.70.tl",
         ...                                        state_keys=states)
         """
-        states = TimeSeriesData({}, {})
+        states = EmptyTimeSeries()
         # Figure out what kind of file this is
         f = open(filename, "r")
         line = f.readline()
@@ -262,7 +262,7 @@ class DataContainer(object):
                     tmin = min(msids[k][0], tmin)
                     tmax = max(msids[k][-1], tmax)
             states = States.from_database(state_keys, secs2date(tmin), secs2date(tmax))
-        model = TimeSeriesData({}, {})
+        model = EmptyTimeSeries()
         return cls(msids, states, model)
 
     @classmethod
@@ -299,7 +299,7 @@ class DataContainer(object):
             msids = MSIDs.from_database(comps, tstart, tstop=tstop,
                                         filter_bad=True)
         else:
-            msids = TimeSeriesData({}, {})
+            msids = EmptyTimeSeries()
         return cls(msids, states, model)
 
     @classmethod
@@ -341,7 +341,6 @@ class DataContainer(object):
             models = Model.from_load_file(temp_files[0])
             comps = list(models.keys())
         else:
-            models = {}
             model_list = []
             comps = []
             for temp_file in temp_files:
@@ -362,5 +361,5 @@ class DataContainer(object):
             tstop = secs2date(states.times["ccd_count"][1][-1])
             msids = MSIDs.from_database(comps, tstart, tstop=tstop, filter_bad=True)
         else:
-            msids = TimeSeriesData({}, {})
+            msids = EmptyTimeSeries()
         return cls(msids, states, models)

@@ -11,3 +11,7 @@ class TimeSeriesData(object):
 
     def keys(self):
         return list(self.table.keys())
+
+class EmptyTimeSeries(TimeSeriesData):
+    def __init__(self):
+        super(TimeSeriesData, self).__init__({}, {})
