@@ -199,6 +199,7 @@ class DatePlot(ACISPlot):
         if colors is None:
             colors = default_colors
         fields = ensure_list(fields)
+        self.fields = fields
         self.num_fields = len(fields)
         colors = ensure_list(colors)
         for i, field in enumerate(fields):
@@ -382,6 +383,25 @@ class DatePlot(ACISPlot):
                                "has only one set of data on the left y-axis!")
         prop = {"family": "serif", "size": fontsize}
         self.ax.legend(loc=loc, prop=prop, **kwargs)
+
+    def set_field_label(self, field, label):
+        """
+        Change the field label in the legend.
+
+        Parameters
+        ----------
+        field : (type, name) tuple
+            The field whose label to change.
+        label :
+            The label to set it to.
+
+        Examples
+        --------
+        >>> dp.set_field_label(("msids","1deamzt"), "DEA Temperature")
+        """
+        idx = self.fields.index(field)
+        self.ax.lines[idx].set_label(label)
+        self.set_legend()
 
     def add_text(self, time, y, text, fontsize=18, color='black', 
                  rotation='horizontal', **kwargs):
