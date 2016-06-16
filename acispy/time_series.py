@@ -14,4 +14,4 @@ class TimeSeriesData(object):
 
 class EmptyTimeSeries(TimeSeriesData):
     def __init__(self):
-        super(TimeSeriesData, self).__init__({}, {})
+        super(EmptyTimeSeries, self).__init__({}, {})
