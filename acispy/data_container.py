@@ -207,6 +207,7 @@ class DataContainer(object):
         >>> from acispy import DataContainer
         >>> tstart = "2016:091:12:05:00.100"
         >>> tstop = "2016:100:13:07:45.234"
+        >>> msids = ["1deamzt", "1pin1at"]
         >>> states = ["pitch", "off_nominal_roll"]
         >>> dc = DataContainer.fetch_from_database(tstart, tstop, msid_keys=msids,
         ...                                        state_keys=states)
@@ -216,10 +217,7 @@ class DataContainer(object):
                                        filter_bad=filter_bad, stat=stat)
         else:
             msids = EmptyTimeSeries()
-        if state_keys is not None:
-            states = States.from_database(state_keys, tstart, tstop)
-        else:
-            states = EmptyTimeSeries()
+        states = States.from_database(state_keys, tstart, tstop)
         model = EmptyTimeSeries()
         return cls(msids, states, model)
 

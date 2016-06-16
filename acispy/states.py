@@ -26,6 +26,11 @@ class States(TimeSeriesData):
 
     @classmethod
     def from_database(cls, states, tstart, tstop):
+        if states is None:
+            states = ["q1","q2","q3","q4","pitch","ccd_count","clocking","ra",
+                      "dec","roll","dither","fep_count","hetg","letg","obsid",
+                      "pcad_mode","power_cmd","si_mode","simfa_pos","simpos",
+                      "vid_board"]
         st = states[:]
         if "off_nominal_roll" in states:
             st.remove("off_nominal_roll")
