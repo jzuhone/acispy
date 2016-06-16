@@ -8,8 +8,9 @@ import numpy as np
 from Chandra.Time import secs2date, date2secs
 from acispy.states import States
 from acispy.model import Model
-from acispy.time_series import TimeSeriesData
+from acispy.time_series import EmptyTimeSeries
 from acispy.utils import mylog
+import Ska.Numpy
 
 limits = {'dea': 35.5,
           'dpa': 35.5,
@@ -48,12 +49,12 @@ class ThermalModelRunner(DataContainer):
     Examples
     --------
     >>> states = {"ccd_count": np.array([5,6,1]),
-    ...          "pitch": np.array([150.0]*3),
-    ...          "fep_count": np.array([5,6,1]),
-    ...          "clocking": np.array([1]*3),
-    ...          "vid_board": np.array([1]*3),
-    ...          "off_nominal_roll": np.array([0.0]*3),
-    ...          "simpos": np.array([-99616.0]*3)}
+    ...           "pitch": np.array([150.0]*3),
+    ...           "fep_count": np.array([5,6,1]),
+    ...           "clocking": np.array([1]*3),
+    ...           "vid_board": np.array([1]*3),
+    ...           "off_nominal_roll": np.array([0.0]*3),
+    ...           "simpos": np.array([-99616.0]*3)}
     >>> state_times = [["2015:002:00:00:00","2015:002:12:00:00","2015:003:12:00:00"],
     ...                ["2015:002:12:00:00","2015:003:12:00:00","2015:005:00:00:00"]]
     >>> dpa_model = ThermalModelRunner("dpa", "2015:002:00:00:00", 
@@ -80,7 +81,7 @@ class ThermalModelRunner(DataContainer):
         if 'roll' in model.comp:
             model.comp['roll'].set_data(states['off_nominal_roll'], state_times)
         if 'dpa_power' in model.comp:
-            model.comp['dpa_power'].set_data(0.0) # This is just a hack, we're not 
+            model.comp['dpa_power'].set_data(0.0) # This is just a hack, we're not
                                                   # really setting the power to zero.
         if 'pin1at' in model.comp:
             model.comp['pin1at'].set_data(T_init-10.)
@@ -93,16 +94,65 @@ class ThermalModelRunner(DataContainer):
 
         states["tstart"] = state_times[0,:]
         states["tstop"] = state_times[1,:]
+        states["datestart"] = secs2date(state_times[0,:])
+        states["datestop"] = secs2date(state_times[1,:])
         states.pop("dh_heater", None)
 
         self.name = name
         self.model_spec = model_spec
+        self.model = model
 
         model_obj = Model.from_xija(model, [msid_dict[name]])
-        msids_obj = TimeSeriesData({}, {})
+        msids_obj = EmptyTimeSeries()
         states_obj = States(states)
 
         super(ThermalModelRunner, self).__init__(msids_obj, states_obj, model_obj)
+
+    def write_model(self, model_file):
+        """
+        Write the model data vs. time to an ASCII text file.
+
+        Parameters
+        ----------
+        model_file : string
+            The filename to write the data to.
+        """
+        msid = msid_dict[self.name]
+        T = self["model", msid].value
+        times = self.times("model", msid).value
+        dates = self.dates("model", msid)
+        temp_array = np.rec.fromarrays([times, dates, T], names=('time', 'date', msid))
+        fmt = {msid: '%.2f',
+               'time': '%.2f'}
+        out = open(model_file, 'w')
+        Ska.Numpy.pprint(temp_array, fmt, out)
+        out.close()
+
+    def write_states(self, states_file):
+        """
+        Write the model states vs. time to an ASCII text file.
+
+        Parameters
+        ----------
+        states_file : string
+            The filename to write the states to.
+        """
+        states = {}
+        states["tstart"] = self.times("states","pitch")[0].value
+        states["tstop"] = self.times("states","pitch")[1].value
+        states["datestart"] = self.dates("states","pitch")[0]
+        states["datestop"] = self.dates("states","pitch")[1]
+        states.update(self.states)
+        out = open(states_file, 'w')
+        fmt = {'power': '%.1f',
+               'pitch': '%.2f',
+               'tstart': '%.2f',
+               'tstop': '%.2f',
+               }
+        newcols = list(states.keys())
+        newstates = np.rec.fromarrays([states[x] for x in newcols], names=newcols)
+        Ska.Numpy.pprint(newstates, fmt, out)
+        out.close()
 
 class SimulateCTIRun(ThermalModelRunner):
     """
