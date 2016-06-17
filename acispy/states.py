@@ -26,7 +26,7 @@ class States(TimeSeriesData):
 
     @classmethod
     def from_database(cls, states, tstart, tstop):
-        if states is None:
+        if states is "default":
             states = ["q1","q2","q3","q4","pitch","ccd_count","clocking","ra",
                       "dec","roll","dither","fep_count","hetg","letg","obsid",
                       "pcad_mode","power_cmd","si_mode","simfa_pos","simpos",
