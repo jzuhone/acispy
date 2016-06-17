@@ -1,7 +1,7 @@
 from acispy.msids import MSIDs
 from acispy.states import States
 from acispy.model import Model
-from Chandra.Time import secs2date
+from Chandra.Time import secs2date, date2secs
 from acispy.fields import create_derived_fields, \
     DerivedField, FieldContainer, OutputFieldFunction, \
     OutputTimeFunction, dummy_time_function
@@ -158,7 +158,7 @@ class DataContainer(object):
     def times(self, ftype, fname):
         """
         Return the timing information in seconds from the beginning of the mission
-        for a field given its *type* and *name*.
+        for a field given its *ftype* and *fname*.
 
         Examples
         --------
@@ -168,7 +168,7 @@ class DataContainer(object):
 
     def dates(self, ftype, fname):
         """
-        Return the timing information in date and time for a field given its *type* and *name*.
+        Return the timing information in date and time for a field given its *ftype* and *fname*.
 
         Examples
         --------
@@ -179,6 +179,36 @@ class DataContainer(object):
             return (secs2date(times[0]), secs2date(times[1]))
         else:
             return secs2date(times)
+
+    def slice_field_on_dates(self, ftype, fname, tstart, tstop):
+        """
+        Return a sliced array of a field between two dates.
+
+        Parameters
+        ----------
+        ftype : string
+            The field type.
+        fname : string
+            The field name.
+        tstart : string
+            The start time in YYYY:DOY:HH:MM:SS format
+        tstop : string
+            The stop time in YYYY:DOY:HH:MM:SS format
+
+        Examples
+        --------
+        >>> dc.slice_field_on_dates("states", "pitch", "2016:100:10:21:30", "2016:110:09:23:11")
+        """
+        tstart = date2secs(tstart)
+        tstop = date2secs(tstop)
+        times = self.times(ftype, fname)
+        if ftype == 'states':
+            st = np.searchsorted(times[0].value, tstart)
+            ed = np.searchsorted(times[1].value, tstop)
+        else:
+            st = np.searchsorted(times.value, tstart)
+            ed = np.searchsorted(times.value, tstop)
+        return self[ftype, fname][st:ed]
 
     @classmethod
     def fetch_from_database(cls, tstart, tstop, msid_keys=None, state_keys=None, 
