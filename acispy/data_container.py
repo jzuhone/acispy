@@ -1,7 +1,7 @@
 from acispy.msids import MSIDs
 from acispy.states import States
 from acispy.model import Model
-from Chandra.Time import secs2date, date2secs
+from Chandra.Time import secs2date, DateTime
 from acispy.fields import create_derived_fields, \
     DerivedField, FieldContainer, OutputFieldFunction, \
     OutputTimeFunction, dummy_time_function
@@ -199,8 +199,8 @@ class DataContainer(object):
         --------
         >>> dc.slice_field_on_dates("states", "pitch", "2016:100:10:21:30", "2016:110:09:23:11")
         """
-        tstart = date2secs(tstart)
-        tstop = date2secs(tstop)
+        tstart = DateTime(tstart).secs
+        tstop = DateTime(tstop).secs
         times = self.times(ftype, fname)
         if ftype == 'states':
             st = np.searchsorted(times[0].value, tstart)

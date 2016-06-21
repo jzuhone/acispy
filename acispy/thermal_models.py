@@ -5,7 +5,7 @@ from astropy.units import Quantity
 from acispy.data_container import DataContainer
 from acispy.plots import DatePlot
 import numpy as np
-from Chandra.Time import secs2date, date2secs
+from Chandra.Time import secs2date, DateTime
 from acispy.states import States
 from acispy.model import Model
 from acispy.time_series import EmptyTimeSeries
@@ -63,8 +63,8 @@ class ThermalModelRunner(DataContainer):
     """
     def __init__(self, name, tstart, tstop, states, state_times, 
                  T_init, model_spec=None):
-        state_times = np.array([date2secs(state_times[0]),
-                                date2secs(state_times[1])])
+        state_times = np.array([DateTime(state_times[0]).secs,
+                                DateTime(state_times[1]).secs])
         if model_spec is None:
             if name == "psmc":
                 path = "psmc_check"
@@ -199,7 +199,7 @@ class SimulateCTIRun(ThermalModelRunner):
                   "off_nominal_roll": off_nominal_roll,
                   "dh_heater": dh_heater}
         datestart = tstart
-        tstart = date2secs(tstart)
+        tstart = DateTime(tstart).secs
         tstop = tstart + days*86400.
         datestop = secs2date(tstop)
         state_times = [[datestart], [datestop]]
