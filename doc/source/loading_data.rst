@@ -16,8 +16,9 @@ Fetching Data from the Online Database
 Often, one will want to fetch data directly from the Chandra engineering
 archive and the commanded states database within a particular date and time 
 range. The method :meth:`~acispy.data_container.DataContainer.fetch_from_database` 
-enables this functionality. The MSIDs and states you want to extract must be 
-specified:
+enables this functionality. The MSIDs you want to extract must be 
+specified. You may either specify a set of states using the ``state_keys``
+keyword argument; otherwise a useful default set will be loaded.
 
 .. code-block:: python
 
@@ -50,8 +51,9 @@ file will be extracted from the commanded states database.
                                            state_keys=states)
     
 In this case, all of the MSIDs in the tracelog are ingested into the 
-:class:`~acispy.data_container.DataContainer`, whereas the states that you 
-want must be specified.
+:class:`~acispy.data_container.DataContainer`. You may either specify 
+a set of states using the ``state_keys`` keyword argument; otherwise 
+a useful default set will be loaded.
 
 Reading Model Data from a Load
 ------------------------------
@@ -196,6 +198,16 @@ gives:
      ('states', 'pitch'),
      ('states', 'ccd_count')]
     
+To slice a field array between two times, use the :class:`~acispy.DataContainer.slice_field_on_dates`
+method:
+
+.. code-block:: python
+
+    dc.slice_field_on_dates("states", "ccd_count", "2016:092:11:00:00", 
+                            "2016:095:13:26:00")
+
+which returns a subset of the array data between the two times. 
+
 Timing Information
 ------------------
 

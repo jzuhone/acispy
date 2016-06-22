@@ -50,6 +50,34 @@ Returns:
     1dpamzt: 24.9379195122 deg_C
     1pdeaat: 28.2671678049 deg_C
 
+``make_sop_table``
+------------------
+
+.. code-block:: text
+
+    usage: make_sop_table [-h] [-c C] [-d D] [-p P] [-t T] [-l L] [-f F] tablefile
+    
+    Create a LaTeX table for a SOP from a tab-separated table file
+        
+    positional arguments:
+      tablefile   The input table file
+    
+    optional arguments:
+      -h, --help  show this help message and exit
+      -c C        Width of Command Description field
+      -d D        Width of Description field
+      -p P        Width of Title field
+      -t T        Width of Telemetry EGSE field
+      -l L        Maximum number of lines per page
+      -f F        File to write to. Default is to change the suffix of the input
+                  file.
+
+Example:
+
+.. code-block:: bash
+
+    [~]$ make_sop_table switch_deaa_b.tsv -c 2.0in -l 24 -f my_table.tab 
+
 ``multiplot_archive``
 ---------------------
 

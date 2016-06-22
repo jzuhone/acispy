@@ -3,16 +3,17 @@
 from __future__ import division
 import csv
 import numpy as np
-import shutil
 import argparse
 
-parser = argparse.ArgumentParser(description='Get a summary of the expected ACIS status given a load')
-parser.add_argument("tablefile", type=str, help='The load to get the status from')
-parser.add_argument("-c", type=str, default="1.5in", help='width of Command Description field')
-parser.add_argument("-d", type=str, default="3.0in", help='width of Description field')
-parser.add_argument("-p", type=str, default="2.1in", help='width of Title field')
-parser.add_argument("-t", type=str, default="1.7in", help='width of Telemetry EGSE field')
-parser.add_argument("-l", type=int, default=27, help='maximum number of lines per page')
+parser = argparse.ArgumentParser(description='Create a LaTeX table for a SOP from a tab-separated table file')
+parser.add_argument("tablefile", type=str, help='The input table file')
+parser.add_argument("-c", type=str, default="1.5in", help='Width of Command Description field')
+parser.add_argument("-d", type=str, default="3.0in", help='Width of Description field')
+parser.add_argument("-p", type=str, default="2.1in", help='Width of Title field')
+parser.add_argument("-t", type=str, default="1.7in", help='Width of Telemetry EGSE field')
+parser.add_argument("-l", type=int, default=27, help='Maximum number of lines per page')
+parser.add_argument("-f", type=str, default="",
+                    help='File to write to. Default is to change the suffix of the input file.')
 
 args = parser.parse_args()
 
@@ -143,7 +144,10 @@ for i, page in enumerate(pages):
     outlines += table_footer
 
 # Write the LaTeX table
-outfn = fn[:-4]+".tab"
+if args.f == "":
+    outfn = fn[:-4]+".tab"
+else:
+    outfn = args.f
 with open(outfn, 'w') as fd:
     fd.writelines(outlines)
     fd.close()
