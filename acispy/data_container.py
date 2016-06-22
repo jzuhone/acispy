@@ -264,6 +264,7 @@ class DataContainer(object):
             The path to the tracelog file
         state_keys : list of strings, optional
             List of commanded states to pull from the commanded states database.
+            If not supplied, a default list of states will be loaded.
 
         Examples
         --------
@@ -283,14 +284,13 @@ class DataContainer(object):
             msids = MSIDs.from_mit_file(filename)
         else:
             raise RuntimeError("I cannot parse this file!")
-        if state_keys is not None:
-            tmin = 1.0e55
-            tmax = -1.0e55
-            for k in msids.keys():
-                if k.endswith("_times"):
-                    tmin = min(msids[k][0], tmin)
-                    tmax = max(msids[k][-1], tmax)
-            states = States.from_database(state_keys, secs2date(tmin), secs2date(tmax))
+        tmin = 1.0e55
+        tmax = -1.0e55
+        for k in msids.keys():
+            if k.endswith("_times"):
+                tmin = min(msids[k][0], tmin)
+                tmax = max(msids[k][-1], tmax)
+        states = States.from_database(state_keys, secs2date(tmin), secs2date(tmax))
         model = EmptyTimeSeries()
         return cls(msids, states, model)
 
