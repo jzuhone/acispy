@@ -227,6 +227,7 @@ class DataContainer(object):
             List of MSIDs to pull from the engineering archive.
         state_keys : list of strings, optional
             List of commanded states to pull from the commanded states database.
+            If not supplied, a default list of states will be loaded.
         filter_bad : boolean, optional
             Whether or not to filter out bad values of MSIDs. Default: True.
         stat : string, optional
