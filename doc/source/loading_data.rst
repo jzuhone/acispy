@@ -198,7 +198,7 @@ gives:
      ('states', 'pitch'),
      ('states', 'ccd_count')]
     
-To slice a field array between two times, use the :class:`~acispy.DataContainer.slice_field_on_dates`
+To slice a field array between two times, use the :meth:`~acispy.DataContainer.slice_field_on_dates`
 method:
 
 .. code-block:: python
