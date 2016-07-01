@@ -17,9 +17,6 @@ setup(name='acispy',
       classifiers=[
           'Intended Audience :: Science/Research',
           'Operating System :: OS Independent',
-          'Programming Language :: Python :: 2.7',
-          'Programming Language :: Python :: 3.4',
-          'Programming Language :: Python :: 3.5',
-          'Topic :: Scientific/Engineering :: Visualization',
+          'Programming Language :: Python :: 2.7'
       ],
       )
