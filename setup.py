@@ -6,7 +6,7 @@ scripts = glob.glob("scripts/*")
 
 setup(name='acispy',
       packages=['acispy'],
-      version='0.4.0',
+      version='0.4.1',
       description='Python tools for ACIS Ops',
       author='John ZuHone',
       author_email='jzuhone@gmail.com',
