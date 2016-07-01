@@ -81,7 +81,7 @@ nleft = 8
 nright = 10
 
 ttime_left = ' & '.join(['','Total time:',str(total_time)]+['']*(nleft-3))+" \\\\\n"
-ttime_right = ' & '.join(['']*nright)+" \\\\\n"
+ttime_right = ' & '.join(['']*(nright+1))+" \\\\\n"
 
 rows = np.array(rows).astype("|S80")
 
