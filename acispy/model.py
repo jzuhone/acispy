@@ -46,7 +46,7 @@ class Model(TimeSeriesData):
         table = ascii.read(temps_file)
         comp = list(table.keys())[-1]
         key = "fptemp_11" if comp == "fptemp" else comp
-        data[key] = Quantity(table[comp].data, msid_units[comp])
+        data[key] = Quantity(table[comp].data, msid_units[key])
         times[key] = Quantity(table["time"], 's')
         return cls(data, times)
 
