@@ -18,8 +18,15 @@ class Model(TimeSeriesData):
 
     @classmethod
     def from_xija(cls, model, components):
-        table = dict((k, Quantity(model.comp[k].mvals, msid_units[k])) for k in components)
-        times = dict((k, Quantity(model.times, 's')) for k in components)
+        table = {}
+        times = {}
+        for k in components:
+            if k == "dpa_power":
+                mvals = model.comp[k].mvals*100. / model.comp[k].mult + model.comp[k].bias
+            else:
+                mvals = model.comp[k].mvals
+            table[k] = Quantity(mvals, msid_units[k])
+            times[k] = Quantity(model.times, 's')
         return cls(table, times)
 
     @classmethod
