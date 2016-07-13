@@ -158,7 +158,9 @@ msid_units = {'1deamzt': 'deg_C',
               'deap15voltb': 'V',
               'deam6voltb':	'V',
               'deap6voltb':	'V',
-              'gnd_2': 'V'}
+              'gnd_2': 'V',
+              'dpa_power': 'W',
+              'dp_dpa_power': 'W'}
 
 unit_table = {"msids": msid_units,
               "states": state_units,

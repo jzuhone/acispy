@@ -19,7 +19,8 @@ drawstyles = {"simpos": "steps",
 
 units_map = {"deg_C": "Temperature",
              "V": "Voltage",
-             "A": "Current"}
+             "A": "Current",
+             "W": "Power"}
 
 default_colors = ["b","r","g","k"]
 
