@@ -118,8 +118,10 @@ class ThermalModelRunner(DataContainer):
 class ThermalModelFromTelemetry(ThermalModelRunner):
     def __init__(self, dc, name, model_spec=None):
         msid = msid_dict[name]
-        tstart = secs2date(dc.times("msids", msid).value[0])
-        tstop = secs2date(dc.times("msids", msid).value[-1])
+        msid_times = secs2date(dc.times("msids", msid).value)
+
+        tstart = msid_times[0]
+        tstop = msid_times[-1]
 
         if model_spec is None:
             if name == "psmc":
@@ -132,9 +134,14 @@ class ThermalModelFromTelemetry(ThermalModelRunner):
 
         states = dict((k, np.array(dc.states[k])) for k in dc.states.keys())
 
+        ok = ((msid_times >= states[0]['tstart'] - 700.) &
+              (msid_times <= states[0]['tstart'] + 700.))
+
+        T_init = dc["msids", msid].value[ok]
+
         self.xija_model = self._compute_model(name, tstart, tstop, states, 
                                               dc.times("states","ccd_count").value,
-                                              dc["msids", msid].value[0])
+                                              T_init)
 
         components = [msid]
         if 'dpa_power' in self.xija_model.comp:
