@@ -70,27 +70,11 @@ class ThermalModelRunner(DataContainer):
                 path = "psmc_check"
             else:
                 path = name
-            model_spec = os.path.join(default_json_path % (path, name))
+            self.model_spec = os.path.join(default_json_path % (path, name))
         else:
-            model_spec = model_spec
-        model = xija.XijaModel(name, start=tstart, stop=tstop, model_spec=model_spec)
-        if 'eclipse' in model.comp:
-            model.comp['eclipse'].set_data(False)
-        model.comp[msid_dict[name]].set_data(T_init)
-        model.comp['sim_z'].set_data(states['simpos'], state_times)
-        if 'roll' in model.comp:
-            model.comp['roll'].set_data(states['off_nominal_roll'], state_times)
-        if 'dpa_power' in model.comp:
-            model.comp['dpa_power'].set_data(0.0) # This is just a hack, we're not
-                                                  # really setting the power to zero.
-        if 'pin1at' in model.comp:
-            model.comp['pin1at'].set_data(T_init-10.)
-        if 'dh_heater' in model.comp:
-            model.comp['dh_heater'].set_data(states.get("dh_heater", 0), state_times)
-        for st in ('ccd_count', 'fep_count', 'vid_board', 'clocking', 'pitch'):
-            model.comp[st].set_data(states[st], state_times)
-        model.make()
-        model.calc()
+            self.model_spec = model_spec
+
+        self.xija_model = self._compute_model(name, tstart, tstop, states, T_init)
 
         states["tstart"] = state_times[0,:]
         states["tstop"] = state_times[1,:]
@@ -99,12 +83,66 @@ class ThermalModelRunner(DataContainer):
         states.pop("dh_heater", None)
 
         self.name = name
-        self.model_spec = model_spec
-        self.model = model
 
-        model_obj = Model.from_xija(model, [msid_dict[name]])
+        components = [msid_dict[name]]
+        if 'dpa_power' in self.xija_model.comp:
+            components.append('dpa_power')
+
+        model_obj = Model.from_xija(self.xija_model, components)
         msids_obj = EmptyTimeSeries()
         states_obj = States(states)
+
+        super(ThermalModelRunner, self).__init__(msids_obj, states_obj, model_obj)
+
+    def _compute_model(self, name, tstart, tstop, states, state_times, T_init):
+        model = xija.XijaModel(name, start=tstart, stop=tstop, model_spec=self.model_spec)
+        if 'eclipse' in model.comp:
+            model.comp['eclipse'].set_data(False)
+        model.comp[msid_dict[name]].set_data(T_init)
+        model.comp['sim_z'].set_data(states['simpos'], state_times)
+        if 'roll' in model.comp:
+            model.comp['roll'].set_data(states['off_nominal_roll'], state_times)
+        if 'dpa_power' in model.comp:
+            model.comp['dpa_power'].set_data(0.0) # This is just a hack, we're not
+            # really setting the power to zero.
+        if 'pin1at' in model.comp:
+            model.comp['pin1at'].set_data(T_init-10.)
+        if 'dh_heater' in model.comp:
+            model.comp['dh_heater'].set_data(states.get("dh_heater", 0), state_times)
+        for st in ('ccd_count', 'fep_count', 'vid_board', 'clocking', 'pitch'):
+            model.comp[st].set_data(states[st], state_times)
+        model.make()
+        model.calc()
+        return model
+
+class ThermalModelFromTelemetry(ThermalModelRunner):
+    def __init__(self, dc, name, model_spec=None):
+        msid = msid_dict[name]
+        tstart = secs2date(dc.times("msids", msid).value[0])
+        tstop = secs2date(dc.times("msids", msid).value[-1])
+
+        if model_spec is None:
+            if name == "psmc":
+                path = "psmc_check"
+            else:
+                path = name
+            self.model_spec = os.path.join(default_json_path % (path, name))
+        else:
+            self.model_spec = model_spec
+
+        states = dict((k, np.array(dc.states[k])) for k in dc.states.keys())
+
+        self.xija_model = self._compute_model(name, tstart, tstop, states, 
+                                              dc.times("states","ccd_count").value,
+                                              dc["msids", msid].value[0])
+
+        components = [msid]
+        if 'dpa_power' in self.xija_model.comp:
+            components.append('dpa_power')
+
+        model_obj = Model.from_xija(self.xija_model, components)
+        msids_obj = dc.msids
+        states_obj = dc.states
 
         super(ThermalModelRunner, self).__init__(msids_obj, states_obj, model_obj)
 
