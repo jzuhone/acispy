@@ -219,8 +219,7 @@ def interpolate(times_in, times_out, data_in):
     return data_out
 
 def moving_average(a, n=5):
-    cumsum = np.cumsum(np.insert(a, 0, 0))
-    return (cumsum[n:]-cumsum[:-n])/n
+    return Ska.Numpy.smooth(a, window_len=n, window='flat')
 
 def ensure_tuple(obj):
     """
