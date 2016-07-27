@@ -116,6 +116,32 @@ class ThermalModelRunner(DataContainer):
         return model
 
 class ThermalModelFromTelemetry(ThermalModelRunner):
+    """
+    Class for running Xija thermal models using commanded states
+    and telemetry data as an initial condition, extracted from
+    a :class:`~acispy.data_container.DataContainer` object.
+
+    Parameters
+    ----------
+    dc : :class:`~acispy.data_container.DataContainer`
+        The DataContainer to extract the information from.
+    name : string
+        The name of the model to simulate. Can be "dea", "dpa", or "psmc".
+    model_spec : string, optional
+        Path to the model spec JSON file for the model. Default: None, the
+        standard model path will be used.
+
+    Examples
+    --------
+    >>> from acispy import DataContainer, ThermalModelFromTelemetry
+    >>> tstart = "2016:091:12:05:00.100"
+    >>> tstop = "2016:100:13:07:45.234"
+    >>> msids = ["1deamzt", "1pin1at"]
+    >>> states = ["pitch", "off_nominal_roll"]
+    >>> dc = DataContainer.fetch_from_database(tstart, tstop, msid_keys=msids,
+    ...                                        state_keys=states)
+    >>> dpa_model = ThermalModelFromTelemetry(dc, "dpa")
+    """
     def __init__(self, dc, name, model_spec=None):
         msid = msid_dict[name]
         msid_times = secs2date(dc.times("msids", msid).value)
