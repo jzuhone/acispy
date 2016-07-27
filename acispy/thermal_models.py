@@ -161,7 +161,7 @@ class ThermalModelRunner(DataContainer):
         Ska.Numpy.pprint(newstates, fmt, out)
         out.close()
 
-class ThermalModelFromTelemetry(ThermalModelRunner):
+class ThermalModelFromData(ThermalModelRunner):
     """
     Class for running Xija thermal models using commanded states
     and telemetry data as an initial condition, extracted from
@@ -179,14 +179,14 @@ class ThermalModelFromTelemetry(ThermalModelRunner):
 
     Examples
     --------
-    >>> from acispy import DataContainer, ThermalModelFromTelemetry
+    >>> from acispy import DataContainer, ThermalModelFromData
     >>> tstart = "2016:091:12:05:00.100"
     >>> tstop = "2016:100:13:07:45.234"
     >>> msids = ["1deamzt", "1pin1at"]
     >>> states = ["pitch", "off_nominal_roll"]
     >>> dc = DataContainer.fetch_from_database(tstart, tstop, msid_keys=msids,
     ...                                        state_keys=states)
-    >>> dpa_model = ThermalModelFromTelemetry(dc, "dpa")
+    >>> dpa_model = ThermalModelFromData(dc, "dpa")
     """
     def __init__(self, dc, name, model_spec=None):
         msid = msid_dict[name]
