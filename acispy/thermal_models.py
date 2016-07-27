@@ -115,6 +115,52 @@ class ThermalModelRunner(DataContainer):
         model.calc()
         return model
 
+    def write_model(self, model_file):
+        """
+        Write the model data vs. time to an ASCII text file.
+
+        Parameters
+        ----------
+        model_file : string
+            The filename to write the data to.
+        """
+        msid = msid_dict[self.name]
+        T = self["model", msid].value
+        times = self.times("model", msid).value
+        dates = self.dates("model", msid)
+        temp_array = np.rec.fromarrays([times, dates, T], names=('time', 'date', msid))
+        fmt = {msid: '%.2f',
+               'time': '%.2f'}
+        out = open(model_file, 'w')
+        Ska.Numpy.pprint(temp_array, fmt, out)
+        out.close()
+
+    def write_states(self, states_file):
+        """
+        Write the model states vs. time to an ASCII text file.
+
+        Parameters
+        ----------
+        states_file : string
+            The filename to write the states to.
+        """
+        states = {}
+        states["tstart"] = self.times("states","pitch")[0].value
+        states["tstop"] = self.times("states","pitch")[1].value
+        states["datestart"] = self.dates("states","pitch")[0]
+        states["datestop"] = self.dates("states","pitch")[1]
+        states.update(self.states)
+        out = open(states_file, 'w')
+        fmt = {'power': '%.1f',
+               'pitch': '%.2f',
+               'tstart': '%.2f',
+               'tstop': '%.2f',
+               }
+        newcols = list(states.keys())
+        newstates = np.rec.fromarrays([states[x] for x in newcols], names=newcols)
+        Ska.Numpy.pprint(newstates, fmt, out)
+        out.close()
+
 class ThermalModelFromTelemetry(ThermalModelRunner):
     """
     Class for running Xija thermal models using commanded states
@@ -165,7 +211,7 @@ class ThermalModelFromTelemetry(ThermalModelRunner):
 
         T_init = dc["msids", msid].value[ok]
 
-        self.xija_model = self._compute_model(name, tstart, tstop, states, 
+        self.xija_model = self._compute_model(name, tstart, tstop, states,
                                               dc.times("states","ccd_count").value,
                                               T_init)
 
@@ -178,52 +224,6 @@ class ThermalModelFromTelemetry(ThermalModelRunner):
         states_obj = dc.states
 
         super(ThermalModelRunner, self).__init__(msids_obj, states_obj, model_obj)
-
-    def write_model(self, model_file):
-        """
-        Write the model data vs. time to an ASCII text file.
-
-        Parameters
-        ----------
-        model_file : string
-            The filename to write the data to.
-        """
-        msid = msid_dict[self.name]
-        T = self["model", msid].value
-        times = self.times("model", msid).value
-        dates = self.dates("model", msid)
-        temp_array = np.rec.fromarrays([times, dates, T], names=('time', 'date', msid))
-        fmt = {msid: '%.2f',
-               'time': '%.2f'}
-        out = open(model_file, 'w')
-        Ska.Numpy.pprint(temp_array, fmt, out)
-        out.close()
-
-    def write_states(self, states_file):
-        """
-        Write the model states vs. time to an ASCII text file.
-
-        Parameters
-        ----------
-        states_file : string
-            The filename to write the states to.
-        """
-        states = {}
-        states["tstart"] = self.times("states","pitch")[0].value
-        states["tstop"] = self.times("states","pitch")[1].value
-        states["datestart"] = self.dates("states","pitch")[0]
-        states["datestop"] = self.dates("states","pitch")[1]
-        states.update(self.states)
-        out = open(states_file, 'w')
-        fmt = {'power': '%.1f',
-               'pitch': '%.2f',
-               'tstart': '%.2f',
-               'tstop': '%.2f',
-               }
-        newcols = list(states.keys())
-        newstates = np.rec.fromarrays([states[x] for x in newcols], names=newcols)
-        Ska.Numpy.pprint(newstates, fmt, out)
-        out.close()
 
 class SimulateCTIRun(ThermalModelRunner):
     """
