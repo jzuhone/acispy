@@ -5,7 +5,7 @@ matplotlib.use("qt4agg")
 import matplotlib.pyplot as plt
 import argparse
 import acispy
-from acispy.utils import msid_units
+from acispy.utils import state_labels
 
 parser = argparse.ArgumentParser(description='Plot a single model component with another component or state')
 parser.add_argument("load", type=str, help='The load to take the model from')
@@ -15,17 +15,17 @@ args = parser.parse_args()
 
 model = []
 
-if args.y_axis in msid_units:
+if args.y_axis in state_labels:
+    y_axis = ("states", args.y_axis)
+else:
     model.append(args.y_axis)
     y_axis = ("model", args.y_axis)
-else:
-    y_axis = ("states", args.y_axis)
 if args.y2_axis is not None:
-    if args.y2_axis in msid_units:
+    if args.y2_axis in state_labels:
+        y2_axis = ("states", args.y2_axis)
+    else:
         model.append(args.y2_axis)
         y2_axis = ("model", args.y2_axis)
-    else:
-        y2_axis = ("states", args.y2_axis)
 else:
     y2_axis = None
 

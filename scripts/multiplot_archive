@@ -5,7 +5,7 @@ matplotlib.use("qt4agg")
 import matplotlib.pyplot as plt
 import argparse
 import acispy
-from acispy.utils import msid_units
+from acispy.utils import state_labels
 
 parser = argparse.ArgumentParser(description='Make plots of MSIDs and commanded states from the engineering archive')
 parser.add_argument("tstart", type=str, help='The start time in YYYY:DOY:HH:MM:SS format')
@@ -19,15 +19,15 @@ states = []
 msids = []
 
 for p in args.plots.split(','):
-    if p in msid_units:
-        msids.append(p)
-    else:
+    if p in state_labels:
         states.append(p)
+    else:
+        msids.append(p)
 
 fields = [("msids", m) for m in msids] + [("states", s) for s in states]
 
 if len(states) == 0:
-    states = None
+    states = "default"
 if len(msids) == 0:
     msids = None
 

@@ -5,7 +5,7 @@ matplotlib.use("qt4agg")
 import matplotlib.pyplot as plt
 import argparse
 import acispy
-from acispy.utils import msid_units
+from acispy.utils import state_labels
 
 parser = argparse.ArgumentParser(description='Plot a single MSID with another MSID or state')
 parser.add_argument("tstart", type=str, help='The start time in YYYY:DOY:HH:MM:SS format')
@@ -16,19 +16,18 @@ args = parser.parse_args()
 
 msids = []
 states = []
-if args.y_axis in msid_units:
+
+if args.y_axis in state_labels:
+    y_axis = ("states", args.y_axis)
+else:
     msids.append(args.y_axis)
     y_axis = ("msids", args.y_axis)
-else:
-    states.append(args.y_axis)
-    y_axis = ("states", args.y_axis)
 if args.y2_axis is not None:
-    if args.y2_axis in msid_units:
+    if args.y2_axis in state_labels:
+        y2_axis = ("states", args.y2_axis)
+    else:
         msids.append(args.y2_axis)
         y2_axis = ("msids", args.y2_axis)
-    else:
-        states.append(args.y2_axis)
-        y2_axis = ("states", args.y2_axis)
 else:
     y2_axis = None
 

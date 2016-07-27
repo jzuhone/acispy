@@ -5,7 +5,7 @@ matplotlib.use("qt4agg")
 import matplotlib.pyplot as plt
 import argparse
 import acispy
-from acispy.utils import msid_units
+from acispy.utils import state_labels
 
 parser = argparse.ArgumentParser(description='Make plots of MSIDs from a tracelog file. Commanded states will be loaded from the commanded states database.')
 parser.add_argument("tracelog", type=str, help='The tracelog file to load the MSIDs from')
@@ -18,15 +18,15 @@ states = []
 msids = []
 
 for p in args.plots.split(','):
-    if p in msid_units:
-        msids.append(p)
-    else:
+    if p in state_labels:
         states.append(p)
+    else:
+        msids.append(p)
 
 fields = [("msids", m) for m in msids] + [("states", s) for s in states]
 
 if len(states) == 0:
-    states = None
+    states = "default"
 
 ds = acispy.DataContainer.fetch_from_tracelog(args.tracelog, state_keys=states)
 if args.one_panel:
