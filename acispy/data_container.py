@@ -211,7 +211,7 @@ class DataContainer(object):
         return self[ftype, fname][st:ed]
 
     @classmethod
-    def fetch_from_database(cls, tstart, tstop, msid_keys=None, state_keys=None, 
+    def fetch_from_database(cls, tstart, tstop, msid_keys=None, state_keys='default',
                             filter_bad=True, stat=None):
         """
         Fetch MSIDs from the engineering archive and states from the commanded
