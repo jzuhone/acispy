@@ -160,7 +160,9 @@ msid_units = {'1deamzt': 'deg_C',
               'deap6voltb':	'V',
               'gnd_2': 'V',
               'dpa_power': 'W',
-              'dp_dpa_power': 'W'}
+              'dp_dpa_power': 'W',
+              'Point_EarthCentAng': 'deg',
+              'Dist_SatEarth': 'm'}
 
 unit_table = {"msids": msid_units,
               "states": state_units,
