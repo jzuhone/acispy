@@ -21,7 +21,8 @@ units_map = {"deg_C": "Temperature",
              "V": "Voltage",
              "A": "Current",
              "W": "Power",
-             "deg": 'Angle'}
+             "deg": 'Angle',
+             "deg**2": "Solid Angle"}
 
 default_colors = ["b","r","g","k"]
 
