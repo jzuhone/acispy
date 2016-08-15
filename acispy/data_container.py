@@ -138,7 +138,7 @@ class DataContainer(object):
         Examples
         --------
         >>> times = dc.times("msids", "1pdeaat")
-        >>> add_interpolated_field("msids", "1pin1at", times) 
+        >>> dc.add_interpolated_field("msids", "1pin1at", times)
         """
         if isinstance(times, tuple):
             times = self.times(times[0], times[1])
