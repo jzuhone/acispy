@@ -20,7 +20,8 @@ drawstyles = {"simpos": "steps",
 units_map = {"deg_C": "Temperature",
              "V": "Voltage",
              "A": "Current",
-             "W": "Power"}
+             "W": "Power",
+             "deg": 'Angle'}
 
 default_colors = ["b","r","g","k"]
 
@@ -234,12 +235,12 @@ class DatePlot(ACISPlot):
             if units == '':
                 ylabel = ''
             else:
-                ylabel = '%s (%s)' % (units_map[units], unit_labels[units])
+                ylabel = '%s (%s)' % (units_map[units], unit_labels.get(units, units))
             self.set_ylabel(ylabel)
         else:
             ylabel = dc.fields[fields[0]].display_name
             if units != '':
-                ylabel += ' (%s)' % unit_labels[units]
+                ylabel += ' (%s)' % unit_labels.get(units, units)
             self.set_ylabel(ylabel)
         if field2 is not None:
             src_name2, fd2 = field2
@@ -261,7 +262,7 @@ class DatePlot(ACISPlot):
             units2 = dc.fields[field2].units
             ylabel2 = dc.fields[field2].display_name
             if units2 != '':
-                ylabel2 += ' (%s)' % unit_labels[units2]
+                ylabel2 += ' (%s)' % unit_labels.get(units2, units2)
             self.set_ylabel2(ylabel2)
 
     def set_xlim(self, xmin, xmax):
@@ -644,9 +645,9 @@ class PhasePlot(ACISPlot):
         for label in self.ax.get_yticklabels():
             label.set_fontproperties(fontProperties)
         if xunit != '':
-            xlabel += ' (%s)' % unit_labels[xunit]
+            xlabel += ' (%s)' % unit_labels.get(xunit, xunit)
         if yunit != '':
-            ylabel += ' (%s)' % unit_labels[yunit]
+            ylabel += ' (%s)' % unit_labels.get(yunit, yunit)
         self.set_xlabel(xlabel)
         self.set_ylabel(ylabel)
 
