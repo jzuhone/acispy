@@ -118,43 +118,6 @@ class DataContainer(object):
         self.add_derived_field(ftype, "avg_%s" % fname, _avg, units,
                                avg_times, display_name=display_name)
 
-    def add_interpolated_field(self, ftype, fname, times):
-        """
-        Add a new field from interpolating a field to a new
-        set of times.
-
-        Parameters
-        ----------
-        ftype : string
-            The type of the field to be averaged.
-        fname : string
-            The name of the field to be averaged.
-        times : array or tuple
-            The timing array to interpolate the data to. In units
-            of seconds from the beginning of the mission. Can supply 
-            an array of times or a field specification. If the latter
-            then the times for this field will be used.
-
-        Examples
-        --------
-        >>> times = dc.times("msids", "1pdeaat")
-        >>> dc.add_interpolated_field("msids", "1pin1at", times)
-        """
-        if isinstance(times, tuple):
-            times = self.times(times[0], times[1])
-        ok = bracket_times(self.times(ftype, fname), times)
-        if ok.sum() != times.size:
-            raise RuntimeError("The given times array does not fully span the times "
-                               "array for the field you want to interpolate!")
-        times_out = np.array(times[ok])
-        units = unit_table[ftype].get(fname, '')
-        def _interp(dc):
-            times_in = dc.times(ftype, fname).value
-            return Quantity(interpolate(times_in, times_out, dc[ftype, fname]), units)
-        display_name = self.fields[ftype, fname].display_name
-        self.add_derived_field(ftype, "interp_%s" % fname, _interp, units,
-                               times_out, display_name=display_name)
-
     def times(self, ftype, fname):
         """
         Return the timing information in seconds from the beginning of the mission
