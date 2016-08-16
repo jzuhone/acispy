@@ -68,9 +68,11 @@ class MSIDs(TimeSeriesData):
 
     @classmethod
     def from_database(cls, msids, tstart, tstop=None, filter_bad=False,
-                      stat=None):
+                      stat=None, interpolate=False):
         data = fetch.MSIDset(msids, tstart, stop=tstop, filter_bad=filter_bad,
                              stat=None)
+        if interpolate:
+            data.interpolate()
         table = dict((k, data[k].vals) for k in data.keys())
         times = dict((k, Quantity(get_time(data[k].times).secs, 's')) for k in data.keys())
         return cls(table, times)
