@@ -182,10 +182,8 @@ class ThermalModelFromData(ThermalModelRunner):
     >>> from acispy import DataContainer, ThermalModelFromData
     >>> tstart = "2016:091:12:05:00.100"
     >>> tstop = "2016:100:13:07:45.234"
-    >>> msids = ["1deamzt", "1pin1at"]
-    >>> states = ["pitch", "off_nominal_roll"]
-    >>> dc = DataContainer.fetch_from_database(tstart, tstop, msid_keys=msids,
-    ...                                        state_keys=states)
+    >>> msids = ["1dpamzt"]
+    >>> dc = DataContainer.fetch_from_database(tstart, tstop, msid_keys=msids)
     >>> dpa_model = ThermalModelFromData(dc, "dpa")
     """
     def __init__(self, dc, name, model_spec=None):
@@ -206,10 +204,12 @@ class ThermalModelFromData(ThermalModelRunner):
 
         states = dict((k, np.array(dc.states[k])) for k in dc.states.keys())
 
-        ok = ((msid_times >= states[0]['tstart'] - 700.) &
-              (msid_times <= states[0]['tstart'] + 700.))
+        tstart_state = dc.states.times['ccd_count'][0][0].value
 
-        T_init = dc["msids", msid].value[ok]
+        ok = ((msid_times >= tstart_state - 700.) &
+              (msid_times <= tstart_state + 700.))
+
+        T_init = dc["msids", msid].value[ok].mean()
 
         self.xija_model = self._compute_model(name, tstart, tstop, states,
                                               dc.times("states","ccd_count").value,
