@@ -29,7 +29,16 @@ keyword argument; otherwise a useful default set will be loaded.
     states = ["pitch", "off_nominal_roll"]
     dc = DataContainer.fetch_from_database(tstart, tstop, msid_keys=msids,
                                            state_keys=states)
-                                           
+
+By default, the MSIDs are not at identical time values. You can enforce that
+the MSID data is interpolated to a common set of times by passing in the keyword
+argument ``interpolate_msids=True``:
+
+.. code-block:: python
+
+    dc = DataContainer.fetch_from_database(tstart, tstop, msid_keys=msids,
+                                           interpolate_msids=True)
+
 Additional options are provided for filtering out bad data and choosing the
 time cadence for MSIDs; for details see the API doc entry for 
 :meth:`~acispy.data_container.DataContainer.fetch_from_database`. 
@@ -70,7 +79,8 @@ a particular load review using :meth:`~acispy.data_container.DataContainer.fetch
 
 To get the corresponding MSIDs from the engineering archive during the same 
 time frame, pass to :meth:`~acispy.data_container.DataContainer.fetch_model_from_load`
-the keyword argument ``get_msids=True``.
+the keyword argument ``get_msids=True``. To interpolate the MSID data to a common
+set of times as the model data, use ``interpolate_msids=True``.
 
 Reading Model Data from Files
 -----------------------------
@@ -89,7 +99,10 @@ files and would like to load them in, this can be done using the
                                                get_msids=True)
                                                
 Like the previous method, this one takes the ``get_msids`` keyword argument to 
-obtain the corresponding MSIDs from the archive if desired. 
+obtain the corresponding MSIDs from the archive if desired. To interpolate the 
+MSID data to a common set of times as the model data, use ``interpolate_msids=True``.
+However, this only really works if the all of the model fields are also at the same
+times. 
 
 This method can also be used to import model data for the same MSID for different
 model runs:
