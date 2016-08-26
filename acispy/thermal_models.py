@@ -74,7 +74,8 @@ class ThermalModelRunner(DataContainer):
         else:
             self.model_spec = model_spec
 
-        self.xija_model = self._compute_model(name, tstart, tstop, states, T_init)
+        self.xija_model = self._compute_model(name, tstart, tstop, states, 
+                                              state_times, T_init)
 
         states["tstart"] = state_times[0,:]
         states["tstop"] = state_times[1,:]
