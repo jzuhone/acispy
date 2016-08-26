@@ -111,11 +111,10 @@ class DataContainer(object):
         """
         def _avg(dc):
             return moving_average(dc[ftype, fname], n=n)
-        avg_times = self.times(ftype, fname)[n-1:]
         display_name = "Average %s" % self.fields[ftype, fname].display_name
         units = unit_table[ftype].get(fname, '')
         self.add_derived_field(ftype, "avg_%s" % fname, _avg, units,
-                               avg_times, display_name=display_name)
+                               (ftype, fname), display_name=display_name)
 
     def times(self, ftype, fname):
         """
