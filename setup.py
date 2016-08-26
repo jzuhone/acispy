@@ -4,9 +4,11 @@ import glob
 
 scripts = glob.glob("scripts/*")
 
+from acispy import __version__
+
 setup(name='acispy',
       packages=['acispy'],
-      version='0.4.1',
+      version=__version__,
       description='Python tools for ACIS Ops',
       author='John ZuHone',
       author_email='jzuhone@gmail.com',
