@@ -1,4 +1,4 @@
-__version__ = "0.4.1"
+__version__ = "0.5.0"
 
 from acispy.data_container import DataContainer
 from acispy.plots import DatePlot, MultiDatePlot, PhasePlot
