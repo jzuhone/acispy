@@ -94,3 +94,11 @@ def create_derived_fields(dcont):
     dcont.add_derived_field("msids", "dea_b_power", _deab_power, 
                             "W", ("msids", "1de28bvo"),
                             display_name="DEA-B Power")
+
+    def _simpos(dc):
+        return dc['msids', '3tscpos']*397.7225924607
+    dcont.add_derived_field("msids", "simpos", _simpos,
+                            "", ("msids", "3tscpos"),
+                            display_name="SIM Position")
+
+
