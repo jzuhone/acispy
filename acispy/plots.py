@@ -612,7 +612,7 @@ class PhasePlot(ACISPlot):
         x_src_name, x_fd = x_field
         y_src_name, y_fd = y_field
         xlabel = dc.fields[x_field].display_name
-        ylabel = dc.fields[x_field].display_name
+        ylabel = dc.fields[y_field].display_name
         xunit = dc.fields[x_field].units
         yunit = dc.fields[y_field].units
         if y_src_name == "states" and x_src_name != "states":
