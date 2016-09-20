@@ -727,3 +727,19 @@ class PhasePlot(ACISPlot):
         self.ax.text(x, y, text, fontsize=fontsize, color=color,
                      family='serif', rotation=rotation, **kwargs)
 
+def quick_dateplot(dates, values, **kwargs):
+    """
+    Make a quick date vs. value plot.
+    Parameters
+    ----------
+    dates : array of strings
+        The dates to be plotted.
+    values : array
+        The values to be plotted.
+
+    All other keyword arguments are assumed to be Matplotlib
+    customizations. 
+    """
+    fig = plt.figure(figsize=(10, 10))
+    ticklocs, fig, ax = plot_cxctime(x, y, fig=fig, **kwargs)
+    return fig, ax
