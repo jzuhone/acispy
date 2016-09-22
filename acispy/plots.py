@@ -11,6 +11,7 @@ from matplotlib.backends.backend_agg import \
     FigureCanvasAgg
 from io import BytesIO
 import numpy as np
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 drawstyles = {"simpos": "steps",
               "pitch": "steps",
@@ -589,8 +590,16 @@ class PhasePlot(ACISPlot):
         The field to plot on the x-axis.
     y_field : tuple of strings
         The field to plot on the y-axis.
+    c_field : tuple of strings, optional
+        The field to use to color the dots on the plot. Default: None
     fontsize : integer, optional
         The font size for the labels in the plot. Default: 18 pt.
+    color : string, optional
+        The color of the dots on the phase plot. Only used if a
+        color field is not provided. Default: 'blue'
+    cmap : string, optional
+        The colormap for the dots if a color field has been provided.
+        Default: 'heat'
     fig : :class:`~matplotlib.figure.Figure`, optional
         A Figure instance to plot in. Default: None, one will be
         created if not provided.
@@ -603,8 +612,9 @@ class PhasePlot(ACISPlot):
     >>> from acispy import PhasePlot
     >>> pp = PhasePlot(dc, ("msids", "1deamzt"), ("msids", "1dpamzt"))
     """
-    def __init__(self, dc, x_field, y_field, fontsize=18,
-                 fig=None, ax=None):
+    def __init__(self, dc, x_field, y_field, c_field=None,
+                 fontsize=18, color='blue', cmap='hot',
+                 fig=None, ax=None, **kwargs):
         if fig is None:
             fig = plt.figure(figsize=(12, 12))
         if ax is None:
@@ -618,27 +628,57 @@ class PhasePlot(ACISPlot):
         if y_src_name == "states" and x_src_name != "states":
             raise RuntimeError("Cannot plot an MSID or model vs. a state, "
                                "put the state on the x-axis!")
+
         x = dc[x_field]
         y = dc[y_field]
         if x.size != y.size:
             # Interpolate the y-axis to the x-axis times
             times_in = dc.times(*y_field).value
             if x_src_name == "states":
-                tstart_out, tstop_out = dc.times(*x_field)
-                ok1 = bracket_times(times_in, tstart_out.value)
-                ok2 = bracket_times(times_in, tstop_out.value)
-                y1 = interpolate(times_in, tstart_out[ok1].value, y)
-                y2 = interpolate(times_in, tstop_out[ok2].value, y)
-                x = np.append(x[ok1], x[ok2])
-                y = np.append(y1, y2)
+                tstart_out, tstop_out = dc.times(*x_field).value
+                ok1 = bracket_times(times_in, tstart_out)
+                ok2 = bracket_times(times_in, tstop_out)
+                y1 = interpolate(times_in, tstart_out[ok1], y)
+                y2 = interpolate(times_in, tstop_out[ok2], y)
+                xx = np.append(x[ok1], x[ok2])
+                yy = np.append(y1, y2)
+                times_out = np.sort(np.concatenate([tstart_out, tstop_out]))
             else:
-                times_out = bracket_times(dc.times(*x_field).value)
-                ok = bracket_times(times_in, times_out.value)
-                x = x[ok]
-                y = interpolate(times_in, times_out[ok].value, y)
-        scp = ax.scatter(x, y)
+                times_out = dc.times(*x_field).value
+                ok = bracket_times(times_in, times_out)
+                xx = x[ok]
+                yy = interpolate(times_in, times_out[ok], y)
+        else:
+            xx = x
+            yy = y
+            if x_src_name == "states":
+                tstart_out, tstop_out = dc.times(*x_field).value
+                times_out = np.sort(np.concatenate([tstart_out, tstop_out]))
+            else:
+                times_out = dc.times(*x_field).value
+
+        if c_field is None:
+            cc = color
+        else:
+            c = dc[c_field]
+            c_src_name, c_fd = c_field
+            if c.size != xx.size:
+                # Interpolate the c-axis to the x-axis times
+                if c_src_name == "states":
+                    times_in = dc.times(*c_field).value[0]
+                else:
+                    times_in = dc.times(*c_field).value
+                idxs = np.searchsorted(times_in, times_out)-1
+                cc = c[idxs]
+            else:
+                cc = c
+
+        cm = plt.cm.get_cmap(cmap)
+        scp = ax.scatter(xx, yy, c=cc, cmap=cm, **kwargs)
+
         super(PhasePlot, self).__init__(fig, ax)
         self.scp = scp
+
         fontProperties = font_manager.FontProperties(family="serif",
                                                      size=fontsize)
         for label in self.ax.get_xticklabels():
@@ -651,6 +691,19 @@ class PhasePlot(ACISPlot):
             ylabel += ' (%s)' % unit_labels.get(yunit, yunit)
         self.set_xlabel(xlabel)
         self.set_ylabel(ylabel)
+        if c_field is not None:
+            clabel = dc.fields[c_field].display_name
+            cunit = dc.fields[c_field].units
+            if cunit != '':
+                clabel += ' (%s)' % unit_labels.get(cunit, cunit)
+            divider = make_axes_locatable(ax)
+            cax = divider.append_axes("right", size="5%", pad=0.05)
+            cb = plt.colorbar(scp, cax=cax)
+            fontdict = {"family": "serif", "size": fontsize}
+            cb.set_label(clabel, fontdict=fontdict)
+            for label in cb.ax.get_yticklabels():
+                label.set_fontproperties(fontProperties)
+            self.cb = cb
 
     def set_xlim(self, xmin, xmax):
         """
@@ -738,7 +791,7 @@ def quick_dateplot(dates, values, **kwargs):
         The values to be plotted.
 
     All other keyword arguments are assumed to be Matplotlib
-    customizations. 
+    customizations.
     """
     fig = plt.figure(figsize=(10, 10))
     ticklocs, fig, ax = plot_cxctime(x, y, fig=fig, **kwargs)
