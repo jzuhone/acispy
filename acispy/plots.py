@@ -206,6 +206,7 @@ class DatePlot(ACISPlot):
         self.fields = fields
         self.num_fields = len(fields)
         colors = ensure_list(colors)
+        self.y = {}
         for i, field in enumerate(fields):
             src_name, fd = field
             drawstyle = drawstyles.get(fd, None)
@@ -221,6 +222,8 @@ class DatePlot(ACISPlot):
                                              color=colors[i],
                                              drawstyle=drawstyle, 
                                              label=label)
+            self.y[field] = y
+        self.x = x
         super(DatePlot, self).__init__(fig, ax)
         self.ax.set_xlabel("Date", fontdict={"size": fontsize,
                                              "family": "serif"})
@@ -257,6 +260,7 @@ class DatePlot(ACISPlot):
                 y = dc[field2]
             plot_cxctime(x, y, fig=fig, ax=self.ax2, lw=lw,
                          drawstyle=drawstyle, color=color2)
+            self.y2 = y
             for label in self.ax2.get_xticklabels():
                 label.set_fontproperties(fontProperties)
             for label in self.ax2.get_yticklabels():
@@ -657,6 +661,9 @@ class PhasePlot(ACISPlot):
             else:
                 times_out = dc.times(*x_field).value
 
+        self.xx = xx
+        self.yy = yy
+
         if c_field is None:
             cc = color
         else:
@@ -672,6 +679,7 @@ class PhasePlot(ACISPlot):
                 cc = c[idxs]
             else:
                 cc = c
+            self.cc = cc
 
         cm = plt.cm.get_cmap(cmap)
         scp = ax.scatter(xx, yy, c=cc, cmap=cm, **kwargs)
