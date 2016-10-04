@@ -204,7 +204,7 @@ class DataContainer(object):
         >>> tstart = "2016:091:12:05:00.100"
         >>> tstop = "2016:100:13:07:45.234"
         >>> msids = ["1deamzt", "1pin1at"]
-        >>> states = ["pitch", "off_nominal_roll"]
+        >>> states = ["pitch", "ccd_count"]
         >>> dc = DataContainer.fetch_from_database(tstart, tstop, msid_keys=msids,
         ...                                        state_keys=states)
         """

@@ -1,6 +1,6 @@
 from astropy.io import ascii
 import requests
-from acispy.utils import get_time, calc_off_nom_rolls, state_units
+from acispy.utils import get_time, state_units
 import numpy as np
 from Chandra.cmd_states import fetch_states
 from astropy.units import Quantity
@@ -19,10 +19,6 @@ class States(TimeSeriesData):
                     self.table[k] = v
                 self.times[k] = Quantity(np.array([table["tstart"],
                                                    table['tstop']]), 's')
-        if set(["q1","q2","q3","q4"]) < set(self.table.keys()):
-            self.table["off_nominal_roll"] = Quantity(calc_off_nom_rolls(table), 'deg')
-            self.times["off_nominal_roll"] = Quantity(np.array([table["tstart"],
-                                                                table['tstop']]), 's')
 
     @classmethod
     def from_database(cls, states, tstart, tstop):
@@ -30,9 +26,6 @@ class States(TimeSeriesData):
             states = ["q1","q2","q3","q4","pitch","ccd_count","clocking","ra",
                       "dec","roll","fep_count","simpos","vid_board"]
         st = states[:]
-        if "off_nominal_roll" in states:
-            st.remove("off_nominal_roll")
-            st += ["q1", "q2", "q3", "q4"]
         t = fetch_states(tstart, tstop, vals=st)
         table = dict((k, t[k]) for k in t.dtype.names)
         return cls(table)

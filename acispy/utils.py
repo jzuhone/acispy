@@ -57,13 +57,11 @@ state_labels = {"ccd_count": "CCD Count",
                 "q3": "q3",
                 "q4": "q4",
                 "trans_keys": None,
-                "vid_board": 'Video Board',
-                "off_nominal_roll": "Off-Nominal\nRoll"}
+                "vid_board": 'Video Board'}
 
 state_units = {'ra': 'deg',
                'dec': 'deg',
                'roll': 'deg',
-               'off_nominal_roll': 'deg',
                'tstart': 's',
                'tstop': 's',
                'pitch': 'deg'}
@@ -162,7 +160,8 @@ msid_units = {'1deamzt': 'deg_C',
               'dpa_power': 'W',
               'dp_dpa_power': 'W',
               'Point_EarthCentAng': 'deg',
-              'Dist_SatEarth': 'm'}
+              'Dist_SatEarth': 'm',
+              'roll': 'deg'}
 
 unit_table = {"msids": msid_units,
               "states": state_units,

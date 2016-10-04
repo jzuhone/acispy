@@ -9,7 +9,7 @@ from Chandra.Time import secs2date, DateTime
 from acispy.states import States
 from acispy.model import Model
 from acispy.time_series import EmptyTimeSeries
-from acispy.utils import mylog
+from acispy.utils import mylog, calc_off_nom_rolls
 import Ska.Numpy
 
 limits = {'dea': 35.5,
@@ -102,7 +102,7 @@ class ThermalModelRunner(DataContainer):
         model.comp[msid_dict[name]].set_data(T_init)
         model.comp['sim_z'].set_data(states['simpos'], state_times)
         if 'roll' in model.comp:
-            model.comp['roll'].set_data(states['off_nominal_roll'], state_times)
+            model.comp['roll'].set_data(calc_off_nom_rolls(states), state_times)
         if 'dpa_power' in model.comp:
             model.comp['dpa_power'].set_data(0.0) # This is just a hack, we're not
             # really setting the power to zero.
