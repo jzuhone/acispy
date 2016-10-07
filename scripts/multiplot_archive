@@ -27,7 +27,7 @@ for p in args.plots.split(','):
 fields = [("msids", m) for m in msids] + [("states", s) for s in states]
 
 if len(states) == 0:
-    states = "default"
+    states = None
 if len(msids) == 0:
     msids = None
 

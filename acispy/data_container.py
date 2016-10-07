@@ -28,6 +28,7 @@ class DataContainer(object):
                 setattr(self, key, value)
                 self._populate_fields(key, value)
         create_derived_fields(self)
+        self.data = {}
 
     def _populate_fields(self, ftype, obj):
         if ftype.startswith("model"):
@@ -45,7 +46,9 @@ class DataContainer(object):
             self.field_list.append((ftype, fname))
 
     def __getitem__(self, item):
-        return self.fields[item](self)
+        if item not in self.data:
+            self.data[item] = self.fields[item](self)
+        return self.data[item]
 
     def __contains__(self, item):
         return item in self.fields
@@ -116,6 +119,33 @@ class DataContainer(object):
         self.add_derived_field(ftype, "avg_%s" % fname, _avg, units,
                                (ftype, fname), display_name=display_name)
 
+    def map_state_to_msid(self, state, msid, ftype="msids"):
+        """
+        Create a new derived field by interpolating a state to the times of
+        a MSID or model component.
+
+        Parameters
+        ----------
+        state : string
+            The state to be interpolated.
+        msid : string
+            The msid or model component to interpolate the state to.
+        ftype : string, optional
+            The field type to use. "msids" or "model". Default: "msids"
+
+        Examples
+        --------
+        >>> dc.map_state_to_msid("ccd_count", "1dpamzt")
+        """
+        def _state(dc):
+            msid_times = dc.times(ftype, msid)
+            state_times = dc.times("states", state)[1]
+            indexes = np.searchsorted(state_times, msid_times)
+            return dc["states", state][indexes]
+        units = unit_table['states'].get(state, '')
+        self.add_derived_field(ftype, state, _state, units, (ftype, msid),
+                               display_name=self.fields["states", state].display_name)
+
     def times(self, ftype, fname):
         """
         Return the timing information in seconds from the beginning of the mission
@@ -172,7 +202,7 @@ class DataContainer(object):
         return self[ftype, fname][st:ed]
 
     @classmethod
-    def fetch_from_database(cls, tstart, tstop, msid_keys=None, state_keys='default',
+    def fetch_from_database(cls, tstart, tstop, msid_keys=None, state_keys=None,
                             filter_bad=True, stat=None, interpolate_msids=False):
         """
         Fetch MSIDs from the engineering archive and states from the commanded
@@ -188,7 +218,7 @@ class DataContainer(object):
             List of MSIDs to pull from the engineering archive.
         state_keys : list of strings, optional
             List of commanded states to pull from the commanded states database.
-            If not supplied, a default list of states will be loaded.
+            If not supplied, a default list of states will be loaded. Default: None
         filter_bad : boolean, optional
             Whether or not to filter out bad values of MSIDs. Default: True.
         stat : string, optional
@@ -214,7 +244,7 @@ class DataContainer(object):
                                        interpolate=interpolate_msids)
         else:
             msids = EmptyTimeSeries()
-        states = States.from_database(state_keys, tstart, tstop)
+        states = States.from_database(tstart, tstop, states=state_keys)
         model = EmptyTimeSeries()
         return cls(msids, states, model)
 
@@ -256,7 +286,7 @@ class DataContainer(object):
             if k.endswith("_times"):
                 tmin = min(msids[k][0], tmin)
                 tmax = max(msids[k][-1], tmax)
-        states = States.from_database(state_keys, secs2date(tmin), secs2date(tmax))
+        states = States.from_database(secs2date(tmin), secs2date(tmax), states=state_keys)
         model = EmptyTimeSeries()
         return cls(msids, states, model)
 

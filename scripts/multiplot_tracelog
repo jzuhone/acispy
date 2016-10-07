@@ -26,7 +26,7 @@ for p in args.plots.split(','):
 fields = [("msids", m) for m in msids] + [("states", s) for s in states]
 
 if len(states) == 0:
-    states = "default"
+    states = None
 
 ds = acispy.DataContainer.fetch_from_tracelog(args.tracelog, state_keys=states)
 if args.one_panel:

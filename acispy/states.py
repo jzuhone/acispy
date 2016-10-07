@@ -12,7 +12,7 @@ class States(TimeSeriesData):
         self.table = {}
         self.times = {}
         for k, v in table.items():
-            if k not in ["tstart","tstop","datestart","datestop"]:
+            if k not in ["tstart", "tstop", "datestart", "datestop"]:
                 if k in state_units:
                     self.table[k] = Quantity(v, state_units[k])
                 else:
@@ -21,12 +21,8 @@ class States(TimeSeriesData):
                                                    table['tstop']]), 's')
 
     @classmethod
-    def from_database(cls, states, tstart, tstop):
-        if states is "default":
-            states = ["q1","q2","q3","q4","pitch","ccd_count","clocking","ra",
-                      "dec","roll","fep_count","simpos","vid_board"]
-        st = states[:]
-        t = fetch_states(tstart, tstop, vals=st)
+    def from_database(cls, tstart, tstop, states=None):
+        t = fetch_states(tstart, tstop, vals=states)
         table = dict((k, t[k]) for k in t.dtype.names)
         return cls(table)
 
@@ -53,6 +49,7 @@ class States(TimeSeriesData):
 
     def get_states(self, time):
         time = get_time(time).secs
+        self[self.keys()[0]]
         # We have this if we need it
         err = "The time %s is not within the selected time frame!" % time
         if time < self.times[self.keys()[0]][0][0].value:
