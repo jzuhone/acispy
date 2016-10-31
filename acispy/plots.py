@@ -623,66 +623,22 @@ class PhasePlot(ACISPlot):
             fig = plt.figure(figsize=(12, 12))
         if ax is None:
             ax = fig.add_subplot(111)
-        x_src_name, x_fd = x_field
-        y_src_name, y_fd = y_field
+
         xlabel = dc.fields[x_field].display_name
         ylabel = dc.fields[y_field].display_name
         xunit = dc.fields[x_field].units
         yunit = dc.fields[y_field].units
-        if y_src_name == "states" and x_src_name != "states":
-            raise RuntimeError("Cannot plot an MSID or model vs. a state, "
-                               "put the state on the x-axis!")
 
-        x = dc[x_field]
-        y = dc[y_field]
-        if x.size != y.size:
-            # Interpolate the y-axis to the x-axis times
-            times_in = dc.times(*y_field).value
-            if x_src_name == "states":
-                tstart_out, tstop_out = dc.times(*x_field).value
-                ok1 = bracket_times(times_in, tstart_out)
-                ok2 = bracket_times(times_in, tstop_out)
-                y1 = interpolate(times_in, tstart_out[ok1], y)
-                y2 = interpolate(times_in, tstop_out[ok2], y)
-                xx = np.append(x[ok1], x[ok2])
-                yy = np.append(y1, y2)
-                times_out = np.sort(np.concatenate([tstart_out, tstop_out]))
-            else:
-                times_out = dc.times(*x_field).value
-                ok = bracket_times(times_in, times_out)
-                xx = x[ok]
-                yy = interpolate(times_in, times_out[ok], y)
-        else:
-            xx = x
-            yy = y
-            if x_src_name == "states":
-                tstart_out, tstop_out = dc.times(*x_field).value
-                times_out = np.sort(np.concatenate([tstart_out, tstop_out]))
-            else:
-                times_out = dc.times(*x_field).value
-
-        self.xx = xx
-        self.yy = yy
+        self.xx = dc[x_field]
+        self.yy = dc[y_field]
 
         if c_field is None:
-            cc = color
+            self.cc = color
         else:
-            c = dc[c_field]
-            c_src_name, c_fd = c_field
-            if c.size != xx.size:
-                # Interpolate the c-axis to the x-axis times
-                if c_src_name == "states":
-                    times_in = dc.times(*c_field).value[0]
-                else:
-                    times_in = dc.times(*c_field).value
-                idxs = np.searchsorted(times_in, times_out)-1
-                cc = c[idxs]
-            else:
-                cc = c
-            self.cc = cc
+            self.cc = dc[c_field]
 
         cm = plt.cm.get_cmap(cmap)
-        scp = ax.scatter(xx, yy, c=cc, cmap=cm, **kwargs)
+        scp = ax.scatter(self.xx, self.yy, c=self.cc, cmap=cm, **kwargs)
 
         super(PhasePlot, self).__init__(fig, ax)
         self.scp = scp

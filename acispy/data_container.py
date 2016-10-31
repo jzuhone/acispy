@@ -239,7 +239,7 @@ class DataContainer(object):
         ...                                        state_keys=states)
         """
         if msid_keys is not None:
-            msids = MSIDs.from_database(msid_keys, tstart, tstop=tstop, 
+            msids = MSIDs.from_database(msid_keys, tstart, tstop=tstop,
                                        filter_bad=filter_bad, stat=stat,
                                        interpolate=interpolate_msids)
         else:
