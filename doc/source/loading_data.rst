@@ -18,7 +18,7 @@ archive and the commanded states database within a particular date and time
 range. The method :meth:`~acispy.data_container.DataContainer.fetch_from_database` 
 enables this functionality. The MSIDs you want to extract must be 
 specified. You may either specify a set of states using the ``state_keys``
-keyword argument; otherwise a useful default set will be loaded.
+keyword argument; otherwise the full default set will be loaded.
 
 .. code-block:: python
 
@@ -62,7 +62,7 @@ file will be extracted from the commanded states database.
 In this case, all of the MSIDs in the tracelog are ingested into the 
 :class:`~acispy.data_container.DataContainer`. You may either specify 
 a set of states using the ``state_keys`` keyword argument; otherwise 
-a useful default set will be loaded.
+the full default set will be loaded.
 
 Reading Model Data from a Load
 ------------------------------
@@ -84,6 +84,7 @@ set of times as the model data, use ``interpolate_msids=True``.
 
 Reading Model Data from Files
 -----------------------------
+
 The model validation tools (such as `dea_check <http://github.com/acisops/dea_check>`_)
 output ASCII table files ``"temperatures.dat"`` and ``"states.dat"`` that contain the 
 temperature and commanded state information as a function of time. If you have these
