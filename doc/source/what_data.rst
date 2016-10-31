@@ -18,8 +18,6 @@ Commanded States
 Commanded states (such as pitch angle, roll, obsid, CCD count, etc.) can be loaded from
 the commanded states database or from thermal model predictions. A list of the commanded
 states understood by ACISpy can be found `here <http://cxc.cfa.harvard.edu/mta/ASPECT/tool_doc/cmd_states/#cmd-states-table>`_.
-Additionally, ACISpy computes the off-nominal roll from the attitude and stores it as
-``"off_nominal_roll"`` along with the other commanded states. 
 
 MSIDs
 -----

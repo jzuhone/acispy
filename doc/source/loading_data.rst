@@ -26,7 +26,7 @@ keyword argument; otherwise the full default set will be loaded.
     tstart = "2016:091:01:00:00.000" 
     tstop = "2016:097:03:30:57.231"
     msids = ["1deamzt", "1dpamzt"]
-    states = ["pitch", "off_nominal_roll"]
+    states = ["pitch", "ccd_count"]
     dc = DataContainer.fetch_from_database(tstart, tstop, msid_keys=msids,
                                            state_keys=states)
 
@@ -140,7 +140,7 @@ existing ones. For now, we'll use our example from before to fill up a :class:`~
     tstart = "2016:091:01:00:00.000" 
     tstop = "2016:097:03:30:57.231"
     msids = ["1deamzt", "1dpamzt"]
-    states = ["pitch", "off_nominal_roll", "ccd_count"]
+    states = ["pitch", "ccd_count"]
     dc = DataContainer.fetch_from_database(tstart, tstop, msid_keys=msids,
                                            state_keys=states)
 
@@ -181,7 +181,6 @@ check the `field_list` attribute:
      ('states', 'q3'),
      ('states', 'q2'),
      ('states', 'q4'),
-     ('states', 'off_nominal_roll'),
      ('states', 'pitch'),
      ('states', 'ccd_count')]
 
@@ -208,7 +207,6 @@ gives:
      ('states', 'q2'),
      ('states', 'q4'),
      ...
-     ('states', 'off_nominal_roll'),
      ('states', 'pitch'),
      ('states', 'ccd_count')]
     
