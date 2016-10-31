@@ -802,5 +802,5 @@ def quick_dateplot(dates, values, **kwargs):
     customizations.
     """
     fig = plt.figure(figsize=(10, 10))
-    ticklocs, fig, ax = plot_cxctime(x, y, fig=fig, **kwargs)
+    ticklocs, fig, ax = plot_cxctime(dates, values, fig=fig, **kwargs)
     return fig, ax
