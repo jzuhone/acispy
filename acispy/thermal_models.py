@@ -74,13 +74,14 @@ class ThermalModelRunner(DataContainer):
         else:
             self.model_spec = model_spec
 
-        self.xija_model = self._compute_model(name, tstart, tstop, states, 
-                                              state_times, T_init)
-
         states["tstart"] = state_times[0,:]
         states["tstop"] = state_times[1,:]
         states["datestart"] = secs2date(state_times[0,:])
         states["datestop"] = secs2date(state_times[1,:])
+
+        self.xija_model = self._compute_model(name, tstart, tstop, states, 
+                                              state_times, T_init)
+
         states.pop("dh_heater", None)
 
         self.name = name
@@ -102,7 +103,7 @@ class ThermalModelRunner(DataContainer):
         model.comp[msid_dict[name]].set_data(T_init)
         model.comp['sim_z'].set_data(states['simpos'], state_times)
         if 'roll' in model.comp:
-            model.comp['roll'].set_data(calc_off_nom_rolls(states), state_times)
+            model.comp['roll'].set_data(states["off_nominal_roll"], state_times)
         if 'dpa_power' in model.comp:
             model.comp['dpa_power'].set_data(0.0) # This is just a hack, we're not
             # really setting the power to zero.
@@ -204,6 +205,9 @@ class ThermalModelFromData(ThermalModelRunner):
             self.model_spec = model_spec
 
         states = dict((k, np.array(dc.states[k])) for k in dc.states.keys())
+        states["tstart"] = dc.states.times['ccd_count'][0].value
+        states["tstop"] = dc.states.times['ccd_count'][1].value
+        states["off_nominal_roll"] = calc_off_nom_rolls(states)
 
         tstart_state = dc.states.times['ccd_count'][0][0].value
 

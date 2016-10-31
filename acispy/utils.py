@@ -57,14 +57,16 @@ state_labels = {"ccd_count": "CCD Count",
                 "q3": "q3",
                 "q4": "q4",
                 "trans_keys": None,
-                "vid_board": 'Video Board'}
+                "vid_board": 'Video Board',
+                "off_nominal_roll": "Off-Nominal Roll"}
 
 state_units = {'ra': 'deg',
                'dec': 'deg',
                'roll': 'deg',
                'tstart': 's',
                'tstop': 's',
-               'pitch': 'deg'}
+               'pitch': 'deg',
+               'off_nominal_roll': 'deg'}
 
 msid_units = {'1deamzt': 'deg_C',
               '1dpamzt': 'deg_C',
