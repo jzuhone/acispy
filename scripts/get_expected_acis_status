@@ -3,7 +3,8 @@
 from __future__ import print_function
 import argparse
 import acispy
-from acispy.utils import get_time
+from acispy.utils import get_time, calc_off_nom_rolls
+import numpy as np
 
 dont_use = ["q1","q2","q3","q4","power_cmd","datestart","datestop",
             "tstart","tstop","trans_keys","vid_board","pcad_mode",
@@ -18,14 +19,18 @@ parser.add_argument("--time", type=str, default="now",
 args = parser.parse_args()
 
 dc = acispy.DataContainer.fetch_model_from_load(args.load, comps)
-t = get_time(args.time).date
-states = dc.states.get_states(t)
-values = dc.model.get_values(t)
+t = get_time(args.time)
+states = dc.states.get_states(t.date)
+values = dc.model.get_values(t.date)
+
+rolls = calc_off_nom_rolls(dc.states)
+idx = np.searchsorted(dc.states["tstart"].value, t.secs)-1
 
 print("Getting expected ACIS state at %s." % t)
 
 for k, v in states.items():
     if k not in dont_use:
         print("%s: %s" % (k, v))
+print("Off-nominal Roll: %g deg" % rolls[idx])
 for k, v in values.items():
     print("%s: %s" % (k, v[0]))
