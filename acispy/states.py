@@ -12,13 +12,12 @@ class States(TimeSeriesData):
         self.table = {}
         self.times = {}
         for k, v in table.items():
-            if k not in ["tstart", "tstop", "datestart", "datestop"]:
-                if k in state_units:
-                    self.table[k] = Quantity(v, state_units[k])
-                else:
-                    self.table[k] = v
-                self.times[k] = Quantity(np.array([table["tstart"],
-                                                   table['tstop']]), 's')
+            if k in state_units:
+                self.table[k] = Quantity(v, state_units[k])
+            else:
+                self.table[k] = v
+            self.times[k] = Quantity(np.array([table["tstart"],
+                                               table['tstop']]), 's')
 
     @classmethod
     def from_database(cls, tstart, tstop, states=None):

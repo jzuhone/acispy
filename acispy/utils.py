@@ -58,7 +58,11 @@ state_labels = {"ccd_count": "CCD Count",
                 "q4": "q4",
                 "trans_keys": None,
                 "vid_board": 'Video Board',
-                "off_nominal_roll": "Off-Nominal Roll"}
+                "off_nominal_roll": "Off-Nominal Roll",
+                "tstart": "Start Time",
+                "tstop": "Stop Time",
+                "datestart": "Start Date",
+                "datestop": "Stop Date"}
 
 state_units = {'ra': 'deg',
                'dec': 'deg',
