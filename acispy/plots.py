@@ -2,15 +2,13 @@ from Ska.Matplotlib import plot_cxctime, pointpair
 from matplotlib import font_manager
 import matplotlib.pyplot as plt
 from matplotlib.dates import num2date
-from acispy.utils import unit_labels, interpolate, \
-    ensure_list, bracket_times
+from acispy.utils import unit_labels, ensure_list
 from Chandra.Time import DateTime
 from datetime import datetime
 from collections import OrderedDict
 from matplotlib.backends.backend_agg import \
     FigureCanvasAgg
 from io import BytesIO
-import numpy as np
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 drawstyles = {"simpos": "steps",
