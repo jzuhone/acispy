@@ -30,6 +30,46 @@ def get_time(time):
         time = DateTime(time)
     return time
 
+def ensure_tuple(obj):
+    """
+    This function ensures that *obj* is a tuple.  Typically used to convert
+    scalar, list, or array arguments specified by a user in a context where
+    we assume a tuple internally
+    """
+    if isinstance(obj, tuple):
+        return obj
+    elif isinstance(obj, (list, np.ndarray)):
+        return tuple(obj)
+    else:
+        return (obj,)
+
+def ensure_list(obj):
+    """
+    This function ensures that *obj* is a list.  Typically used to convert a
+    string to a list, for instance ensuring the *fields* as an argument is a
+    list.
+    """
+    if obj is None:
+        return [obj]
+    if not isinstance(obj, list):
+        return [obj]
+    return obj
+
+def ensure_numpy_array(obj):
+    """
+    This function ensures that *obj* is a numpy array. Typically used to
+    convert scalar, list or tuple argument passed to functions using Cython.
+    """
+    if isinstance(obj, np.ndarray):
+        if obj.shape == ():
+            return np.array([obj])
+        # We cast to ndarray to catch ndarray subclasses
+        return np.array(obj)
+    elif isinstance(obj, (list, tuple)):
+        return np.asarray(obj)
+    else:
+        return np.asarray([obj])
+
 def calc_off_nom_rolls(states):
     times = 0.5*(states['tstart'] + states['tstop'])
     atts = np.array([states["q%d" % x] for x in range(1, 5)]).transpose()
@@ -227,43 +267,3 @@ def interpolate(times_in, times_out, data_in):
 
 def moving_average(a, n=5):
     return Ska.Numpy.smooth(a, window_len=n, window='flat')
-
-def ensure_tuple(obj):
-    """
-    This function ensures that *obj* is a tuple.  Typically used to convert
-    scalar, list, or array arguments specified by a user in a context where
-    we assume a tuple internally
-    """
-    if isinstance(obj, tuple):
-        return obj
-    elif isinstance(obj, (list, np.ndarray)):
-        return tuple(obj)
-    else:
-        return (obj,)
-
-def ensure_list(obj):
-    """
-    This function ensures that *obj* is a list.  Typically used to convert a
-    string to a list, for instance ensuring the *fields* as an argument is a
-    list.
-    """
-    if obj is None:
-        return [obj]
-    if not isinstance(obj, list):
-        return [obj]
-    return obj
-
-def ensure_numpy_array(obj):
-    """
-    This function ensures that *obj* is a numpy array. Typically used to
-    convert scalar, list or tuple argument passed to functions using Cython.
-    """
-    if isinstance(obj, np.ndarray):
-        if obj.shape == ():
-            return np.array([obj])
-        # We cast to ndarray to catch ndarray subclasses
-        return np.array(obj)
-    elif isinstance(obj, (list, tuple)):
-        return np.asarray(obj)
-    else:
-        return np.asarray([obj])
