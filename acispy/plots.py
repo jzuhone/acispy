@@ -751,6 +751,12 @@ def quick_dateplot(dates, values, fig=None, ax=None, **kwargs):
         The dates to be plotted.
     values : array
         The values to be plotted.
+    fig : :class:`~matplotlib.figure.Figure`, optional
+        A Figure instance to plot in. Default: None, one will be
+        created if not provided.
+    ax : :class:`~matplotlib.axes.Axes`, optional
+        An Axes instance to plot in. Default: None, one will be
+        created if not provided.
 
     All other keyword arguments are assumed to be Matplotlib
     customizations.
