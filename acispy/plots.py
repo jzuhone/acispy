@@ -745,6 +745,7 @@ class PhasePlot(ACISPlot):
 def quick_dateplot(dates, values, fig=None, ax=None, **kwargs):
     """
     Make a quick date vs. value plot.
+
     Parameters
     ----------
     dates : array of strings
@@ -758,8 +759,6 @@ def quick_dateplot(dates, values, fig=None, ax=None, **kwargs):
         An Axes instance to plot in. Default: None, one will be
         created if not provided.
 
-    All other keyword arguments are assumed to be Matplotlib
-    customizations.
     """
     fig = plt.figure(figsize=(10, 10))
     dates = DateTime(dates).secs

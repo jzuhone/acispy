@@ -1,6 +1,9 @@
 Plotting API
 ============
 
+.. automodule:: acispy.plots
+    :members: quick_dateplot
+
 .. autoclass:: acispy.plots.DatePlot
     :members:
     :inherited-members:
@@ -11,3 +14,4 @@ Plotting API
 .. autoclass:: acispy.plots.PhasePlot
     :members:
     :inherited-members:
+    
