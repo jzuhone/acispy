@@ -71,7 +71,7 @@ def ensure_numpy_array(obj):
         return np.asarray([obj])
 
 def calc_off_nom_rolls(states):
-    times = 0.5*(states['tstart'] + states['tstop']).value
+    times = np.array(0.5*(states['tstart'] + states['tstop']))
     atts = np.array([states["q%d" % x] for x in range(1, 5)]).transpose()
     return np.array([Ska.Sun.off_nominal_roll(att, time)
                      for time, att in zip(times, atts)])
