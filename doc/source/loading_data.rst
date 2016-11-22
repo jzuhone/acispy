@@ -177,6 +177,10 @@ check the `field_list` attribute:
 
     [('msids', '1deamzt'),
      ('msids', '1dpamzt'),
+     ('states', 'datestart'),
+     ('states', 'datestop'),
+     ('states', 'tstart'),
+     ('states', 'tstop'),
      ('states', 'q1'),
      ('states', 'q3'),
      ('states', 'q2'),
