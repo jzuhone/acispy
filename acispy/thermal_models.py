@@ -146,20 +146,14 @@ class ThermalModelRunner(DataContainer):
         states_file : string
             The filename to write the states to.
         """
-        states = {}
-        states["tstart"] = self.times("states","pitch")[0].value
-        states["tstop"] = self.times("states","pitch")[1].value
-        states["datestart"] = self.dates("states","pitch")[0]
-        states["datestop"] = self.dates("states","pitch")[1]
-        states.update(self.states)
         out = open(states_file, 'w')
         fmt = {'power': '%.1f',
                'pitch': '%.2f',
                'tstart': '%.2f',
                'tstop': '%.2f',
                }
-        newcols = list(states.keys())
-        newstates = np.rec.fromarrays([states[x] for x in newcols], names=newcols)
+        newcols = list(self.states.keys())
+        newstates = np.rec.fromarrays([self.states[x] for x in newcols], names=newcols)
         Ska.Numpy.pprint(newstates, fmt, out)
         out.close()
 
@@ -205,8 +199,6 @@ class ThermalModelFromData(ThermalModelRunner):
             self.model_spec = model_spec
 
         states = dict((k, np.array(dc.states[k])) for k in dc.states.keys())
-        states["tstart"] = dc.states.times['ccd_count'][0].value
-        states["tstop"] = dc.states.times['ccd_count'][1].value
         states["off_nominal_roll"] = calc_off_nom_rolls(states)
 
         tstart_state = dc.states.times['ccd_count'][0][0].value
@@ -318,3 +310,5 @@ class SimulateCTIRun(ThermalModelRunner):
     def asymptotic_temperature(self):
         return self.mvals[-1]
 
+    def write_states(self, states_file):
+        raise NotImplementedError
