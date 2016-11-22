@@ -31,9 +31,16 @@ else:
     msids.append(args.y_field)
     y_field = ("msids", args.y_field)
 
-ds = acispy.DataContainer.fetch_from_database(args.tstart, args.tstop,
+dc = acispy.DataContainer.fetch_from_database(args.tstart, args.tstop,
                                               msid_keys=msids, state_keys=states,
-                                              filter_bad=True)
+                                              interpolate_msids=True, filter_bad=True)
 
-cp = acispy.PhasePlot(ds, x_field, y_field)
+if x_field[0] == "states" and y_field[0] != "states":
+    dc.map_state_to_msid(x_field[1], y_field[1])
+    x_field = ("msids", x_field[1])
+elif x_field[0] != "states" and y_field[0] == "states":
+    dc.map_state_to_msid(y_field[1], x_field[1])
+    y_field = ("msids", y_field[1])
+
+pp = acispy.PhasePlot(dc, x_field, y_field)
 plt.show()
