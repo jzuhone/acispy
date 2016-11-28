@@ -128,7 +128,135 @@ class ACISPlot(object):
         """
         self.fig.canvas.draw()
 
-class DatePlot(ACISPlot):
+class QuickDatePlot(ACISPlot):
+    r"""
+    Make a quick date vs. value plot.
+
+    Parameters
+    ----------
+    dates : array of strings
+        The dates to be plotted.
+    values : array
+        The values to be plotted.
+    fig : :class:`~matplotlib.figure.Figure`, optional
+        A Figure instance to plot in. Default: None, one will be
+        created if not provided.
+    ax : :class:`~matplotlib.axes.Axes`, optional
+        An Axes instance to plot in. Default: None, one will be
+        created if not provided.
+
+    """
+    def __init__(self, dates, values, fig=None, ax=None, **kwargs):
+        fig = plt.figure(figsize=(10, 10))
+        dates = DateTime(dates).secs
+        ticklocs, fig, ax = plot_cxctime(dates, values, fig=fig, ax=ax, **kwargs)
+        super(QuickDatePlot, self).__init__(fig, ax)
+
+    def set_xlim(self, xmin, xmax):
+        """
+        Set the limits on the x-axis of the plot to *xmin* and *xmax*,
+        which must be in YYYY:DOY:HH:MM:SS format.
+
+        Examples
+        --------
+        >>> p.set_xlim("2016:050:12:45:47.324", "2016:056:22:32:01.123")
+        """
+        if not isinstance(xmin, datetime):
+            xmin = datetime.strptime(DateTime(xmin).iso, "%Y-%m-%d %H:%M:%S.%f")
+        if not isinstance(xmax, datetime):
+            xmax = datetime.strptime(DateTime(xmax).iso, "%Y-%m-%d %H:%M:%S.%f")
+        self.ax.set_xlim(xmin, xmax)
+
+    def add_vline(self, time, lw=2, ls='solid', color='green', **kwargs):
+        """
+        Add a vertical line on the time axis of the plot.
+
+        Parameters
+        ----------
+        time : string
+            The time to place the vertical line at.
+            Must be in YYYY:DOY:HH:MM:SS format.
+        lw : integer, optional
+            The width of the line. Default: 2
+        ls : string, optional
+            The style of the line. Can be one of:
+            'solid', 'dashed', 'dashdot', 'dotted'.
+            Default: 'solid'
+        color : string, optional
+            The color of the line. Default: 'green'
+
+        Examples
+        --------
+        >>> p.add_vline("2016:101:12:36:10.102", lw=3, ls='dashed', color='red')
+        """
+        time = datetime.strptime(DateTime(time).iso, "%Y-%m-%d %H:%M:%S.%f")
+        self.ax.axvline(x=time, lw=lw, ls=ls, color=color, **kwargs)
+
+    def add_text(self, time, y, text, fontsize=18, color='black',
+                 rotation='horizontal', **kwargs):
+        """
+        Add text to a DatePlot.
+
+        Parameters
+        ----------
+        time : string
+            The time to place the text at.
+            Must be in YYYY:DOY:HH:MM:SS format.
+        y : float
+            The y-value to place the text at.
+        text : string
+            The text itself.
+        fontsize : integer, optional
+            The size of the font. Default: 18 pt.
+        color : string, optional
+            The color of the font. Default: black.
+        rotation : string or float, optional
+            The rotation of the text. Default: Horizontal
+
+        Examples
+        --------
+        >>> dp.add_text("2016:101:12:36:10.102", 35., "Something happened here!",
+        ...             fontsize=15, color='magenta')
+        """
+        time = datetime.strptime(DateTime(time).iso, "%Y-%m-%d %H:%M:%S.%f")
+        self.ax.text(time, y, text, fontsize=fontsize, color=color,
+                     family='serif', rotation=rotation, **kwargs)
+
+    def set_legend(self, loc='best', fontsize=16, **kwargs):
+        """
+        Adjust a legend on the plot.
+
+        Parameters
+        ----------
+        loc : string, optional
+            The location of the legend on the plot. Options are:
+            'best'
+            'upper right'
+            'upper left'
+            'lower left'
+            'lower right'
+            'right'
+            'center left'
+            'center right'
+            'lower center'
+            'upper center'
+            'center'
+            Default: 'best', which will try to find the best location for
+            the legend, e.g. away from plotted data.
+        fontsize : integer, optional
+            The size of the legend text. Default: 16 pt.
+
+        Examples
+        --------
+        >>> p.set_legend(loc='right', fontsize=18)
+        """
+        if self.num_fields == 1:
+            raise RuntimeError("This plot does not have a legend because it"
+                               "has only one set of data on the left y-axis!")
+        prop = {"family": "serif", "size": fontsize}
+        self.ax.legend(loc=loc, prop=prop, **kwargs)
+
+class DatePlot(QuickDatePlot):
     r""" Make a single-panel plot of a quantity (or multiple quantities) 
     vs. date and time. 
 
@@ -199,7 +327,8 @@ class DatePlot(ACISPlot):
                                              label=label)
             self.y[field] = y
         self.x = x
-        super(DatePlot, self).__init__(fig, ax)
+        self.fig = fig
+        self.ax = ax
         self.ax.set_xlabel("Date", fontdict={"size": fontsize,
                                              "family": "serif"})
         if self.num_fields > 1:
@@ -246,21 +375,6 @@ class DatePlot(ACISPlot):
                 ylabel2 += ' (%s)' % unit_labels.get(units2, units2)
             self.set_ylabel2(ylabel2)
 
-    def set_xlim(self, xmin, xmax):
-        """
-        Set the limits on the x-axis of the plot to *xmin* and *xmax*,
-        which must be in YYYY:DOY:HH:MM:SS format.
-
-        Examples
-        --------
-        >>> p.set_xlim("2016:050:12:45:47.324", "2016:056:22:32:01.123")
-        """
-        if not isinstance(xmin, datetime):
-            xmin = datetime.strptime(DateTime(xmin).iso, "%Y-%m-%d %H:%M:%S.%f")
-        if not isinstance(xmax, datetime):
-            xmax = datetime.strptime(DateTime(xmax).iso, "%Y-%m-%d %H:%M:%S.%f")
-        self.ax.set_xlim(xmin, xmax)
-
     def set_ylim2(self, ymin, ymax):
         """
         Set the limits on the right y-axis of the plot to *ymin* and *ymax*.
@@ -285,31 +399,6 @@ class DatePlot(ACISPlot):
         fontdict = {"size": fontsize, "family": "serif"}
         self.ax2.set_ylabel(ylabel, fontdict=fontdict, **kwargs)
 
-    def add_vline(self, time, lw=2, ls='solid', color='green', **kwargs):
-        """
-        Add a vertical line on the time axis of the plot.
-
-        Parameters
-        ----------
-        time : string
-            The time to place the vertical line at.
-            Must be in YYYY:DOY:HH:MM:SS format.
-        lw : integer, optional
-            The width of the line. Default: 2
-        ls : string, optional
-            The style of the line. Can be one of:
-            'solid', 'dashed', 'dashdot', 'dotted'.
-            Default: 'solid'
-        color : string, optional
-            The color of the line. Default: 'green'
-
-        Examples
-        --------
-        >>> p.add_vline("2016:101:12:36:10.102", lw=3, ls='dashed', color='red')
-        """
-        time = datetime.strptime(DateTime(time).iso, "%Y-%m-%d %H:%M:%S.%f")
-        self.ax.axvline(x=time, lw=lw, ls=ls, color=color, **kwargs)
-
     def add_hline2(self, y2, lw=2, ls='solid', color='green', **kwargs):
         """
         Add a horizontal line on the right y-axis of the plot.
@@ -333,40 +422,6 @@ class DatePlot(ACISPlot):
         """
         self.ax2.axhline(y=y2, lw=lw, ls=ls, color=color, **kwargs)
 
-    def set_legend(self, loc='best', fontsize=16, **kwargs):
-        """
-        Adjust a legend on the plot.
-
-        Parameters
-        ----------
-        loc : string, optional
-            The location of the legend on the plot. Options are:
-            'best'
-            'upper right'
-            'upper left'
-            'lower left'
-            'lower right'
-            'right'
-            'center left'
-            'center right'
-            'lower center'
-            'upper center'
-            'center'
-            Default: 'best', which will try to find the best location for
-            the legend, e.g. away from plotted data.
-        fontsize : integer, optional
-            The size of the legend text. Default: 16 pt.
-
-        Examples
-        --------
-        >>> p.set_legend(loc='right', fontsize=18)
-        """
-        if self.num_fields == 1:
-            raise RuntimeError("This plot does not have a legend because it"
-                               "has only one set of data on the left y-axis!")
-        prop = {"family": "serif", "size": fontsize}
-        self.ax.legend(loc=loc, prop=prop, **kwargs)
-
     def set_field_label(self, field, label):
         """
         Change the field label in the legend.
@@ -385,36 +440,6 @@ class DatePlot(ACISPlot):
         idx = self.fields.index(field)
         self.ax.lines[idx].set_label(label)
         self.set_legend()
-
-    def add_text(self, time, y, text, fontsize=18, color='black', 
-                 rotation='horizontal', **kwargs):
-        """
-        Add text to a DatePlot.
-
-        Parameters
-        ----------
-        time : string
-            The time to place the text at.
-            Must be in YYYY:DOY:HH:MM:SS format.
-        y : float
-            The y-value to place the text at.
-        text : string
-            The text itself.
-        fontsize : integer, optional
-            The size of the font. Default: 18 pt.
-        color : string, optional
-            The color of the font. Default: black.
-        rotation : string or float, optional
-            The rotation of the text. Default: Horizontal
-
-        Examples
-        --------
-        >>> dp.add_text("2016:101:12:36:10.102", 35., "Something happened here!",
-        ...             fontsize=15, color='magenta')
-        """
-        time = datetime.strptime(DateTime(time).iso, "%Y-%m-%d %H:%M:%S.%f")
-        self.ax.text(time, y, text, fontsize=fontsize, color=color, 
-                     family='serif', rotation=rotation, **kwargs)
 
 class MultiDatePlot(object):
     r""" Make a multi-panel plot of multiple quantities vs. date and time.
@@ -718,26 +743,3 @@ class PhasePlot(ACISPlot):
         """
         self.ax.text(x, y, text, fontsize=fontsize, color=color,
                      family='serif', rotation=rotation, **kwargs)
-
-def quick_dateplot(dates, values, fig=None, ax=None, **kwargs):
-    """
-    Make a quick date vs. value plot.
-
-    Parameters
-    ----------
-    dates : array of strings
-        The dates to be plotted.
-    values : array
-        The values to be plotted.
-    fig : :class:`~matplotlib.figure.Figure`, optional
-        A Figure instance to plot in. Default: None, one will be
-        created if not provided.
-    ax : :class:`~matplotlib.axes.Axes`, optional
-        An Axes instance to plot in. Default: None, one will be
-        created if not provided.
-
-    """
-    fig = plt.figure(figsize=(10, 10))
-    dates = DateTime(dates).secs
-    ticklocs, fig, ax = plot_cxctime(dates, values, fig=fig, ax=ax, **kwargs)
-    return fig, ax
