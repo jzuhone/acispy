@@ -98,29 +98,6 @@ class ACISPlot(object):
         """
         self.ax.axhline(y=y, lw=lw, ls=ls, color=color, **kwargs)
 
-    def add_hline(self, y, lw=2, ls='solid', color='green', **kwargs):
-        """
-        Add a horizontal line on the left y-axis of the plot.
-
-        Parameters
-        ----------
-        y : float
-            The value to place the vertical line at.
-        lw : integer, optional
-            The width of the line. Default: 2
-        ls : string, optional
-            The style of the line. Can be one of:
-            'solid', 'dashed', 'dashdot', 'dotted'.
-            Default: 'solid'
-        color : string, optional
-            The color of the line. Default: 'green'
-
-        Examples
-        --------
-        >>> p.add_hline(36., lw=3, ls='dashed', color='red')
-        """
-        self.ax.axhline(y=y, lw=lw, ls=ls, color=color, **kwargs)
-
     def set_ylim(self, ymin, ymax):
         """
         Set the limits on the left y-axis of the plot to *ymin* and *ymax*.
