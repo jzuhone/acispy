@@ -251,9 +251,6 @@ class QuickDatePlot(ACISPlot):
         --------
         >>> p.set_legend(loc='right', fontsize=18)
         """
-        if self.num_fields == 1:
-            raise RuntimeError("This plot does not have a legend because it"
-                               "has only one set of data on the left y-axis!")
         prop = {"family": "serif", "size": fontsize}
         self.ax.legend(loc=loc, prop=prop, **kwargs)
 
