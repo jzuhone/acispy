@@ -146,11 +146,12 @@ class QuickDatePlot(ACISPlot):
         created if not provided.
 
     """
-    def __init__(self, dates, values, fig=None, ax=None, **kwargs):
+    def __init__(self, dates, values, fig=None, ax=None, fontsize=18, **kwargs):
         fig = plt.figure(figsize=(10, 10))
         dates = DateTime(dates).secs
         ticklocs, fig, ax = plot_cxctime(dates, values, fig=fig, ax=ax, **kwargs)
         super(QuickDatePlot, self).__init__(fig, ax)
+        self.ax.set_xlabel("Date", fontdict={"size": fontsize, "family": "serif"})
 
     def set_xlim(self, xmin, xmax):
         """
