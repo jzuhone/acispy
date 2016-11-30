@@ -68,7 +68,7 @@ class MSIDs(TimeSeriesData):
 
     @classmethod
     def from_database(cls, msids, tstart, tstop=None, filter_bad=False,
-                      stat=None, interpolate=False, interpolate_times=None):
+                      stat='5min', interpolate=False, interpolate_times=None):
         data = fetch.MSIDset(msids, tstart, stop=tstop, filter_bad=filter_bad,
                              stat=stat)
         if interpolate:
