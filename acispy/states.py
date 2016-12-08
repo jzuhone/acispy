@@ -6,6 +6,10 @@ from Chandra.cmd_states import fetch_states
 from astropy.units import Quantity
 from acispy.time_series import TimeSeriesData
 
+cmd_state_codes = {("states", "hetg"): {"RETR": 0, "INSR": 1},
+                   ("states", "letg"): {"RETR": 0, "INSR": 1},
+                   ("states", "dither"): {"DISA": 0, "ENAB": 1}}
+
 class States(TimeSeriesData):
 
     def __init__(self, table):

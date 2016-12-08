@@ -1,5 +1,5 @@
 from acispy.msids import MSIDs
-from acispy.states import States
+from acispy.states import States, cmd_state_codes
 from acispy.model import Model
 from Chandra.Time import secs2date, DateTime
 from acispy.fields import create_derived_fields, \
@@ -29,6 +29,11 @@ class DataContainer(object):
                 self._populate_fields(key, value)
         create_derived_fields(self)
         self.data = {}
+        self.state_codes = {}
+        if hasattr(self.msids, "state_codes"):
+            for k, v in self.msids.state_codes.items():
+                self.state_codes["msids", k] = v
+        self.state_codes.update(cmd_state_codes)
 
     def _populate_fields(self, ftype, obj):
         if ftype.startswith("model"):

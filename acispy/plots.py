@@ -10,6 +10,7 @@ from matplotlib.backends.backend_agg import \
     FigureCanvasAgg
 from io import BytesIO
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from acispy.utils import convert_state_code
 
 drawstyles = {"simpos": "steps",
               "pitch": "steps",
@@ -322,16 +323,22 @@ class DatePlot(CustomDatePlot):
         for i, field in enumerate(fields):
             src_name, fd = field
             drawstyle = drawstyles.get(fd, None)
+            state_codes = dc.state_codes.get(field, None)
+            if state_codes is None:
+                y = dc[field]
+            else:
+                state_codes = [(v, k) for k, v in state_codes.items()]
+                y = convert_state_code(dc, field)
             if src_name == "states":
                 tstart, tstop = dc.times(*field)
                 x = pointpair(tstart.value, tstop.value)
-                y = pointpair(dc[field])
+                y = pointpair(y)
             else:
                 x = dc.times(*field).value
-                y = dc[field]
             label = dc.fields[field].display_name
             ticklocs, fig, ax = plot_cxctime(x, y, fig=fig, lw=lw, ax=ax,
                                              color=colors[i],
+                                             state_codes=state_codes,
                                              drawstyle=drawstyle, 
                                              label=label)
             self.y[field] = y
@@ -364,16 +371,22 @@ class DatePlot(CustomDatePlot):
             src_name2, fd2 = field2
             self.ax2 = self.ax.twinx()
             drawstyle = drawstyles.get(fd2, None)
+            state_codes = dc.state_codes.get(field2, None)
+            if state_codes is None:
+                y2 = dc[field2]
+            else:
+                state_codes = [(v, k) for k, v in state_codes.items()]
+                y2 = convert_state_code(dc, field2)
             if src_name2 == "states":
                 tstart, tstop = dc.times(*field2)
                 x = pointpair(tstart.value, tstop.value)
-                y = pointpair(dc[field2])
+                y2 = pointpair(y2)
             else:
                 x = dc.times(*field2).value
-                y = dc[field2]
-            plot_cxctime(x, y, fig=fig, ax=self.ax2, lw=lw,
-                         drawstyle=drawstyle, color=color2)
-            self.y2 = y
+            plot_cxctime(x, y2, fig=fig, ax=self.ax2, lw=lw,
+                         drawstyle=drawstyle, color=color2,
+                         state_codes=state_codes)
+            self.y2 = y2
             for label in self.ax2.get_xticklabels():
                 label.set_fontproperties(fontProperties)
             for label in self.ax2.get_yticklabels():

@@ -7,7 +7,7 @@ from acispy.utils import msid_units
 from acispy.time_series import TimeSeriesData
 
 class MSIDs(TimeSeriesData):
-    def __init__(self, table, times):
+    def __init__(self, table, times, state_codes={}):
         self.table = {}
         for k, v in table.items():
             if v.dtype.char != 'S':
@@ -15,6 +15,7 @@ class MSIDs(TimeSeriesData):
             else:
                 self.table[k] = v
         self.times = times
+        self.state_codes = state_codes
 
     @classmethod
     def from_mit_file(cls, filename):
@@ -73,7 +74,12 @@ class MSIDs(TimeSeriesData):
                              stat=stat)
         if interpolate:
             data.interpolate(times=interpolate_times)
-        table = dict((k, data[k].vals) for k in data.keys())
+        table = {}
+        state_codes = {}
+        for k, msid in data.items():
+            if msid.state_codes:
+                state_codes[k] = dict((k, v) for v, k in msid.state_codes)
+            table[k] = msid.vals
         times = dict((k, Quantity(get_time(data[k].times).secs, 's')) for k in data.keys())
-        return cls(table, times)
+        return cls(table, times, state_codes=state_codes)
 
