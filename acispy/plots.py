@@ -129,6 +129,9 @@ class ACISPlot(object):
         """
         self.fig.canvas.draw()
 
+    def tight_layout(self, *args, **kwargs):
+        self.fig.tight_layout(*args, **kwargs)
+
 class CustomDatePlot(ACISPlot):
     r"""
     Make a custom date vs. value plot.
