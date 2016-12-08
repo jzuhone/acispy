@@ -8,7 +8,8 @@ from acispy.time_series import TimeSeriesData
 
 cmd_state_codes = {("states", "hetg"): {"RETR": 0, "INSR": 1},
                    ("states", "letg"): {"RETR": 0, "INSR": 1},
-                   ("states", "dither"): {"DISA": 0, "ENAB": 1}}
+                   ("states", "dither"): {"DISA": 0, "ENAB": 1},
+                   ("states", "pcad_mode"): {"STBY": 0, "NPNT": 1, "NMAN": 2, "NSUN": 3, "PWRF": 4, "RMAN": 5, "NULL": 6}}
 
 class States(TimeSeriesData):
 
