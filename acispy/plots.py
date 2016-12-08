@@ -153,7 +153,7 @@ class CustomDatePlot(ACISPlot):
     """
     def __init__(self, dates, values, lw=1.5, fontsize=18, fig=None, ax=None, **kwargs):
         if fig is None:
-            fig = plt.figure(figsize=(10, 10))
+            fig = plt.figure(figsize=(10, 8))
         dates = DateTime(dates).secs
         ticklocs, fig, ax = plot_cxctime(dates, values, fig=fig, ax=ax, lw=lw, **kwargs)
         super(CustomDatePlot, self).__init__(fig, ax)
@@ -355,6 +355,8 @@ class DatePlot(CustomDatePlot):
             label.set_fontproperties(fontProperties)
         for label in self.ax.get_yticklabels():
             label.set_fontproperties(fontProperties)
+        ymin, ymax = self.ax.get_ylim()
+        self.ax.set_ylim(0.9 * ymin, 1.1 * ymax)
         units = dc.fields[fields[0]].units
         if self.num_fields > 1:
             if units == '':
@@ -391,6 +393,8 @@ class DatePlot(CustomDatePlot):
                 label.set_fontproperties(fontProperties)
             for label in self.ax2.get_yticklabels():
                 label.set_fontproperties(fontProperties)
+            ymin2, ymax2 = self.ax2.get_ylim()
+            self.ax2.set_ylim(0.9*ymin2, 1.1*ymax2)
             units2 = dc.fields[field2].units
             ylabel2 = dc.fields[field2].display_name
             if units2 != '':
