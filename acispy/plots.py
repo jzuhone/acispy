@@ -128,9 +128,9 @@ class ACISPlot(object):
         """
         self.fig.canvas.draw()
 
-class QuickDatePlot(ACISPlot):
+class CustomDatePlot(ACISPlot):
     r"""
-    Make a quick date vs. value plot.
+    Make a custom date vs. value plot.
 
     Parameters
     ----------
@@ -138,6 +138,10 @@ class QuickDatePlot(ACISPlot):
         The dates to be plotted.
     values : array
         The values to be plotted.
+    lw : float, optional
+        The width of the lines in the plots. Default: 1.5 px.
+    fontsize : integer, optional
+        The font size for the labels in the plot. Default: 18 pt.
     fig : :class:`~matplotlib.figure.Figure`, optional
         A Figure instance to plot in. Default: None, one will be
         created if not provided.
@@ -146,12 +150,19 @@ class QuickDatePlot(ACISPlot):
         created if not provided.
 
     """
-    def __init__(self, dates, values, fig=None, ax=None, fontsize=18, **kwargs):
-        fig = plt.figure(figsize=(10, 10))
+    def __init__(self, dates, values, lw=1.5, fontsize=18, fig=None, ax=None, **kwargs):
+        if fig is None:
+            fig = plt.figure(figsize=(10, 10))
         dates = DateTime(dates).secs
-        ticklocs, fig, ax = plot_cxctime(dates, values, fig=fig, ax=ax, **kwargs)
-        super(QuickDatePlot, self).__init__(fig, ax)
+        ticklocs, fig, ax = plot_cxctime(dates, values, fig=fig, ax=ax, lw=lw, **kwargs)
+        super(CustomDatePlot, self).__init__(fig, ax)
         self.ax.set_xlabel("Date", fontdict={"size": fontsize, "family": "serif"})
+        fontProperties = font_manager.FontProperties(family="serif",
+                                                     size=fontsize)
+        for label in self.ax.get_xticklabels():
+            label.set_fontproperties(fontProperties)
+        for label in self.ax.get_yticklabels():
+            label.set_fontproperties(fontProperties)
 
     def set_xlim(self, xmin, xmax):
         """
@@ -254,7 +265,7 @@ class QuickDatePlot(ACISPlot):
         prop = {"family": "serif", "size": fontsize}
         self.ax.legend(loc=loc, prop=prop, **kwargs)
 
-class DatePlot(QuickDatePlot):
+class DatePlot(CustomDatePlot):
     r""" Make a single-panel plot of a quantity (or multiple quantities) 
     vs. date and time. 
 

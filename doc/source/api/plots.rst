@@ -1,13 +1,14 @@
 Plotting API
 ============
 
-.. automodule:: acispy.plots
-    :members: quick_dateplot
-
 .. autoclass:: acispy.plots.DatePlot
     :members:
     :inherited-members:
-    
+
+.. autoclass:: acispy.plots.CustomDatePlot
+    :members:
+    :inherited-members:
+
 .. autoclass:: acispy.plots.MultiDatePlot
     :members:
 
