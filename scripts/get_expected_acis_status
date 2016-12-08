@@ -26,7 +26,7 @@ values = dc.model.get_values(t.date)
 rolls = calc_off_nom_rolls(dc.states)
 idx = np.searchsorted(dc.states["tstart"].value, t.secs)-1
 
-print("Getting expected ACIS state at %s." % t)
+print("Getting expected ACIS state at %s." % t.date)
 
 for k, v in states.items():
     if k not in dont_use:
