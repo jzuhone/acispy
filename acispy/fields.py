@@ -57,14 +57,6 @@ class FieldContainer(object):
 
 def create_derived_fields(dcont):
 
-    # Telemetry format 
-    def _tel_fmt(dc):
-        fmt_str = dc['msids','ccsdstmf']
-        return np.char.strip(fmt_str, 'FMT').astype("int")
-
-    dcont.add_derived_field("msids", "fmt", _tel_fmt, "",
-                            ('msids','ccsdstmf'))
-
     # DPA, DEA powers
 
     def _dpaa_power(dc):
