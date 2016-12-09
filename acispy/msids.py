@@ -63,8 +63,8 @@ class MSIDs(TimeSeriesData):
         data = np.array(data, dtype=dtype)
         # Convert times in the TIME column to Chandra 1998 time
         data['time'] -= 410227200.
-        table = dict((k, data[k]) for k in data.dtype.names)
-        times = dict((k.lower(), Quantity(data["time"], 's')) for k in header if k != "TIME")
+        table = dict((k, data[k]) for k in data.dtype.names if k != "time")
+        times = dict((k.lower(), Quantity(data["time"], 's')) for k in header if k != "time")
         return cls(table, times)
 
     @classmethod

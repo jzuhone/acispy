@@ -286,10 +286,9 @@ class DataContainer(object):
             raise RuntimeError("I cannot parse this file!")
         tmin = 1.0e55
         tmax = -1.0e55
-        for k in msids.keys():
-            if k.endswith("_times"):
-                tmin = min(msids[k][0], tmin)
-                tmax = max(msids[k][-1], tmax)
+        for k in msids.times.keys():
+            tmin = min(msids.times[k][0].value, tmin)
+            tmax = max(msids.times[k][-1].value, tmax)
         states = States.from_database(secs2date(tmin), secs2date(tmax), states=state_keys)
         model = EmptyTimeSeries()
         return cls(msids, states, model)
