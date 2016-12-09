@@ -274,7 +274,6 @@ class DataContainer(object):
         >>> dc = DataContainer.fetch_from_tracelog("acisENG10d_00985114479.70.tl",
         ...                                        state_keys=states)
         """
-        states = EmptyTimeSeries()
         # Figure out what kind of file this is
         f = open(filename, "r")
         line = f.readline()
