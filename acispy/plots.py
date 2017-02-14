@@ -238,6 +238,25 @@ class CustomDatePlot(ACISPlot):
         self.ax.text(time, y, text, fontsize=fontsize, color=color,
                      family='serif', rotation=rotation, **kwargs)
 
+    def set_line_label(self, line, label):
+        """
+        Change the field label in the legend.
+
+        Parameters
+        ----------
+        line : integer
+            The line whose label to change given by its number, assuming
+            a starting index of 0.
+        label :
+            The label to set it to.
+
+        Examples
+        --------
+        >>> dp.set_line_label(1, "DEA Temperature")
+        """
+        self.ax.lines[line].set_label(label)
+        self.set_legend()
+
     def set_legend(self, loc='best', fontsize=16, **kwargs):
         """
         Adjust a legend on the plot.
@@ -467,8 +486,7 @@ class DatePlot(CustomDatePlot):
         >>> dp.set_field_label(("msids","1deamzt"), "DEA Temperature")
         """
         idx = self.fields.index(field)
-        self.ax.lines[idx].set_label(label)
-        self.set_legend()
+        self.set_line_label(idx, label)
 
 class MultiDatePlot(object):
     r""" Make a multi-panel plot of multiple quantities vs. date and time.
