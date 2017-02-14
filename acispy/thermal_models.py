@@ -2,6 +2,7 @@ from __future__ import print_function
 import xija
 import os
 from astropy.units import Quantity
+from astropy.io import ascii
 from acispy.data_container import DataContainer
 from acispy.plots import DatePlot
 import numpy as np
@@ -116,6 +117,35 @@ class ThermalModelRunner(DataContainer):
         model.make()
         model.calc()
         return model
+
+    @classmethod
+    def from_states_table(cls, name, tstart, tstop, states_file, T_init, model_spec=None):
+        """
+        Class for running Xija thermal models.
+
+        Parameters
+        ----------
+        name : string
+            The name of the model to simulate. Can be "dea", "dpa", or "psmc".
+        tstart : string
+            The start time in YYYY:DOY:HH:MM:SS format.
+        tstop : string
+            The stop time in YYYY:DOY:HH:MM:SS format.
+        states_file : string
+            A file containing commanded states, in the same format as "states.dat" which is
+            outputted by ACIS thermal model runs for loads.
+        T_init : float
+            The starting temperature for the model in degrees C.
+        model_spec : string, optional
+            Path to the model spec JSON file for the model. Default: None, the
+            standard model path will be used.
+        """
+        state_keys = ["ccd_count", "pitch", "fep_count", "clocking", "vid_board", "simpos"]
+        states = ascii.read(states_file)
+        states_dict = dict((k, states[k]) for k in state_keys)
+        states_dict["off_nominal_roll"] = calc_off_nom_rolls(states)
+        state_times = np.array([states["datestart"], states["datestop"]])
+        return cls(name, tstart, tstop, states_dict, state_times, T_init, model_spec=model_spec)
 
     def write_model(self, model_file):
         """
