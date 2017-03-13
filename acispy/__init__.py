@@ -1,4 +1,4 @@
-__version__ = "0.7.1"
+__version__ = "0.7.2"
 
 from acispy.data_container import DataContainer
 from acispy.plots import DatePlot, MultiDatePlot, \
