@@ -21,7 +21,8 @@ and data, it is recommended to use the Python interface.
       -h, --help   show this help message and exit
       --time TIME  The time to check the status at (default: current time)
 
-Example:
+Example
++++++++
 
 .. code-block:: bash
 
@@ -72,7 +73,8 @@ Returns:
       -f F        File to write to. Default is to change the suffix of the input
                   file.
 
-Example:
+Example
++++++++
 
 .. code-block:: bash
 
@@ -97,7 +99,8 @@ Example:
       --one-panel  Whether to make a multi-panel plot or a single-panel plot. The
                    latter is only valid if the quantities have the same units.
 
-Example 1:
+Example 1
++++++++++
 
 .. code-block:: bash
 
@@ -107,7 +110,8 @@ Returns:
 
 .. image:: _images/multiplot_archive.png
 
-Example 2:
+Example 2
++++++++++
 
 .. code-block:: bash
 
@@ -134,7 +138,8 @@ Example 2:
       --one-panel  Whether to make a multi-panel plot or a single-panel plot. The
                    latter is only valid if the quantities have the same units.
 
-Example 1:
+Example 1
++++++++++
 
 .. code-block:: bash
     
@@ -144,7 +149,8 @@ Returns:
 
 .. image:: _images/multiplot_tracelog.png
 
-Example 2:
+Example 2
++++++++++
 
 .. code-block:: bash
     
@@ -172,7 +178,8 @@ Returns:
       --y2_axis Y2_AXIS  The model component or state to plot on the right y-axis
                          (default: none)
 
-Example:
+Example
++++++++
 
 .. code-block:: bash
 
@@ -201,7 +208,8 @@ Returns:
       --y2_axis Y2_AXIS  The MSID or state to be plotted on the right y-axis
                          (default: none)
 
-Example:
+Example
++++++++
 
 .. code-block:: bash
 
@@ -222,7 +230,16 @@ Returns:
                             [--dh_heater DH_HEATER]
                             component tstart T_init pitch
 
-Example: 
+Example 1
++++++++++
+
+To run the 1DPAMZT model with the following conditions:
+
+Start time: 2015:100:12:45:30
+Initial temperature: 10.0 degrees C
+Pitch: 150 degrees
+CCD count: 6
+Off-nominal roll: 12.0 degrees
 
 .. code-block:: bash
 
@@ -233,6 +250,31 @@ Returns:
 .. code-block:: text
 
     The limit of 35.5 degrees C will be reached at 2015:100:21:07:04.816, after 30.0948 ksec.
+    The asymptotic temperature is 40.0741 degrees C.
 
 .. image:: _images/cti_run.png
+
+Example 2
++++++++++
+
+To run the 1DEAMZT model with the following conditions:
+
+Start time: 2017:069:15:40:00
+Initial temperature: 7.5 degrees C
+Pitch: 150 degrees
+CCD count: 4
+Off-nominal roll: 0.0 degrees
+
+.. code-block:: bash
+
+    [~]$ simulate_cti_run dea 2017:069:15:40:00 7.5 150. --ccd_count 4 --off_nominal_roll 0.0
+
+Returns:
+
+.. code-block:: text
+
+    The limit of 35.5 degrees C is never reached!
+    The asymptotic temperature is 32.3293 degrees C.
+
+.. image:: _images/cti_run2.png
 
