@@ -7,7 +7,7 @@ import argparse
 import acispy
 
 parser = argparse.ArgumentParser(description='Simulate a CTI run.')
-parser.add_argument("component", type=str, help='The component to model.')
+parser.add_argument("component", type=str, help='The component to model: dpa, dea, or psmc.')
 parser.add_argument("tstart", type=str, help='The start time in YYYY:DOY:HH:MM:SS format')
 parser.add_argument("T_init", type=float, help='The initial temperature of the component in degrees C.')
 parser.add_argument("pitch", type=float, help='The initial temperature of the component in degrees C.')
