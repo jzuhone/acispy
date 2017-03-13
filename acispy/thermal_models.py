@@ -306,9 +306,9 @@ class SimulateCTIRun(ThermalModelRunner):
         super(SimulateCTIRun, self).__init__(name, tstart, tstop, states,
                                              state_times, T_init, model_spec=model_spec)
         err = np.abs(self.asymptotic_temperature-self.mvals[-10])/self.asymptotic_temperature
-        if err > 1.0e-5:
-            raise RuntimeWarning("You may not have reached the asymptotic temperature! Suggest"
-                                 " increasing the 'days' parameter past its current value of %g!" % days)
+        if err > 1.0e-3:
+            mylog.warning("You may not have reached the asymptotic temperature! Suggest"
+                          " increasing the 'days' parameter past its current value of %g!" % days)
         self.limit = Quantity(limits[self.name], "deg_C")
         if self.asymptotic_temperature > self.limit:
             idx = np.searchsorted(self.mvals.value, self.limit.value)-1
@@ -323,6 +323,7 @@ class SimulateCTIRun(ThermalModelRunner):
             self.duration = None
             msg = "The limit of %g degrees C is never reached!" % self.limit.value
         mylog.info(msg)
+        mylog.info("The asymptotic temperature is %g degrees C." % self.asymptotic_temperature.value)
 
     def plot_model(self):
         """
