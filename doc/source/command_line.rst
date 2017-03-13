@@ -239,7 +239,7 @@ Start time: 2015:100:12:45:30
 Initial temperature: 10.0 degrees C
 Pitch: 150 degrees
 CCD count: 6
-Off-nominal roll: 12.0 degrees
+Off-nominal roll: 12.0 degrees  
 
 .. code-block:: bash
 
