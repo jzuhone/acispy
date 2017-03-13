@@ -235,11 +235,11 @@ Example 1
 
 To run the 1DPAMZT model with the following conditions:
 
-Start time: 2015:100:12:45:30
-Initial temperature: 10.0 degrees C
-Pitch: 150 degrees
-CCD count: 6
-Off-nominal roll: 12.0 degrees  
+* Start time: 2015:100:12:45:30
+* Initial temperature: 10.0 degrees C
+* Pitch: 150 degrees
+* CCD count: 6
+* Off-nominal roll: 12.0 degrees
 
 .. code-block:: bash
 
@@ -259,11 +259,11 @@ Example 2
 
 To run the 1DEAMZT model with the following conditions:
 
-Start time: 2017:069:15:40:00
-Initial temperature: 7.5 degrees C
-Pitch: 150 degrees
-CCD count: 4
-Off-nominal roll: 0.0 degrees
+* Start time: 2017:069:15:40:00
+* Initial temperature: 7.5 degrees C
+* Pitch: 150 degrees
+* CCD count: 4
+* Off-nominal roll: 0.0 degrees
 
 .. code-block:: bash
 
