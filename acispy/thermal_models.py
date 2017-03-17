@@ -32,7 +32,7 @@ class ThermalModelRunner(DataContainer):
     Parameters
     ----------
     name : string
-        The name of the model to simulate. Can be "dea", "dpa", or "psmc".
+        The name of the model to simulate. Can be "dea", "dpa", "psmc", or "fep1mong".
     tstart : string
         The start time in YYYY:DOY:HH:MM:SS format.
     tstop : string
@@ -128,7 +128,7 @@ class ThermalModelRunner(DataContainer):
         Parameters
         ----------
         name : string
-            The name of the model to simulate. Can be "dea", "dpa", or "psmc".
+            The name of the model to simulate. Can be "dea", "dpa", "psmc", or "fep1mong".
         tstart : string
             The start time in YYYY:DOY:HH:MM:SS format.
         tstop : string
@@ -200,7 +200,7 @@ class ThermalModelFromData(ThermalModelRunner):
     dc : :class:`~acispy.data_container.DataContainer`
         The DataContainer to extract the information from.
     name : string
-        The name of the model to simulate. Can be "dea", "dpa", or "psmc".
+        The name of the model to simulate. Can be "dea", "dpa", "psmc", or "fep1mong".
     model_spec : string, optional
         Path to the model spec JSON file for the model. Default: None, the
         standard model path will be used.
@@ -261,7 +261,7 @@ class SimulateCTIRun(ThermalModelRunner):
     Parameters
     ----------
     name : string
-        The name of the model to simulate. Can be "dea", "dpa", or "psmc".
+        The name of the model to simulate. Can be "dea", "dpa", "psmc", or "fep1mong".
     tstart : string
         The start time in YYYY:DOY:HH:MM:SS format.
     T_init : float
