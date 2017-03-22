@@ -1,5 +1,5 @@
-import numpy as np
 from astropy.units import Quantity
+from acispy.utils import calc_off_nom_rolls
 
 class OutputFieldFunction(object):
     def __init__(self, ftype, fname):
@@ -56,6 +56,14 @@ class FieldContainer(object):
         return item in self.output_fields or item in self.derived_fields
 
 def create_derived_fields(dcont):
+
+    # Off-nominal roll
+
+    def _off_nominal_roll(dc):
+        return calc_off_nom_rolls(dc.states)
+
+    dcont.add_derived_field("states", "off_nominal_roll", _off_nominal_roll,
+                            "deg", ("states", "q1"), display_name="Off-Nominal Roll")
 
     # DPA, DEA powers
 
