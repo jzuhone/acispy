@@ -10,6 +10,7 @@ from acispy.utils import unit_table, \
     get_display_name, moving_average, \
     ensure_list
 import numpy as np
+import os
 
 class DataContainer(object):
     def __init__(self, msids, states, model):
@@ -205,6 +206,52 @@ class DataContainer(object):
             st = np.searchsorted(times.value, tstart)
             ed = np.searchsorted(times.value, tstop)
         return self[ftype, fname][st:ed]
+
+    def write_msids(self, filename, fields, overwrite=False):
+        """
+        Write MSIDs (or MSID-like quantities such as model values) to an ASCII
+        table file. This assumes that all of the quantities have been
+        interpolated to a common set of times.
+
+        Parameters
+        ----------
+        filename : string
+            The filename to write the quantities to.
+        fields : list of (type, name) field specifications
+            The quantities to be written to the ASCII table.
+        overwrite : boolean, optional
+            If True, an existing file with the same name will be overwritten.
+        """
+        from astropy.table import Table
+        fields = ensure_list(fields)
+        base_times = self.times(*fields[0])
+        if len(fields) > 1:
+            for field in fields[1:]:
+                if not np.all(base_times & self.times(*field)):
+                    raise RuntimeError("To write MSIDs, all of the times should be the same!!")
+        if os.path.exists(filename) and not overwrite:
+            raise IOError("File %s already exists, but overwrite=False!" % filename)
+        data = dict((k, self[k]) for k in fields)
+        Table(data).write(filename, format='ascii')
+
+    def write_states(self, filename, overwrite=False):
+        """
+        Write commanded states to an ASCII table file. An error will be thrown
+        if there are no commanded states present.
+
+        Parameters
+        ----------
+        filename : string
+            The filename to write the states to.
+        overwrite : boolean, optional
+            If True, an existing file with the same name will be overwritten.
+        """
+        from astropy.table import Table
+        if isinstance(self.states, EmptyTimeSeries):
+            raise RuntimeError("There are no commanded states to be written!")
+        if os.path.exists(filename) and not overwrite:
+            raise IOError("File %s already exists, but overwrite=False!" % filename)
+        Table(self.states.table).write(filename, format='ascii')
 
     @classmethod
     def fetch_from_database(cls, tstart, tstop, msid_keys=None, state_keys=None,
