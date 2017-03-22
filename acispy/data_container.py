@@ -227,11 +227,13 @@ class DataContainer(object):
         base_times = self.times(*fields[0])
         if len(fields) > 1:
             for field in fields[1:]:
-                if not np.all(base_times & self.times(*field)):
+                if not np.all(base_times == self.times(*field)):
                     raise RuntimeError("To write MSIDs, all of the times should be the same!!")
         if os.path.exists(filename) and not overwrite:
             raise IOError("File %s already exists, but overwrite=False!" % filename)
-        data = dict((k, self[k]) for k in fields)
+        data = dict(("_".join(k), self[k]) for k in fields)
+        data["times"] = self.times(*fields[0])
+        data["dates"] = self.dates(*fields[0])
         Table(data).write(filename, format='ascii')
 
     def write_states(self, filename, overwrite=False):
