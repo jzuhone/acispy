@@ -1,4 +1,5 @@
-from Ska.Matplotlib import plot_cxctime, pointpair
+from Ska.Matplotlib import plot_cxctime, pointpair, \
+    cxctime2plotdate
 from matplotlib import font_manager
 import matplotlib.pyplot as plt
 from matplotlib.dates import num2date
@@ -11,6 +12,7 @@ from matplotlib.backends.backend_agg import \
 from io import BytesIO
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from acispy.utils import convert_state_code
+import numpy as np
 
 drawstyles = {"simpos": "steps",
               "pitch": "steps",
@@ -341,32 +343,36 @@ class DatePlot(CustomDatePlot):
         self.fields = fields
         self.num_fields = len(fields)
         colors = ensure_list(colors)
+        self.times = {}
         self.y = {}
         for i, field in enumerate(fields):
             src_name, fd = field
             drawstyle = drawstyles.get(fd, None)
             state_codes = dc.state_codes.get(field, None)
+            src = getattr(dc, src_name)
             if state_codes is None:
-                y = dc[field]
+                y = src[fd]
             else:
                 state_codes = [(v, k) for k, v in state_codes.items()]
                 y = convert_state_code(dc, field)
             if src_name == "states":
-                tstart, tstop = dc.times(*field)
+                tstart, tstop = src.times[fd]
                 x = pointpair(tstart.value, tstop.value)
                 y = pointpair(y)
             else:
-                x = dc.times(*field).value
+                x = src.times[fd].value
             label = dc.fields[field].display_name
             ticklocs, fig, ax = plot_cxctime(x, y, fig=fig, lw=lw, ax=ax,
                                              color=colors[i],
                                              state_codes=state_codes,
                                              drawstyle=drawstyle, 
                                              label=label)
-            self.y[field] = y
-        self.x = x
+            self.y[field] = src[fd]
+            self.times[field] = src.times[fd]
+
         self.fig = fig
         self.ax = ax
+        self.dc = dc
         self.ax.set_xlabel("Date", fontdict={"size": fontsize,
                                              "family": "serif"})
         if self.num_fields > 1:
@@ -391,26 +397,29 @@ class DatePlot(CustomDatePlot):
             if units != '':
                 ylabel += ' (%s)' % unit_labels.get(units, units)
             self.set_ylabel(ylabel)
+        self.field2 = field2
         if field2 is not None:
             src_name2, fd2 = field2
             self.ax2 = self.ax.twinx()
             drawstyle = drawstyles.get(fd2, None)
             state_codes = dc.state_codes.get(field2, None)
+            src2 = getattr(dc, src_name2)
             if state_codes is None:
-                y2 = dc[field2]
+                y2 = src2[fd2]
             else:
                 state_codes = [(v, k) for k, v in state_codes.items()]
                 y2 = convert_state_code(dc, field2)
             if src_name2 == "states":
-                tstart, tstop = dc.times(*field2)
+                tstart, tstop = src2.times[fd2]
                 x = pointpair(tstart.value, tstop.value)
                 y2 = pointpair(y2)
             else:
-                x = dc.times(*field2).value
+                x = src2.times[fd2].value
             plot_cxctime(x, y2, fig=fig, ax=self.ax2, lw=lw,
                          drawstyle=drawstyle, color=color2,
                          state_codes=state_codes)
-            self.y2 = y2
+            self.times[field2] = src2.times[fd2]
+            self.y[field2] = src2[fd2]
             for label in self.ax2.get_xticklabels():
                 label.set_fontproperties(fontProperties)
             for label in self.ax2.get_yticklabels():
@@ -422,12 +431,40 @@ class DatePlot(CustomDatePlot):
             if units2 != '':
                 ylabel2 += ' (%s)' % unit_labels.get(units2, units2)
             self.set_ylabel2(ylabel2)
+        self._fill_bad_times()
 
+    def _fill_bad_times(self):
+        fields = [field for field in self.fields if field[0] != "states"]
+        axes = [self.ax]*len(fields)
+        times = [self.times[field] for field in fields]
+        if self.field2 and self.field2[0] != "states":
+            fields.append(self.field2)
+            axes.append(self.ax2)
+            times.append(self.times[field2[1]])
+        for (ftype, fname), ax, x in zip(fields, axes, times):
+            if x.mask is not None:
+                ybot, ytop = ax.get_ylim()
+                all_time = cxctime2plotdate(x.value)
+                mask = ~x.mask
+                bad = np.concatenate([[False], mask, [False]])
+                bad_int = np.flatnonzero(bad[1:] != bad[:-1]).reshape(-1, 2)
+                for ii, jj in bad_int:
+                    ax.fill_between(all_time[ii:jj], ybot, ytop, 
+                                    where=mask[ii:jj], color='cyan', alpha=0.5)
+
+    def set_ylim(self, ymin, ymax):
+        """                                                                                                                                    
+        Set the limits on the left y-axis of the plot to *ymin* and *ymax*.                                                                    
+        """
+        self.ax.set_ylim(ymin, ymax)
+        self._fill_bad_times()
+        
     def set_ylim2(self, ymin, ymax):
         """
         Set the limits on the right y-axis of the plot to *ymin* and *ymax*.
         """
         self.ax2.set_ylim(ymin, ymax)
+        self._fill_bad_times()
 
     def set_ylabel2(self, ylabel, fontsize=18, **kwargs):
         """

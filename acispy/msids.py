@@ -2,19 +2,22 @@ from acispy.utils import get_time, mit_trans_table
 import Ska.engarchive.fetch_sci as fetch
 from astropy.io import ascii
 import numpy as np
-from astropy.units import Quantity
+from acispy.units import MSIDQuantity
 from acispy.utils import msid_units
 from acispy.time_series import TimeSeriesData
 
 class MSIDs(TimeSeriesData):
-    def __init__(self, table, times, state_codes={}):
+    def __init__(self, table, times, state_codes={}, masks={}):
         self.table = {}
+        self.times = {}
         for k, v in table.items():
+            mask = masks.get(k, None)
             if v.dtype.char != 'S':
-                self.table[k] = Quantity(v, msid_units.get(k, ''))
+                unit = msid_units.get(k, None)
+                self.table[k] = MSIDQuantity(v, unit=unit, mask=mask)
             else:
                 self.table[k] = v
-        self.times = times
+            self.times[k] = MSIDQuantity(times[k], unit="s", mask=mask)
         self.state_codes = state_codes
 
     @classmethod
@@ -46,7 +49,7 @@ class MSIDs(TimeSeriesData):
                 else:
                     key = k.lower()
                 table[key] = data[k].data
-                times[key] = Quantity(get_time(time_arr), 's')
+                times[key] = get_time(time_arr)
         return cls(table, times)
 
     @classmethod
@@ -64,7 +67,7 @@ class MSIDs(TimeSeriesData):
         # Convert times in the TIME column to Chandra 1998 time
         data['time'] -= 410227200.
         table = dict((k, data[k]) for k in data.dtype.names if k != "time")
-        times = dict((k.lower(), Quantity(data["time"], 's')) for k in header if k != "time")
+        times = dict((k.lower(), data["time"]) for k in header if k != "time")
         return cls(table, times)
 
     @classmethod
@@ -80,6 +83,6 @@ class MSIDs(TimeSeriesData):
             if msid.state_codes:
                 state_codes[k] = dict((k, v) for v, k in msid.state_codes)
             table[k] = msid.vals
-        times = dict((k, Quantity(get_time(data[k].times).secs, 's')) for k in data.keys())
+        times = dict((k, get_time(data[k].times).secs) for k in data.keys())
         return cls(table, times, state_codes=state_codes)
 

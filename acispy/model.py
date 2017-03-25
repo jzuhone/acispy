@@ -2,7 +2,7 @@ import requests
 from astropy.io import ascii
 import Ska.Numpy
 from acispy.utils import get_time
-from astropy.units import Quantity
+from acispy.units import MSIDQuantity
 from acispy.utils import msid_units
 from acispy.time_series import TimeSeriesData
 
@@ -17,16 +17,25 @@ class Model(TimeSeriesData):
         self.times = times
 
     @classmethod
-    def from_xija(cls, model, components):
+    def from_xija(cls, model, components, interp_times=None, masks={}):
         table = {}
         times = {}
         for k in components:
             if k == "dpa_power":
-                mvals = model.comp[k].mvals*100. / model.comp[k].mult + model.comp[k].bias
+                mvals = model.comp[k].mvals*100. / model.comp[k].mult
+                mvals += model.comp[k].bias
             else:
                 mvals = model.comp[k].mvals
-            table[k] = Quantity(mvals, msid_units[k])
-            times[k] = Quantity(model.times, 's')
+            unit = msid_units.get(k, None)
+            mask = masks.get(k, None)
+            if interp_times is None:
+                t = model.times
+                v = mvals
+            else:
+                t = interp_times
+                v = Ska.Numpy.interpolate(mvals, model.times, interp_times)
+            times[k] = MSIDQuantity(t, 's', mask=mask)
+            table[k] = MSIDQuantity(v, unit, mask=mask)
         return cls(table, times)
 
     @classmethod
@@ -42,8 +51,8 @@ class Model(TimeSeriesData):
             url += "%s/ofls%s/temperatures.dat" % (load[:-1].upper(), load[-1].lower())
             u = requests.get(url)
             table = ascii.read(u.text)
-            data[comp] = Quantity(table[table_key].data, msid_units[comp])
-            times[comp] = Quantity(table["time"], 's')
+            data[comp] = MSIDQuantity(table[table_key].data, msid_units[comp])
+            times[comp] = MSIDQuantity(table["time"], 's')
         return cls(data, times)
 
     @classmethod
@@ -53,17 +62,18 @@ class Model(TimeSeriesData):
         table = ascii.read(temps_file)
         comp = list(table.keys())[-1]
         key = "fptemp_11" if comp == "fptemp" else comp
-        data[key] = Quantity(table[comp].data, msid_units[key])
-        times[key] = Quantity(table["time"], 's')
+        data[key] = MSIDQuantity(table[comp].data, msid_units[key])
+        times[key] = MSIDQuantity(table["time"], 's')
         return cls(data, times)
 
     def get_values(self, time):
         time = get_time(time).secs
         values = {}
         for key in self.keys():
-            values[key] = Quantity(Ska.Numpy.interpolate(self[key], 
-                                                         self.times[key].value, [time],
-                                                         method='linear'), msid_units[key])
+            v = Ska.Numpy.interpolate(self[key], self.times[key].value,
+                                      [time], method='linear')
+            unit = msid_units.get(key, None)
+            values[key] = MSIDQuantity(v, unit=unit)
         return values
 
     def keys(self):

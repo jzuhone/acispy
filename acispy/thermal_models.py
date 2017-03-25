@@ -9,6 +9,7 @@ import numpy as np
 from Chandra.Time import secs2date, DateTime
 from acispy.states import States
 from acispy.model import Model
+from acispy.msids import MSIDs
 from acispy.time_series import EmptyTimeSeries
 from acispy.utils import mylog, calc_off_nom_rolls
 import Ska.Numpy
@@ -47,7 +48,9 @@ class ThermalModelRunner(DataContainer):
         The starting temperature for the model in degrees C.
     model_spec : string, optional
         Path to the model spec JSON file for the model. Default: None, the 
-        standard model path will be used. 
+        standard model path will be used.
+    exclude_bad_times : boolean, optional
+        If set, excludes bad times from the data. Default: False
 
     Examples
     --------
@@ -65,7 +68,7 @@ class ThermalModelRunner(DataContainer):
     ...                                state_times, 10.1)
     """
     def __init__(self, name, tstart, tstop, states, state_times, 
-                 T_init, model_spec=None):
+                 T_init, model_spec=None, exclude_bad_times=False):
         state_times = np.array([DateTime(state_times[0]).secs,
                                 DateTime(state_times[1]).secs])
         if model_spec is None:
@@ -93,7 +96,16 @@ class ThermalModelRunner(DataContainer):
         if 'dpa_power' in self.xija_model.comp:
             components.append('dpa_power')
 
-        model_obj = Model.from_xija(self.xija_model, components)
+        self.bad_times = self.xija_model.bad_times
+        self.bad_times_indices = self.xija_model.bad_times_indices
+
+        masks = {}
+        if exclude_bad_times:
+            masks[msid_dict[name]] = np.ones(self.xija_model.times.shape, dtype='bool')
+            for (left, right) in self.bad_times_indices:
+                masks[msid_dict[name]][left:right] = False
+
+        model_obj = Model.from_xija(self.xija_model, components, masks=masks)
         msids_obj = EmptyTimeSeries()
         states_obj = States(states)
 
@@ -121,7 +133,8 @@ class ThermalModelRunner(DataContainer):
         return model
 
     @classmethod
-    def from_states_table(cls, name, tstart, tstop, states_file, T_init, model_spec=None):
+    def from_states_table(cls, name, tstart, tstop, states_file, T_init,
+                          model_spec=None, exclude_bad_times=False):
         """
         Class for running Xija thermal models.
 
@@ -141,13 +154,16 @@ class ThermalModelRunner(DataContainer):
         model_spec : string, optional
             Path to the model spec JSON file for the model. Default: None, the
             standard model path will be used.
+        exclude_bad_times : boolean, optional
+            If set, excludes bad times from the data. Default: False
         """
         state_keys = ["ccd_count", "pitch", "fep_count", "clocking", "vid_board", "simpos"]
         states = ascii.read(states_file)
         states_dict = dict((k, states[k]) for k in state_keys)
         states_dict["off_nominal_roll"] = calc_off_nom_rolls(states)
         state_times = np.array([states["datestart"], states["datestop"]])
-        return cls(name, tstart, tstop, states_dict, state_times, T_init, model_spec=model_spec)
+        return cls(name, tstart, tstop, states_dict, state_times, T_init,
+                   model_spec=model_spec, exclude_bad_times=exclude_bad_times)
 
     def write_model(self, model_file):
         """
@@ -204,6 +220,8 @@ class ThermalModelFromData(ThermalModelRunner):
     model_spec : string, optional
         Path to the model spec JSON file for the model. Default: None, the
         standard model path will be used.
+    exclude_bad_times : boolean, optional
+        If set, excludes bad times from the data. Default: False
 
     Examples
     --------
@@ -214,12 +232,12 @@ class ThermalModelFromData(ThermalModelRunner):
     >>> dc = DataContainer.fetch_from_database(tstart, tstop, msid_keys=msids)
     >>> dpa_model = ThermalModelFromData(dc, "dpa")
     """
-    def __init__(self, dc, name, model_spec=None):
+    def __init__(self, dc, name, model_spec=None, exclude_bad_times=False):
         msid = msid_dict[name]
-        msid_times = secs2date(dc.times("msids", msid).value)
+        msid_times = dc.times("msids", msid).value
 
-        tstart = msid_times[0]
-        tstop = msid_times[-1]
+        tstart = secs2date(msid_times[0])
+        tstop = secs2date(msid_times[-1])
 
         if model_spec is None:
             if name == "psmc":
@@ -248,8 +266,25 @@ class ThermalModelFromData(ThermalModelRunner):
         if 'dpa_power' in self.xija_model.comp:
             components.append('dpa_power')
 
-        model_obj = Model.from_xija(self.xija_model, components)
-        msids_obj = dc.msids
+        self.bad_times = self.xija_model.bad_times
+        self.bad_times_indices = []
+        for t0, t1 in self.bad_times:
+            t0, t1 = DateTime([t0, t1]).secs
+            i0, i1 = np.searchsorted(msid_times, [t0, t1])
+            if i1 > i0:
+                self.bad_times_indices.append((i0, i1))
+
+        masks = {}
+        if exclude_bad_times:
+            masks[msid] = np.ones(msid_times.shape, dtype='bool')
+            for (left, right) in self.bad_times_indices:
+                masks[msid][left:right] = False
+
+        model_obj = Model.from_xija(self.xija_model, components,
+                                    interp_times=msid_times, masks=masks)
+        msids_obj = MSIDs({msid: dc.msids[msid].value},
+                          {msid: dc.msids.times[msid]},
+                          masks=masks)
         states_obj = dc.states
 
         super(ThermalModelRunner, self).__init__(msids_obj, states_obj, model_obj)

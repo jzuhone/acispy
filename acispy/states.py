@@ -3,13 +3,21 @@ import requests
 from acispy.utils import get_time, state_units
 import numpy as np
 from Chandra.cmd_states import fetch_states
-from astropy.units import Quantity
+from acispy.units import StateQuantity
 from acispy.time_series import TimeSeriesData
 
 cmd_state_codes = {("states", "hetg"): {"RETR": 0, "INSR": 1},
                    ("states", "letg"): {"RETR": 0, "INSR": 1},
                    ("states", "dither"): {"DISA": 0, "ENAB": 1},
-                   ("states", "pcad_mode"): {"STBY": 0, "NPNT": 1, "NMAN": 2, "NSUN": 3, "PWRF": 4, "RMAN": 5, "NULL": 6}}
+                   ("states", "pcad_mode"): {"STBY": 0, "NPNT": 1, 
+                                             "NMAN": 2, "NSUN": 3, 
+                                             "PWRF": 4, "RMAN": 5, 
+                                             "NULL": 6}}
+
+state_dtypes = {"ccd_count": "int", 
+                "fep_count": "int",
+                "vid_board": "int",
+                "clocking": "int"}
 
 class States(TimeSeriesData):
 
@@ -17,12 +25,11 @@ class States(TimeSeriesData):
         self.table = {}
         self.times = {}
         for k, v in table.items():
-            if k in state_units:
-                self.table[k] = Quantity(v, state_units[k])
+            if v.dtype.char != 'S':
+                self.table[k] = StateQuantity(v, state_units.get(k, None), dtype=v.dtype)
             else:
                 self.table[k] = v
-            self.times[k] = Quantity(np.array([table["tstart"],
-                                               table['tstop']]), 's')
+            self.times[k] = StateQuantity([table["tstart"], table["tstop"]], "s")
 
     @classmethod
     def from_database(cls, tstart, tstop, states=None):

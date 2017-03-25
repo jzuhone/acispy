@@ -54,7 +54,10 @@ class DataContainer(object):
     def __getitem__(self, item):
         if item not in self.data:
             self.data[item] = self.fields[item](self)
-        return self.data[item]
+        if self.data[item].mask is not None:
+            return self.data[item][self.data[item].mask]
+        else:
+            return self.data[item]
 
     def __contains__(self, item):
         return item in self.fields
@@ -161,7 +164,11 @@ class DataContainer(object):
         --------
         >>> dc.times("msids", "1deamzt")
         """
-        return self.fields[ftype, fname].time_func(self)
+        v = self.fields[ftype, fname].time_func(self)
+        if v.mask is not None:
+            return v[v.mask]
+        else:
+            return v
 
     def dates(self, ftype, fname):
         """

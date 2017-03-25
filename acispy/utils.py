@@ -269,4 +269,5 @@ def moving_average(a, n=5):
     return Ska.Numpy.smooth(a, window_len=n, window='flat')
 
 def convert_state_code(dc, field):
-    return np.array([dc.state_codes[field][val] for val in dc[field]])
+    src = getattr(dc, field[0])
+    return np.array([dc.state_codes[field][val] for val in src[field[1]]])
