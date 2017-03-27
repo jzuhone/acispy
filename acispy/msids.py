@@ -2,22 +2,22 @@ from acispy.utils import get_time, mit_trans_table
 import Ska.engarchive.fetch_sci as fetch
 from astropy.io import ascii
 import numpy as np
-from acispy.units import MSIDQuantity
+from acispy.units import APQuantity, APStringArray, Quantity
 from acispy.utils import msid_units
 from acispy.time_series import TimeSeriesData
 
 class MSIDs(TimeSeriesData):
     def __init__(self, table, times, state_codes={}, masks={}):
         self.table = {}
-        self.times = {}
         for k, v in table.items():
             mask = masks.get(k, None)
+            t = Quantity(times[k], "s")
             if v.dtype.char != 'S':
                 unit = msid_units.get(k, None)
-                self.table[k] = MSIDQuantity(v, unit=unit, mask=mask)
+                self.table[k] = APQuantity(v, t, unit=unit, dtype=v.dtype, 
+                                           mask=mask)
             else:
-                self.table[k] = v
-            self.times[k] = MSIDQuantity(times[k], unit="s", mask=mask)
+                self.table[k] = APStringArray(v, t, mask=mask)
         self.state_codes = state_codes
 
     @classmethod

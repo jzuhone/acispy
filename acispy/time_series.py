@@ -1,7 +1,6 @@
 class TimeSeriesData(object):
-    def __init__(self, table, times):
+    def __init__(self, table):
         self.table = table
-        self.times = times
 
     def __getitem__(self, item):
         return self.table[item]
@@ -14,4 +13,4 @@ class TimeSeriesData(object):
 
 class EmptyTimeSeries(TimeSeriesData):
     def __init__(self):
-        super(EmptyTimeSeries, self).__init__({}, {})
+        super(EmptyTimeSeries, self).__init__({})

@@ -1,9 +1,8 @@
 from astropy.io import ascii
 import requests
 from acispy.utils import get_time, state_units
-import numpy as np
 from Chandra.cmd_states import fetch_states
-from acispy.units import StateQuantity
+from acispy.units import APQuantity, APStringArray, Quantity
 from acispy.time_series import TimeSeriesData
 
 cmd_state_codes = {("states", "hetg"): {"RETR": 0, "INSR": 1},
@@ -22,14 +21,15 @@ state_dtypes = {"ccd_count": "int",
 class States(TimeSeriesData):
 
     def __init__(self, table):
-        self.table = {}
-        self.times = {}
+        new_table = {}
+        times = Quantity([table["tstart"], table["tstop"]], "s")
         for k, v in table.items():
             if v.dtype.char != 'S':
-                self.table[k] = StateQuantity(v, state_units.get(k, None), dtype=v.dtype)
+                new_table[k] = APQuantity(v, times, state_units.get(k, None), 
+                                          dtype=v.dtype)
             else:
-                self.table[k] = v
-            self.times[k] = StateQuantity([table["tstart"], table["tstop"]], "s")
+                new_table[k] = APStringArray(v, times)
+        super(States, self).__init__(new_table)
 
     @classmethod
     def from_database(cls, tstart, tstop, states=None):
@@ -60,19 +60,9 @@ class States(TimeSeriesData):
 
     def get_states(self, time):
         time = get_time(time).secs
-        self[self.keys()[0]]
-        # We have this if we need it
-        err = "The time %s is not within the selected time frame!" % time
-        if time < self.times[self.keys()[0]][0][0].value:
-            raise RuntimeError(err)
-        idx = np.searchsorted(self.times[self.keys()[0]][0].value, time)-1
-        try:
-            self.times[self.keys()[0]][0][idx]
-        except IndexError:
-            raise RuntimeError(err)
         state = {}
         for key in self.keys():
-            state[key] = self[key][idx]
+            state[key] = self[key][time]
         return state
 
     @property

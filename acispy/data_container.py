@@ -3,8 +3,7 @@ from acispy.states import States, cmd_state_codes
 from acispy.model import Model
 from Chandra.Time import secs2date, DateTime
 from acispy.fields import create_derived_fields, \
-    DerivedField, FieldContainer, OutputFieldFunction, \
-    OutputTimeFunction, dummy_time_function
+    DerivedField, FieldContainer, OutputFieldFunction
 from acispy.time_series import TimeSeriesData, EmptyTimeSeries
 from acispy.utils import unit_table, \
     get_display_name, moving_average, \
@@ -35,6 +34,8 @@ class DataContainer(object):
             for k, v in self.msids.state_codes.items():
                 self.state_codes["msids", k] = v
         self.state_codes.update(cmd_state_codes)
+        self._times = {}
+        self._dates = {}
 
     def _populate_fields(self, ftype, obj):
         if ftype.startswith("model"):
@@ -45,19 +46,16 @@ class DataContainer(object):
             func = OutputFieldFunction(ftype, fname)
             unit = unit_table[utype].get(fname, '')
             display_name = get_display_name(ftype, fname)
-            tfunc = OutputTimeFunction(ftype, fname)
             df = DerivedField(ftype, fname, func, unit,
-                              tfunc, display_name=display_name)
+                              display_name=display_name)
             self.fields.output_fields[ftype, fname] = df
             self.field_list.append((ftype, fname))
 
     def __getitem__(self, item):
         if item not in self.data:
-            self.data[item] = self.fields[item](self)
-        if self.data[item].mask is not None:
-            return self.data[item][self.data[item].mask]
-        else:
-            return self.data[item]
+            v = self.fields[item](self)
+            self.data[item] = v[v.mask]
+        return self.data[item]
 
     def __contains__(self, item):
         return item in self.fields
@@ -66,7 +64,7 @@ class DataContainer(object):
     def derived_field_list(self):
         return list(self.fields.derived_fields.keys())
 
-    def add_derived_field(self, ftype, fname, function, units, times,
+    def add_derived_field(self, ftype, fname, function, units,
                           display_name=None):
         """
         Add a new derived field.
@@ -94,14 +92,10 @@ class DataContainer(object):
         >>> def _dpaa_power(dc):
         ...     return (dc["msids", "1dp28avo"]*dc["msids", "1dpicacu"]).to("W")
         >>> dc.add_derived_field("msids", "dpa_a_power", _dpaa_power, 
-        ...                      ("msids", "1dp28avo"), "W",
-        ...                      display_name="DPA-A Power")
+        ...                      "W", display_name="DPA-A Power")
         """
-        if isinstance(times, tuple):
-            tfunc = OutputTimeFunction(times[0], times[1])
-        else:
-            tfunc = dummy_time_function(times)
-        df = DerivedField(ftype, fname, function, units, tfunc, display_name=display_name)
+        df = DerivedField(ftype, fname, function, units,
+                          display_name=display_name)
         self.fields.derived_fields[ftype, fname] = df
 
     def add_averaged_field(self, ftype, fname, n=10):
@@ -126,7 +120,7 @@ class DataContainer(object):
         display_name = "Average %s" % self.fields[ftype, fname].display_name
         units = unit_table[ftype].get(fname, '')
         self.add_derived_field(ftype, "avg_%s" % fname, _avg, units,
-                               (ftype, fname), display_name=display_name)
+                               display_name=display_name)
 
     def map_state_to_msid(self, state, msid, ftype="msids"):
         """
@@ -152,7 +146,7 @@ class DataContainer(object):
             indexes = np.searchsorted(state_times, msid_times)
             return dc["states", state][indexes]
         units = unit_table['states'].get(state, '')
-        self.add_derived_field(ftype, state, _state, units, (ftype, msid),
+        self.add_derived_field(ftype, state, _state, units,
                                display_name=self.fields["states", state].display_name)
 
     def times(self, ftype, fname):
@@ -164,11 +158,10 @@ class DataContainer(object):
         --------
         >>> dc.times("msids", "1deamzt")
         """
-        v = self.fields[ftype, fname].time_func(self)
-        if v.mask is not None:
-            return v[v.mask]
-        else:
-            return v
+        if (ftype, fname) not in self._times:
+            v = self.fields[ftype, fname](self)
+            self._times[ftype, fname] = v.times[v.mask]
+        return self._times[ftype, fname]
 
     def dates(self, ftype, fname):
         """
@@ -178,41 +171,10 @@ class DataContainer(object):
         --------
         >>> dc.dates("states", "pitch")
         """
-        times = self.times(ftype, fname)
-        if ftype == 'states':
-            return (secs2date(times[0]), secs2date(times[1]))
-        else:
-            return secs2date(times)
-
-    def slice_field_on_dates(self, ftype, fname, tstart, tstop):
-        """
-        Return a sliced array of a field between two dates.
-
-        Parameters
-        ----------
-        ftype : string
-            The field type.
-        fname : string
-            The field name.
-        tstart : string
-            The start time in YYYY:DOY:HH:MM:SS format
-        tstop : string
-            The stop time in YYYY:DOY:HH:MM:SS format
-
-        Examples
-        --------
-        >>> dc.slice_field_on_dates("states", "pitch", "2016:100:10:21:30", "2016:110:09:23:11")
-        """
-        tstart = DateTime(tstart).secs
-        tstop = DateTime(tstop).secs
-        times = self.times(ftype, fname)
-        if ftype == 'states':
-            st = np.searchsorted(times[0].value, tstart)
-            ed = np.searchsorted(times[1].value, tstop)
-        else:
-            st = np.searchsorted(times.value, tstart)
-            ed = np.searchsorted(times.value, tstop)
-        return self[ftype, fname][st:ed]
+        if (ftype, fname) not in self._dates:
+            v = self.fields[ftype, fname](self)
+            self._dates[ftype, fname] = v.dates[v.mask]
+        return self._dates[ftype, fname]
 
     def write_msids(self, filename, fields, overwrite=False):
         """
@@ -342,9 +304,9 @@ class DataContainer(object):
             raise RuntimeError("I cannot parse this file!")
         tmin = 1.0e55
         tmax = -1.0e55
-        for k in msids.times.keys():
-            tmin = min(msids.times[k][0].value, tmin)
-            tmax = max(msids.times[k][-1].value, tmax)
+        for v in msids.values():
+            tmin = min(v.times[0].value, tmin)
+            tmax = max(v.times[-1].value, tmax)
         states = States.from_database(secs2date(tmin), secs2date(tmax), states=state_keys)
         model = EmptyTimeSeries()
         return cls(msids, states, model)

@@ -33,4 +33,4 @@ for k, v in states.items():
         print("%s: %s" % (k, v))
 print("Off-nominal Roll: %g deg" % rolls[idx])
 for k, v in values.items():
-    print("%s: %s" % (k, v[0]))
+    print("%s: %s" % (k, v))
