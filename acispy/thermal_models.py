@@ -251,7 +251,7 @@ class ThermalModelFromData(ThermalModelRunner):
         states = dict((k, np.array(dc.states[k])) for k in dc.states.keys())
         states["off_nominal_roll"] = calc_off_nom_rolls(states)
 
-        tstart_state = dc.states.times['ccd_count'][0][0].value
+        tstart_state = dc.states['ccd_count'].times[0][0].value
 
         ok = ((msid_times >= tstart_state - 700.) &
               (msid_times <= tstart_state + 700.))
@@ -283,7 +283,7 @@ class ThermalModelFromData(ThermalModelRunner):
         model_obj = Model.from_xija(self.xija_model, components,
                                     interp_times=msid_times, masks=masks)
         msids_obj = MSIDs({msid: dc.msids[msid].value},
-                          {msid: dc.msids.times[msid]},
+                          {msid: dc.msids[msid].times},
                           masks=masks)
         states_obj = dc.states
 
