@@ -97,3 +97,6 @@ class APQuantity(Quantity):
         return APQuantity(ret.value, t, unit=self.unit, 
                           dtype=self.dtype, mask=mask)
 
+    @property
+    def dates(self):
+        return secs2date(self.times.value)
