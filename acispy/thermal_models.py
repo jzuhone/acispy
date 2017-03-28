@@ -185,26 +185,6 @@ class ThermalModelRunner(DataContainer):
         Ska.Numpy.pprint(temp_array, fmt, out)
         out.close()
 
-    def write_states(self, states_file):
-        """
-        Write the model states vs. time to an ASCII text file.
-
-        Parameters
-        ----------
-        states_file : string
-            The filename to write the states to.
-        """
-        out = open(states_file, 'w')
-        fmt = {'power': '%.1f',
-               'pitch': '%.2f',
-               'tstart': '%.2f',
-               'tstop': '%.2f',
-               }
-        newcols = list(self.states.keys())
-        newstates = np.rec.fromarrays([self.states[x] for x in newcols], names=newcols)
-        Ska.Numpy.pprint(newstates, fmt, out)
-        out.close()
-
 class ThermalModelFromData(ThermalModelRunner):
     """
     Class for running Xija thermal models using commanded states
