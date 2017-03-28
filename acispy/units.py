@@ -54,7 +54,11 @@ class APStringArray(object):
     def __getitem__(self, item):
         idxs, t = find_indices(item, self.times.value)
         mask = self.mask[idxs]
-        return APStringArray(self.value[idxs], t, mask=mask)
+        v = self.value[idxs]
+        if isinstance(v, np.ndarray):
+            return APStringArray(self.value[idxs], t, mask=mask)
+        else:
+            return v
 
     @property
     def dates(self):
