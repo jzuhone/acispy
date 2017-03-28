@@ -160,7 +160,7 @@ class CustomDatePlot(ACISPlot):
         if fig is None:
             fig = plt.figure(figsize=(10, 8))
         dates = DateTime(dates).secs
-        ticklocs, fig, ax = plot_cxctime(dates, values, fig=fig, ax=ax, lw=lw, **kwargs)
+        ticklocs, fig, ax = plot_cxctime(dates, np.array(values), fig=fig, ax=ax, lw=lw, **kwargs)
         super(CustomDatePlot, self).__init__(fig, ax)
         self.ax.set_xlabel("Date", fontdict={"size": fontsize, "family": "serif"})
         fontProperties = font_manager.FontProperties(family="serif",
@@ -725,7 +725,8 @@ class PhasePlot(ACISPlot):
             self.cc = dc[c_field]
 
         cm = plt.cm.get_cmap(cmap)
-        scp = ax.scatter(self.xx, self.yy, c=self.cc, cmap=cm, **kwargs)
+        scp = ax.scatter(np.array(self.xx), np.array(self.yy),
+                         c=self.cc, cmap=cm, **kwargs)
 
         super(PhasePlot, self).__init__(fig, ax)
         self.scp = scp
