@@ -349,26 +349,25 @@ class DatePlot(CustomDatePlot):
             src_name, fd = field
             drawstyle = drawstyles.get(fd, None)
             state_codes = dc.state_codes.get(field, None)
-            src = getattr(dc, src_name)
             if state_codes is None:
-                y = src[fd].value
+                y = dc[field].value
             else:
                 state_codes = [(v, k) for k, v in state_codes.items()]
                 y = convert_state_code(dc, field)
             if src_name == "states":
-                tstart, tstop = src[fd].times
+                tstart, tstop = dc[field].times
                 x = pointpair(tstart.value, tstop.value)
                 y = pointpair(y)
             else:
-                x = src[fd].times.value
+                x = dc[field].times.value
             label = dc.fields[field].display_name
             ticklocs, fig, ax = plot_cxctime(x, y, fig=fig, lw=lw, ax=ax,
                                              color=colors[i],
                                              state_codes=state_codes,
                                              drawstyle=drawstyle, 
                                              label=label)
-            self.y[field] = src[fd]
-            self.times[field] = src[fd].times
+            self.y[field] = dc[field]
+            self.times[field] = dc[field].times
 
         self.fig = fig
         self.ax = ax
@@ -403,23 +402,22 @@ class DatePlot(CustomDatePlot):
             self.ax2 = self.ax.twinx()
             drawstyle = drawstyles.get(fd2, None)
             state_codes = dc.state_codes.get(field2, None)
-            src2 = getattr(dc, src_name2)
             if state_codes is None:
-                y2 = src2[fd2].value
+                y2 = dc[field2].value
             else:
                 state_codes = [(v, k) for k, v in state_codes.items()]
                 y2 = convert_state_code(dc, field2)
             if src_name2 == "states":
-                tstart, tstop = src2[fd2].times
+                tstart, tstop = dc[field2].times
                 x = pointpair(tstart.value, tstop.value)
                 y2 = pointpair(y2)
             else:
-                x = src2[fd2].times.value
+                x = dc[field2].times.value
             plot_cxctime(x, y2, fig=fig, ax=self.ax2, lw=lw,
                          drawstyle=drawstyle, color=color2,
                          state_codes=state_codes)
-            self.times[field2] = src2[fd2].times
-            self.y[field2] = src2[fd2]
+            self.times[field2] = dc[field2].times
+            self.y[field2] = dc[field2]
             for label in self.ax2.get_xticklabels():
                 label.set_fontproperties(fontProperties)
             for label in self.ax2.get_yticklabels():

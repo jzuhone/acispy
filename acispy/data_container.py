@@ -53,8 +53,7 @@ class DataContainer(object):
 
     def __getitem__(self, item):
         if item not in self.data:
-            v = self.fields[item](self)
-            self.data[item] = v[v.mask]
+            self.data[item]= self.fields[item](self)
         return self.data[item]
 
     def __contains__(self, item):
@@ -159,8 +158,7 @@ class DataContainer(object):
         >>> dc.times("msids", "1deamzt")
         """
         if (ftype, fname) not in self._times:
-            v = self.fields[ftype, fname](self)
-            self._times[ftype, fname] = v.times[v.mask]
+            self._times[ftype, fname] = self[ftype, fname].times
         return self._times[ftype, fname]
 
     def dates(self, ftype, fname):
@@ -172,8 +170,7 @@ class DataContainer(object):
         >>> dc.dates("states", "pitch")
         """
         if (ftype, fname) not in self._dates:
-            v = self.fields[ftype, fname](self)
-            self._dates[ftype, fname] = v.dates[v.mask]
+            self._dates[ftype, fname] = self[ftype, fname].dates
         return self._dates[ftype, fname]
 
     def write_msids(self, filename, fields, overwrite=False):
