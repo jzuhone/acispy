@@ -97,6 +97,12 @@ class APQuantity(Quantity):
         return APQuantity(ret.value, t, unit=self.unit, 
                           dtype=self.dtype, mask=mask)
 
+    def to(self, unit, equivalencies=[]):
+        ret = super(APQuantity, self).to(unit, equivalencies=equivalencies)
+        ret_class = type(self)
+        return ret_class(ret.value, self.times, unit=ret.unit, mask=self.mask,
+                         dtype=ret.dtype)
+
     @property
     def dates(self):
         return secs2date(self.times.value)
