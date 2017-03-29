@@ -1,6 +1,7 @@
 from acispy.msids import MSIDs
 from acispy.states import States, cmd_state_codes
 from acispy.model import Model
+from acispy.units import APQuantity
 from Chandra.Time import secs2date, DateTime
 from acispy.fields import create_derived_fields, \
     DerivedField, FieldContainer, OutputFieldFunction
@@ -115,7 +116,9 @@ class DataContainer(object):
         >>> dc.add_averaged_field("msids", "1dpicacu", n=10) 
         """
         def _avg(dc):
-            return moving_average(dc[ftype, fname], n=n)
+            v = dc[ftype, fname]
+            return APQuantity(moving_average(v.value, n=n), v.times,
+                              unit=v.unit, mask=v.mask)
         display_name = "Average %s" % self.fields[ftype, fname].display_name
         units = unit_table[ftype].get(fname, '')
         self.add_derived_field(ftype, "avg_%s" % fname, _avg, units,
@@ -139,12 +142,13 @@ class DataContainer(object):
         --------
         >>> dc.map_state_to_msid("ccd_count", "1dpamzt")
         """
+        units = unit_table['states'].get(state, '')
         def _state(dc):
             msid_times = dc.times(ftype, msid)
             state_times = dc.times("states", state)[1]
             indexes = np.searchsorted(state_times, msid_times)
-            return dc["states", state][indexes]
-        units = unit_table['states'].get(state, '')
+            return APQuantity(dc["states", state][indexes].value,
+                              msid_times, unit=units)
         self.add_derived_field(ftype, state, _state, units,
                                display_name=self.fields["states", state].display_name)
 
@@ -197,7 +201,7 @@ class DataContainer(object):
                     raise RuntimeError("To write MSIDs, all of the times should be the same!!")
         if os.path.exists(filename) and not overwrite:
             raise IOError("File %s already exists, but overwrite=False!" % filename)
-        data = dict(("_".join(k), self[k]) for k in fields)
+        data = dict(("_".join(k), self[k].value) for k in fields)
         data["times"] = self.times(*fields[0])
         data["dates"] = self.dates(*fields[0])
         Table(data).write(filename, format='ascii')
@@ -219,7 +223,7 @@ class DataContainer(object):
             raise RuntimeError("There are no commanded states to be written!")
         if os.path.exists(filename) and not overwrite:
             raise IOError("File %s already exists, but overwrite=False!" % filename)
-        Table(self.states.table).write(filename, format='ascii')
+        Table(dict((k,v.value) for k, v in self.states.items())).write(filename, format='ascii')
 
     @classmethod
     def fetch_from_database(cls, tstart, tstop, msid_keys=None, state_keys=None,
