@@ -451,7 +451,7 @@ class DatePlot(CustomDatePlot):
                 bad_int = np.flatnonzero(bad[1:] != bad[:-1]).reshape(-1, 2)
                 for ii, jj in bad_int:
                     ax.fill_between(all_time[ii:jj], ybot, ytop, 
-                                    where=mask[ii:jj], color='cyan', alpha=0.5)
+                                    where=~mask[ii:jj], color='cyan', alpha=0.5)
 
     def set_ylim(self, ymin, ymax):
         """
