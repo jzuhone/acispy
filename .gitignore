@@ -3,5 +3,8 @@ dependency_links.txt
 acispy.egg-info
 .idea
 doc/build
+doc/source/.ipynb_checkpoints
+doc/source/*.png
+doc/source/*.dat
 build
 dist
