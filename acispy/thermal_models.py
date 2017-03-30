@@ -165,7 +165,7 @@ class ThermalModelRunner(DataContainer):
         return cls(name, tstart, tstop, states_dict, state_times, T_init,
                    model_spec=model_spec, exclude_bad_times=exclude_bad_times)
 
-    def write_model(self, model_file):
+    def write_model(self, model_file, overwrite=False):
         """
         Write the model data vs. time to an ASCII text file.
 
@@ -173,7 +173,11 @@ class ThermalModelRunner(DataContainer):
         ----------
         model_file : string
             The filename to write the data to.
+        overwrite : boolean, optional
+            If True, an existing file with the same name will be overwritten.
         """
+        if os.path.exists(model_file) and not overwrite:
+            raise IOError("File %s already exists, but overwrite=False!" % model_file)
         msid = msid_dict[self.name]
         T = self["model", msid].value
         times = self.times("model", msid).value
@@ -212,12 +216,13 @@ class ThermalModelFromData(ThermalModelRunner):
     >>> dc = DataContainer.fetch_from_database(tstart, tstop, msid_keys=msids)
     >>> dpa_model = ThermalModelFromData(dc, "dpa")
     """
-    def __init__(self, dc, name, model_spec=None, exclude_bad_times=False):
-        msid = msid_dict[name]
-        msid_times = dc.times("msids", msid).value
+    def __init__(self, tstart, tstop, name, model_spec=None, exclude_bad_times=False):
 
-        tstart = secs2date(msid_times[0])
-        tstop = secs2date(msid_times[-1])
+        msid = msid_dict[name]
+        tstart_secs = DateTime(tstart).secs
+        start = secs2date(tstart_secs-700.0)
+        msids_obj = MSIDs.from_database([msid], start, tstop=tstop)
+        msid_times = msids_obj[msid].times.value
 
         if model_spec is None:
             if name == "psmc":
@@ -228,18 +233,17 @@ class ThermalModelFromData(ThermalModelRunner):
         else:
             self.model_spec = model_spec
 
-        states = dict((k, np.array(dc.states[k])) for k in dc.states.keys())
+        states_obj = States.from_database(start, tstop)
+        states = dict((k, np.array(v)) for k, v in states_obj.items())
         states["off_nominal_roll"] = calc_off_nom_rolls(states)
 
-        tstart_state = dc.states['ccd_count'].times[0][0].value
+        ok = ((msid_times >= tstart_secs - 700.) &
+              (msid_times <= tstart_secs + 700.))
 
-        ok = ((msid_times >= tstart_state - 700.) &
-              (msid_times <= tstart_state + 700.))
-
-        T_init = dc["msids", msid].value[ok].mean()
+        T_init = msids_obj[msid].value[ok].mean()
 
         self.xija_model = self._compute_model(name, tstart, tstop, states,
-                                              dc.times("states","ccd_count").value,
+                                              states_obj["ccd_count"].times.value,
                                               T_init)
 
         components = [msid]
@@ -262,10 +266,6 @@ class ThermalModelFromData(ThermalModelRunner):
 
         model_obj = Model.from_xija(self.xija_model, components,
                                     interp_times=msid_times, masks=masks)
-        msids_obj = MSIDs({msid: dc.msids[msid].value},
-                          {msid: dc.msids[msid].times},
-                          masks=masks)
-        states_obj = dc.states
 
         super(ThermalModelRunner, self).__init__(msids_obj, states_obj, model_obj)
 
@@ -305,27 +305,27 @@ class SimulateCTIRun(ThermalModelRunner):
     """
     def __init__(self, name, tstart, T_init, pitch, days=3.0, simpos=-99616.0, 
                 ccd_count=6, off_nominal_roll=0.0, dh_heater=0, model_spec=None):
-        states = {"ccd_count": ccd_count,
-                  "fep_count": ccd_count,
-                  "clocking": 1,
-                  'vid_board': 1,
-                  "pitch": pitch,
-                  "simpos": simpos,
-                  "off_nominal_roll": off_nominal_roll,
-                  "dh_heater": dh_heater}
+        states = {"ccd_count": np.array([ccd_count], dtype='int'),
+                  "fep_count": np.array([ccd_count], dtype='int'),
+                  "clocking": np.array([1], dtype='int'),
+                  'vid_board': np.array([1], dtype='int'),
+                  "pitch": np.array([pitch]),
+                  "simpos": np.array([simpos]),
+                  "off_nominal_roll": np.array([off_nominal_roll]),
+                  "dh_heater": np.array([dh_heater], dtype='int')}
         datestart = tstart
         tstart = DateTime(tstart).secs
         tstop = tstart + days*86400.
         datestop = secs2date(tstop)
         state_times = [[datestart], [datestop]]
-        super(SimulateCTIRun, self).__init__(name, tstart, tstop, states,
+        super(SimulateCTIRun, self).__init__(name, datestart, datestop, states,
                                              state_times, T_init, model_spec=model_spec)
         err = np.abs(self.asymptotic_temperature-self.mvals[-10])/self.asymptotic_temperature
-        if err > 1.0e-3:
+        if err.value > 1.0e-3:
             mylog.warning("You may not have reached the asymptotic temperature! Suggest"
                           " increasing the 'days' parameter past its current value of %g!" % days)
         self.limit = Quantity(limits[self.name], "deg_C")
-        if self.asymptotic_temperature > self.limit:
+        if self.asymptotic_temperature.value > self.limit.value:
             idx = np.searchsorted(self.mvals.value, self.limit.value)-1
             self.limit_time = self.times('model', msid_dict[self.name])[idx]
             self.limit_date = secs2date(self.limit_time)
