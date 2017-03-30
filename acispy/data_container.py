@@ -1,7 +1,7 @@
 from acispy.msids import MSIDs
 from acispy.states import States, cmd_state_codes
 from acispy.model import Model
-from acispy.units import APQuantity
+from acispy.units import APQuantity, APStringArray
 from Chandra.Time import secs2date, DateTime
 from acispy.fields import create_derived_fields, \
     DerivedField, FieldContainer, OutputFieldFunction
@@ -54,7 +54,7 @@ class DataContainer(object):
 
     def __getitem__(self, item):
         if item not in self.data:
-            self.data[item]= self.fields[item](self)
+            self.data[item] = self.fields[item](self)
         return self.data[item]
 
     def __contains__(self, item):
@@ -147,8 +147,11 @@ class DataContainer(object):
             msid_times = dc.times(ftype, msid)
             state_times = dc.times("states", state)[1]
             indexes = np.searchsorted(state_times, msid_times)
-            return APQuantity(dc["states", state][indexes].value,
-                              msid_times, unit=units)
+            v = dc["states", state][indexes].value
+            if v.dtype.char != 'S':
+                return APQuantity(v, msid_times, unit=units)
+            else:
+                return APStringArray(v, msid_times)
         self.add_derived_field(ftype, state, _state, units,
                                display_name=self.fields["states", state].display_name)
 
@@ -177,7 +180,7 @@ class DataContainer(object):
             self._dates[ftype, fname] = self[ftype, fname].dates
         return self._dates[ftype, fname]
 
-    def write_msids(self, filename, fields, overwrite=False):
+    def write_msids(self, filename, fields, mask_field=None, overwrite=False):
         """
         Write MSIDs (or MSID-like quantities such as model values) to an ASCII
         table file. This assumes that all of the quantities have been
@@ -194,16 +197,20 @@ class DataContainer(object):
         """
         from astropy.table import Table
         fields = ensure_list(fields)
-        base_times = self.times(*fields[0])
+        base_times = self.times(*fields[0]).value
+        if mask_field is not None:
+            mask = self[mask_field].mask
+        else:
+            mask = np.ones(base_times.size, dtype="bool")
         if len(fields) > 1:
             for field in fields[1:]:
-                if not np.all(base_times == self.times(*field)):
+                if not np.all(base_times == self.times(*field).value):
                     raise RuntimeError("To write MSIDs, all of the times should be the same!!")
         if os.path.exists(filename) and not overwrite:
             raise IOError("File %s already exists, but overwrite=False!" % filename)
-        data = dict(("_".join(k), self[k].value) for k in fields)
-        data["times"] = self.times(*fields[0])
-        data["dates"] = self.dates(*fields[0])
+        data = dict(("_".join(k), self[k].value[mask]) for k in fields)
+        data["times"] = self.times(*fields[0]).value[mask]
+        data["dates"] = self.dates(*fields[0])[mask]
         Table(data).write(filename, format='ascii')
 
     def write_states(self, filename, overwrite=False):
