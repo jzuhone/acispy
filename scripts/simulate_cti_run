@@ -1,26 +1,27 @@
 #!/usr/bin/env python
 
-import matplotlib
-matplotlib.use("qt4agg")
-import matplotlib.pyplot as plt
 import argparse
 import acispy
+from acispy.utils import mylog
 
 parser = argparse.ArgumentParser(description='Simulate a CTI run.')
 parser.add_argument("component", type=str, help='The component to model: dpa, dea, or psmc.')
 parser.add_argument("tstart", type=str, help='The start time in YYYY:DOY:HH:MM:SS format')
 parser.add_argument("T_init", type=float, help='The initial temperature of the component in degrees C.')
 parser.add_argument("pitch", type=float, help='The initial temperature of the component in degrees C.')
+parser.add_argument("ccd_count", type=int, help="The number of CCDs to clock.")
 parser.add_argument("--days", type=float, default=3.0, help='The number of days to run the model.')
 parser.add_argument("--simpos", type=float, default=-99616.0, help="The SIM position.")
-parser.add_argument("--ccd_count", type=int, default=6, help="The number of CCDs to clock.")
 parser.add_argument("--off_nominal_roll", type=float, default=0.0, help="The off-nominal roll.")
 parser.add_argument("--dh_heater", type=int, default=0, help="Is the DH heater on (0) or off (1)?.")
 
 args = parser.parse_args()
 
 cti_run = acispy.SimulateCTIRun(args.component, args.tstart, args.T_init, args.pitch,
-                                days=args.days, simpos=args.simpos, ccd_count=args.ccd_count,
+                                args.ccd_count, days=args.days, simpos=args.simpos,
                                 off_nominal_roll=args.off_nominal_roll, dh_heater=args.dh_heater)
+
 dp = cti_run.plot_model()
-plt.show()
+filename = "cti_run_%s_%s.png" % (args.component, args.tstart)
+dp.savefig(filename)
+mylog.info("Image of the model run has been written to %s." % filename)
