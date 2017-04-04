@@ -283,12 +283,12 @@ class SimulateCTIRun(ThermalModelRunner):
         The starting temperature for the model in degrees C.
     pitch : float
         The pitch at which to run the model in degrees. 
+    ccd_count : integer
+        The number of CCDs to clock.
     days : float, optional
         The number of days to run the model. Default: 3.0
     simpos : float, optional
         The SIM position at which to run the model. Default: -99616.0
-    ccd_count : integer, optional
-        The number of CCDs to clock. Default: 6
     off_nominal_roll : float, optional
         The off-nominal roll in degrees for the model. Default: 0.0
     dh_heater: integer, optional
@@ -303,8 +303,8 @@ class SimulateCTIRun(ThermalModelRunner):
     >>> dea_run = SimulateCTIRun("dea", "2016:201:05:12:03", 14.0, 150.,
     ...                          ccd_count=5, off_nominal_roll=-6.0, dh_heater=1)
     """
-    def __init__(self, name, tstart, T_init, pitch, days=3.0, simpos=-99616.0, 
-                ccd_count=6, off_nominal_roll=0.0, dh_heater=0, model_spec=None):
+    def __init__(self, name, tstart, T_init, pitch, ccd_count, days=3.0,
+                 simpos=-99616.0, off_nominal_roll=0.0, dh_heater=0, model_spec=None):
         states = {"ccd_count": np.array([ccd_count], dtype='int'),
                   "fep_count": np.array([ccd_count], dtype='int'),
                   "clocking": np.array([1], dtype='int'),
@@ -320,6 +320,21 @@ class SimulateCTIRun(ThermalModelRunner):
         state_times = [[datestart], [datestop]]
         super(SimulateCTIRun, self).__init__(name, datestart, datestop, states,
                                              state_times, T_init, model_spec=model_spec)
+
+        mylog.info("Run Parameters")
+        mylog.info("--------------")
+        mylog.info("Start Datestring: %s" % datestart)
+        mylog.info("Start Time: %g s" % tstart)
+        mylog.info("Initial Temperature: %g degrees C" % T_init)
+        mylog.info("CCD Count: %d" % ccd_count)
+        mylog.info("Pitch: %g" % pitch)
+        mylog.info("SIM Position: %g" % simpos)
+        mylog.info("Off-nominal Roll: %g" % off_nominal_roll)
+        mylog.info("Detector Housing Heater: %s" % {0: "OFF", 1: "ON"}[dh_heater])
+
+        mylog.info("Model Result")
+        mylog.info("------------")
+
         err = np.abs(self.asymptotic_temperature-self.mvals[-10])/self.asymptotic_temperature
         if err.value > 1.0e-3:
             mylog.warning("You may not have reached the asymptotic temperature! Suggest"
