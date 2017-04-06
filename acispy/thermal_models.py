@@ -49,8 +49,9 @@ class ThermalModelRunner(DataContainer):
     model_spec : string, optional
         Path to the model spec JSON file for the model. Default: None, the 
         standard model path will be used.
-    exclude_bad_times : boolean, optional
-        If set, excludes bad times from the data. Default: False
+    include_bad_times : boolean, optional
+        If set, bad times from the data are included in the array masks
+        and plots. Default: False
 
     Examples
     --------
@@ -68,7 +69,7 @@ class ThermalModelRunner(DataContainer):
     ...                                state_times, 10.1)
     """
     def __init__(self, name, tstart, tstop, states, state_times, 
-                 T_init, model_spec=None, exclude_bad_times=False):
+                 T_init, model_spec=None, include_bad_times=False):
         state_times = np.array([DateTime(state_times[0]).secs,
                                 DateTime(state_times[1]).secs])
         if model_spec is None:
@@ -100,7 +101,7 @@ class ThermalModelRunner(DataContainer):
         self.bad_times_indices = self.xija_model.bad_times_indices
 
         masks = {}
-        if exclude_bad_times:
+        if include_bad_times:
             masks[msid_dict[name]] = np.ones(self.xija_model.times.shape, dtype='bool')
             for (left, right) in self.bad_times_indices:
                 masks[msid_dict[name]][left:right] = False
@@ -134,7 +135,7 @@ class ThermalModelRunner(DataContainer):
 
     @classmethod
     def from_states_table(cls, name, tstart, tstop, states_file, T_init,
-                          model_spec=None, exclude_bad_times=False):
+                          model_spec=None, include_bad_times=False):
         """
         Class for running Xija thermal models.
 
@@ -154,8 +155,9 @@ class ThermalModelRunner(DataContainer):
         model_spec : string, optional
             Path to the model spec JSON file for the model. Default: None, the
             standard model path will be used.
-        exclude_bad_times : boolean, optional
-            If set, excludes bad times from the data. Default: False
+        include_bad_times : boolean, optional
+            If set, bad times from the data are included in the array masks
+            and plots. Default: False
         """
         state_keys = ["ccd_count", "pitch", "fep_count", "clocking", "vid_board", "simpos"]
         states = ascii.read(states_file)
@@ -163,7 +165,7 @@ class ThermalModelRunner(DataContainer):
         states_dict["off_nominal_roll"] = calc_off_nom_rolls(states)
         state_times = np.array([states["datestart"], states["datestop"]])
         return cls(name, tstart, tstop, states_dict, state_times, T_init,
-                   model_spec=model_spec, exclude_bad_times=exclude_bad_times)
+                   model_spec=model_spec, include_bad_times=include_bad_times)
 
     def write_model(self, model_file, overwrite=False):
         """
@@ -203,8 +205,9 @@ class ThermalModelFromData(ThermalModelRunner):
     model_spec : string, optional
         Path to the model spec JSON file for the model. Default: None, the
         standard model path will be used.
-    exclude_bad_times : boolean, optional
-        If set, excludes bad times from the data. Default: False
+    include_bad_times : boolean, optional
+        If set, bad times from the data are included in the array masks
+        and plots. Default: False
 
     Examples
     --------
@@ -215,7 +218,7 @@ class ThermalModelFromData(ThermalModelRunner):
     >>> dc = DataContainer.fetch_from_database(tstart, tstop, msid_keys=msids)
     >>> dpa_model = ThermalModelFromData(dc, "dpa")
     """
-    def __init__(self, tstart, tstop, name, model_spec=None, exclude_bad_times=False):
+    def __init__(self, tstart, tstop, name, model_spec=None, include_bad_times=False):
 
         msid = msid_dict[name]
         tstart_secs = DateTime(tstart).secs
@@ -258,7 +261,7 @@ class ThermalModelFromData(ThermalModelRunner):
                 self.bad_times_indices.append((i0, i1))
 
         masks = {}
-        if exclude_bad_times:
+        if include_bad_times:
             masks[msid] = np.ones(msid_times.shape, dtype='bool')
             for (left, right) in self.bad_times_indices:
                 masks[msid][left:right] = False
