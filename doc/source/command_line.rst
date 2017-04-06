@@ -225,10 +225,28 @@ Returns:
 .. code-block:: text
 
     usage: simulate_cti_run [-h] [--days DAYS] [--simpos SIMPOS]
-                            [--ccd_count CCD_COUNT]
                             [--off_nominal_roll OFF_NOMINAL_ROLL]
                             [--dh_heater DH_HEATER]
-                            component tstart T_init pitch
+                            component tstart T_init pitch ccd_count
+
+    Simulate a CTI run.
+    
+    positional arguments:
+      component             The component to model: dpa, dea, or psmc.
+      tstart                The start time in YYYY:DOY:HH:MM:SS format
+      T_init                The initial temperature of the component in degrees C.
+      pitch                 The initial temperature of the component in degrees C.
+      ccd_count             The number of CCDs to clock.
+    
+    optional arguments:
+      -h, --help            show this help message and exit
+      --days DAYS           The number of days to run the model.
+      --simpos SIMPOS       The SIM position.
+      --off_nominal_roll OFF_NOMINAL_ROLL
+                            The off-nominal roll.
+      --dh_heater DH_HEATER
+                            Is the DH heater on (0) or off (1)?.
+
 
 Example 1
 +++++++++
@@ -243,14 +261,27 @@ To run the 1DPAMZT model with the following conditions:
 
 .. code-block:: bash
 
-    [~]$ simulate_cti_run dpa 2015:100:12:45:30 10.0 150. --ccd_count 6 --off_nominal_roll 12.0
+    [~]$ simulate_cti_run dpa 2015:100:12:45:30 10.0 150. 6 --off_nominal_roll 12.0
 
 Returns:
 
 .. code-block:: text
 
-    The limit of 35.5 degrees C will be reached at 2015:100:21:07:04.816, after 30.0948 ksec.
-    The asymptotic temperature is 40.0741 degrees C.
+    acispy: [INFO     ] 2017-04-06 16:09:39,597 Run Parameters
+    acispy: [INFO     ] 2017-04-06 16:09:39,597 --------------
+    acispy: [INFO     ] 2017-04-06 16:09:39,597 Start Datestring: 2015:100:12:45:30
+    acispy: [INFO     ] 2017-04-06 16:09:39,597 Start Time: 5.45057e+08 s
+    acispy: [INFO     ] 2017-04-06 16:09:39,597 Initial Temperature: 10 degrees C
+    acispy: [INFO     ] 2017-04-06 16:09:39,597 CCD Count: 6
+    acispy: [INFO     ] 2017-04-06 16:09:39,597 Pitch: 150
+    acispy: [INFO     ] 2017-04-06 16:09:39,598 SIM Position: -99616
+    acispy: [INFO     ] 2017-04-06 16:09:39,598 Off-nominal Roll: 12
+    acispy: [INFO     ] 2017-04-06 16:09:39,598 Detector Housing Heater: OFF
+    acispy: [INFO     ] 2017-04-06 16:09:39,598 Model Result
+    acispy: [INFO     ] 2017-04-06 16:09:39,598 ------------
+    acispy: [INFO     ] 2017-04-06 16:09:39,599 The limit of 35.5 degrees C will be reached at 2015:100:21:07:04.816, after 30.0948 ksec.
+    acispy: [INFO     ] 2017-04-06 16:09:39,599 The asymptotic temperature is 40.0741 degrees C.
+    acispy: [INFO     ] 2017-04-06 16:09:43,576 Image of the model run has been written to cti_run_dpa_2015:100:12:45:30.png.
 
 .. image:: _images/cti_run.png
 
@@ -267,14 +298,27 @@ To run the 1DEAMZT model with the following conditions:
 
 .. code-block:: bash
 
-    [~]$ simulate_cti_run dea 2017:069:15:40:00 7.5 150. --ccd_count 4 --off_nominal_roll 0.0
+    [~]$ simulate_cti_run dea 2017:069:15:40:00 7.5 150. 4 --off_nominal_roll 0.0
 
 Returns:
 
 .. code-block:: text
 
-    The limit of 35.5 degrees C is never reached!
-    The asymptotic temperature is 32.3293 degrees C.
+    acispy: [INFO     ] 2017-04-06 16:10:36,312 Run Parameters
+    acispy: [INFO     ] 2017-04-06 16:10:36,312 --------------
+    acispy: [INFO     ] 2017-04-06 16:10:36,312 Start Datestring: 2017:069:15:40:00
+    acispy: [INFO     ] 2017-04-06 16:10:36,312 Start Time: 6.05548e+08 s
+    acispy: [INFO     ] 2017-04-06 16:10:36,312 Initial Temperature: 7.5 degrees C
+    acispy: [INFO     ] 2017-04-06 16:10:36,312 CCD Count: 4
+    acispy: [INFO     ] 2017-04-06 16:10:36,312 Pitch: 150
+    acispy: [INFO     ] 2017-04-06 16:10:36,313 SIM Position: -99616
+    acispy: [INFO     ] 2017-04-06 16:10:36,313 Off-nominal Roll: 0
+    acispy: [INFO     ] 2017-04-06 16:10:36,313 Detector Housing Heater: OFF
+    acispy: [INFO     ] 2017-04-06 16:10:36,313 Model Result
+    acispy: [INFO     ] 2017-04-06 16:10:36,313 ------------
+    acispy: [INFO     ] 2017-04-06 16:10:36,313 The limit of 35.5 degrees C is never reached!
+    acispy: [INFO     ] 2017-04-06 16:10:36,314 The asymptotic temperature is 32.3293 degrees C.
+    acispy: [INFO     ] 2017-04-06 16:10:39,215 Image of the model run has been written to cti_run_dea_2017:069:15:40:00.png.
 
 .. image:: _images/cti_run2.png
 
