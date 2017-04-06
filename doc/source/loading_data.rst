@@ -115,8 +115,8 @@ model runs:
     dc = DataContainer.fetch_models_from_files(model_files, "old_model/states.dat",
                                                get_msids=True)
 
-Directly Accessing Data from the Container
-------------------------------------------
+Directly Accessing Times Series Data from the Container
+-------------------------------------------------------
 
 The :class:`~acispy.data_container.DataContainer` object has dictionary-like 
 access so that the data may be accessed directly. Data can be accessed by querying 
@@ -132,7 +132,8 @@ type of data desired and its name, for example:
 
 A ``(type, name)`` pairing and its associated data are referred to as a "field". We'll
 encounter examples of :ref:`derived-fields` later, which are derivations of new fields from
-existing ones. For now, we'll use our example from before to fill up a :class:`~acispy.data_container.DataContainer`:
+existing ones. For now, we'll use our example from before to fill up a 
+:class:`~acispy.data_container.DataContainer`:
 
 .. code-block:: python
 
@@ -143,28 +144,6 @@ existing ones. For now, we'll use our example from before to fill up a :class:`~
     states = ["pitch", "ccd_count"]
     dc = DataContainer.fetch_from_database(tstart, tstop, msid_keys=msids,
                                            state_keys=states)
-
-Data are returned as NumPy arrays or 
-`AstroPy Quantities <http://docs.astropy.org/en/stable/units/quantity.html>`_ 
-(which are just NumPy arrays with units attached). The following print statements:
-
-.. code-block:: python
-
-    print dc["states", "ccd_count"]
-    print dc["states", "pitch"]
-    print dc["msids", "1deamzt"]
-
-result in the following output (or something similar):
-
-.. code-block:: pycon
-
-    [6  6  6 ...,  4  4  4]
-
-    [ 155.78252178  155.94230537  155.95272431  ...,  142.85889318
-      148.43712545  149.54367736] deg
-
-    [ 22.14923096  22.14923096  22.14923096 ...,  20.17999268  
-      20.17999268  20.17999268] deg_C
 
 To see what fields are available from the :class:`~acispy.data_container.DataContainer`,
 check the `field_list` attribute:
@@ -213,24 +192,146 @@ gives:
      ...
      ('states', 'pitch'),
      ('states', 'ccd_count')]
-    
-To slice a field array between two times, use the :meth:`~acispy.DataContainer.slice_field_on_dates`
-method:
+
+ACISpy Arrays
+-------------
+
+Data are returned as "ACISpy arrays", which are simply NumPy arrays with a
+number of important attributes included. 
+
+Units
++++++
+
+One such attribute is units, for those quantities which possess them. Units are
+added to ACISpy arrays using 
+`AstroPy Quantities <http://docs.astropy.org/en/stable/units/quantity.html>`_. 
+The following print statements illustrate how units are attached to various
+types of arrays:
 
 .. code-block:: python
 
-    dc.slice_field_on_dates("states", "ccd_count", "2016:092:11:00:00", 
-                            "2016:095:13:26:00")
+    print dc["states", "ccd_count"]
+    print dc["states", "pitch"]
+    print dc["msids", "1deamzt"]
 
-which returns a subset of the array data between the two times. 
+.. code-block:: pycon
+
+    [6  6  6 ...,  4  4  4]
+
+    [ 155.78252178  155.94230537  155.95272431  ...,  142.85889318
+      148.43712545  149.54367736] deg
+
+    [ 22.14923096  22.14923096  22.14923096 ...,  20.17999268  
+      20.17999268  20.17999268] deg_C
+
+Note that some arrays (like ``ccd_count'') do not have units. 
+
+Masks
++++++
+
+Model data may include "bad times" where the model does not agree well with
+the actual telemetry, most likely because there was an unexpected event such
+as a safing action. All ACISpy arrays include a ``mask`` attribute, which is
+a boolean NumPy array the same shape as the array, which is ``True`` if the 
+array is well-defined at that time and ``False`` if it is not. Currently, 
+masks only have ``False`` values for model arrays:
+
+.. code-block:: python
+    
+    print dc["model", "1dpamzt"].mask
+
+.. code-block:: pycon
+
+    [ True  False  False  False ...,  True  True  True]
+
+In future versions, masks will be also included for MSID data which have known 
+"bad" values at certain times.
+
+Timing Information
+++++++++++++++++++
+
+Since the MSIDs and states are defined at given times, each ACISpy array has 
+timing information associated with it. The ``times`` attribute for a given 
+array gives the timing information in seconds from the beginning of the mission:
+
+.. code-block:: python
+
+    print dc["states", "pitch"].times
+    print dc["msids", "1deamzt"].times
+
+prints something like:
+
+.. code-block:: pycon
+
+    [[  5.75763786e+08   5.75775250e+08   5.75775555e+08   5.75775860e+08
+        5.75776165e+08   5.75776470e+08   5.75776775e+08   5.75777080e+08
+        ...
+        5.76285868e+08   5.76286168e+08   5.76286301e+08   5.76286325e+08
+        5.76286469e+08   5.76286769e+08   5.76287070e+08   5.76287370e+08]
+     [  5.75775250e+08   5.75775555e+08   5.75775860e+08   5.75776165e+08
+        5.75776470e+08   5.75776775e+08   5.75777080e+08   5.75777385e+08
+        ...
+        5.76286168e+08   5.76286301e+08   5.76286325e+08   5.76286469e+08
+        5.76286769e+08   5.76287070e+08   5.76287370e+08   5.76330630e+08]] s
+
+    [  5.75773267e+08   5.75773300e+08   5.75773333e+08 ...,   5.76300659e+08
+       5.76300691e+08   5.76300724e+08] s
+
+Note that state times are two-dimensional arrays, of shape ``(2, n)``, since
+each state spans a ``tstart`` and a ``tstop``. 
+
+Similiarly, the ``dates`` attribute contains the same information in terms of
+date-time strings:
+
+.. code-block:: python
+
+    print dc["states", "pitch"].dates
+    print dc["msids", "1deamzt"].dates
+
+.. code-block:: pycon
+
+    [['2016:090:22:21:58.350' '2016:091:01:33:03.014' '2016:091:01:38:07.997'
+      '2016:091:01:43:12.980' '2016:091:01:48:17.963' '2016:091:01:53:22.946'
+      ...
+      '2016:096:23:30:33.579' '2016:096:23:30:57.579' '2016:096:23:33:21.437'
+      '2016:096:23:38:21.901' '2016:096:23:43:22.366' '2016:096:23:48:22.830']
+     ['2016:091:01:33:03.014' '2016:091:01:38:07.997' '2016:091:01:43:12.980'
+      '2016:091:01:48:17.963' '2016:091:01:53:22.946' '2016:091:01:58:27.929'
+      ...
+      '2016:096:23:30:57.579' '2016:096:23:33:21.437' '2016:096:23:38:21.901'
+      '2016:096:23:43:22.366' '2016:096:23:48:22.830' '2016:097:11:49:22.579']]
+
+Indexing and Slicing ACISpy Arrays
+++++++++++++++++++++++++++++++++++
+
+ACISpy arrays can be sliced and indexed using integers to access subsets of arrays
+in the usual way:
+
+.. code-block:: python
+
+    dc["msids", "1pdeaat"][1]
+    dc["states", "ccd_count"][2:100]
+    
+However, it is also possible to index and slice arrays with timing information, 
+whether with floating-point numbers (corresponding to seconds from the beginning
+of the mission) or date-time strings:
+
+.. code-block:: python
+
+    dc["states", "pitch"][5.762e8] # indexing with a single time value
+    
+    dc["msids", "1deicacu"][5.5e8:5.6e8] # slicing between two time values
+    
+    dc["states", "fep_count"]["2016:091:03:25:40.500"] # indexing with a single date-time string
+    
+    dc["msids", "1pin1at"]["2017:050:00:00:00":"2017:060:00:00:00"] # slicing between two date-time strings
 
 Timing Information
 ------------------
 
-The timing data for each model component, MSID, and state are stored in the
-:class:`~acispy.data_container.DataContainer` as well. Times are in units of
-seconds from the beginning of the mission. These can be obtained using the
-:meth:`~acispy.data_container.DataContainer.times` method:
+The timing data for each model component, MSID, and state can also be easily
+accessed from the :meth:`~acispy.data_container.DataContainer.times` and 
+:meth:`~acispy.data_container.DataContainer.dates` methods:
 
 .. code-block:: python
 
@@ -240,17 +341,11 @@ seconds from the beginning of the mission. These can be obtained using the
 
     [  5.75773267e+08   5.75773300e+08   5.75773333e+08 ...,   5.76300659e+08   5.76300691e+08   5.76300724e+08] s
 
-Since commanded states have start times and stop times, a tuple of time arrays is
-returned in this case:
-
 .. code-block:: python
 
     times = dc.times('states', 'pitch')
     times[0] # Gives you the start times
     times[1] # Gives you the stop times
-
-Similarly, calling the :meth:`~acispy.data_container.DataContainer.dates` method
-will return the timing data as date/time strings:
 
 .. code-block:: python
 
@@ -258,7 +353,6 @@ will return the timing data as date/time strings:
 
 .. code-block:: pycon
 
-    array(['2016:091:01:00:00.222', '2016:091:01:00:33.022',
-           '2016:091:01:01:05.822', ..., '2016:097:03:29:51.452',
-           '2016:097:03:30:24.252', '2016:097:03:30:57.052'],
-          dtype='|S21')
+    ['2016:091:01:00:00.222', '2016:091:01:00:33.022',
+     '2016:091:01:01:05.822', ..., '2016:097:03:29:51.452',
+     '2016:097:03:30:24.252', '2016:097:03:30:57.052']
