@@ -183,8 +183,7 @@ class ThermalModelRunner(DataContainer):
         times = self.times("model", msid).value
         dates = self.dates("model", msid)
         temp_array = np.rec.fromarrays([times, dates, T], names=('time', 'date', msid))
-        fmt = {msid: '%.2f',
-               'time': '%.2f'}
+        fmt = {msid: '%.2f', 'time': '%.2f'}
         out = open(model_file, 'w')
         Ska.Numpy.pprint(temp_array, fmt, out)
         out.close()
