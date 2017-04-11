@@ -18,7 +18,7 @@ binary_operators = (
 )
 
 def parse_index(idx, times): 
-    if isinstance(idx, (int, np.ndarray)):
+    if isinstance(idx, (int, np.ndarray)) or idx is None:
         return idx
     else:
         if isinstance(idx, string_types):
@@ -34,7 +34,12 @@ def find_indices(item, times):
         t1 = t2 = times
     if isinstance(item, slice):
         idxs = slice(parse_index(item.start, t1),
-                     parse_index(item.stop, t2))
+                     parse_index(item.stop, t2),
+                     item.step)
+    elif isinstance(item, tuple):
+        idxs = slice(parse_index(item[0].start, t1),
+                     parse_index(item[0].stop, t2),
+                     item[0].step)
     else:
         idxs = parse_index(item, t1)
     if getattr(times, "ndim", None) == 2:
@@ -56,7 +61,16 @@ class APStringArray(object):
         mask = self.mask[idxs]
         v = self.value[idxs]
         if isinstance(v, np.ndarray):
-            return APStringArray(self.value[idxs], t, mask=mask)
+            return APStringArray(v, t, mask=mask)
+        else:
+            return v
+
+    def __getslice__(self, i, j):
+        v = self.value[i,j]
+        t = self.times[i:j]
+        mask = self.mask[i:j]
+        if isinstance(v, np.ndarray):
+            return APStringArray(v, t, mask=mask)
         else:
             return v
 
@@ -95,6 +109,13 @@ class APQuantity(Quantity):
         ret = super(APQuantity, self).__getitem__(idxs)
         mask = self.mask[idxs]
         return APQuantity(ret.value, t, unit=self.unit, 
+                          dtype=self.dtype, mask=mask)
+
+    def __getslice__(self, i, j):
+        ret = super(APQuantity, self).__getslice__(i, j)
+        t = self.times[i:j]
+        mask = self.mask[i:j]
+        return APQuantity(ret.value, t, unit=self.unit,
                           dtype=self.dtype, mask=mask)
 
     def to(self, unit, equivalencies=[]):
