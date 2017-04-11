@@ -17,12 +17,14 @@ import Ska.Numpy
 limits = {'dea': 35.5,
           'dpa': 35.5,
           'psmc': 52.5,
-          'fep1mong': 43.0}
+          'fep1mong': 43.0,
+          'fep1actel': 43.0}
 
 msid_dict = {'dea': '1deamzt',
              'dpa': '1dpamzt',
              'psmc': '1pdeaat',
-             'fep1mong': 'tmp_fep1_mong'}
+             'fep1mong': 'tmp_fep1_mong',
+             'fep1actel': 'tmp_fep1_actel'}
 
 default_json_path = os.path.join(os.environ["SKA"], "share/%s/%s_model_spec.json")
 
@@ -193,15 +195,20 @@ class ThermalModelRunner(DataContainer):
 class ThermalModelFromData(ThermalModelRunner):
     """
     Class for running Xija thermal models using commanded states
-    and telemetry data as an initial condition, extracted from
-    a :class:`~acispy.data_container.DataContainer` object.
+    and telemetry data as an initial condition. 
 
     Parameters
     ----------
-    dc : :class:`~acispy.data_container.DataContainer`
-        The DataContainer to extract the information from.
     name : string
-        The name of the model to simulate. Can be "dea", "dpa", "psmc", or "fep1mong".
+        The name of the model to simulate. Can be "dea", "dpa", "psmc", 
+        "fep1mong", or "fep1actel".
+    tstart : string
+        The start time in YYYY:DOY:HH:MM:SS format.
+    tstop : string
+        The stop time in YYYY:DOY:HH:MM:SS format.
+    T_init : float, optional
+        Whether or not to set an initial temperature. If None, an initial 
+        temperature will be determined from telemetry. Default: None
     model_spec : string, optional
         Path to the model spec JSON file for the model. Default: None, the
         standard model path will be used.
@@ -211,14 +218,13 @@ class ThermalModelFromData(ThermalModelRunner):
 
     Examples
     --------
-    >>> from acispy import DataContainer, ThermalModelFromData
+    >>> from acispy import ThermalModelFromData
     >>> tstart = "2016:091:12:05:00.100"
     >>> tstop = "2016:100:13:07:45.234"
-    >>> msids = ["1dpamzt"]
-    >>> dc = DataContainer.fetch_from_database(tstart, tstop, msid_keys=msids)
-    >>> dpa_model = ThermalModelFromData(dc, "dpa")
+    >>> dpa_model = ThermalModelFromData("dpa", tstart, tstop)
     """
-    def __init__(self, tstart, tstop, name, model_spec=None, include_bad_times=False):
+    def __init__(self, name, tstart, tstop, T_init=None, model_spec=None, 
+                 include_bad_times=False):
 
         msid = msid_dict[name]
         tstart_secs = DateTime(tstart).secs
@@ -239,10 +245,10 @@ class ThermalModelFromData(ThermalModelRunner):
         states = dict((k, np.array(v)) for k, v in states_obj.items())
         states["off_nominal_roll"] = calc_off_nom_rolls(states)
 
-        ok = ((msid_times >= tstart_secs - 700.) &
-              (msid_times <= tstart_secs + 700.))
-
-        T_init = msids_obj[msid].value[ok].mean()
+        if T_init is None:
+            ok = ((msid_times >= tstart_secs - 700.) &
+                  (msid_times <= tstart_secs + 700.))
+            T_init = msids_obj[msid].value[ok].mean()
 
         self.xija_model = self._compute_model(name, tstart, tstop, states,
                                               states_obj["ccd_count"].times.value,
