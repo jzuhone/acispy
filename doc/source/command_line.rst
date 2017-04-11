@@ -230,22 +230,22 @@ Returns:
                             component tstart T_init pitch ccd_count
 
     Simulate a CTI run.
-    
+
     positional arguments:
       component             The component to model: dpa, dea, or psmc.
       tstart                The start time in YYYY:DOY:HH:MM:SS format
       T_init                The initial temperature of the component in degrees C.
-      pitch                 The initial temperature of the component in degrees C.
+      pitch                 The pitch in degrees.
       ccd_count             The number of CCDs to clock.
-    
+
     optional arguments:
       -h, --help            show this help message and exit
-      --days DAYS           The number of days to run the model.
-      --simpos SIMPOS       The SIM position.
+      --days DAYS           The number of days to run the model. Default: 3.0
+      --simpos SIMPOS       The SIM position. Default: -99616.0
       --off_nominal_roll OFF_NOMINAL_ROLL
-                            The off-nominal roll.
+                            The off-nominal roll. Default: 0.0
       --dh_heater DH_HEATER
-                            Is the DH heater on (0) or off (1)?.
+                            Is the DH heater on (1) or off (0)? Default: 0/off.
 
 
 Example 1
