@@ -281,6 +281,30 @@ class ThermalModelFromData(ThermalModelRunner):
 
         super(ThermalModelRunner, self).__init__(msids_obj, states_obj, model_obj)
 
+    def write_model_and_data(self, filename, overwrite=False):
+        """
+        Write the model, telemetry, and states data vs. time to
+        an ASCII text file. The state data is interpolated to the
+        times of the model so that everything is at a common set
+        of times. 
+
+        Parameters
+        ----------
+        filename : string
+            The filename to write the data to.
+        overwrite : boolean, optional
+            If True, an existing file with the same name will be overwritten.
+        """
+        msid = msid_dict[self.name]
+        self.add_diff_data_model_field(msid)
+        states_to_map = ["vid_board", "pcad_mode", "pitch", "clocking", "simpos",
+                         "ccd_count", "fep_count", "off_nominal_roll", "power_cmd"]
+        for state in states_to_map:
+            self.map_state_to_msid(state, msid)
+        out = [("msids", state) for state in states_to_map]
+        out += [("msids", msid), ("model", msid), ("model", "diff_%s" % msid)]
+        self.write_msids(filename, out, overwrite=overwrite)
+
 class SimulateCTIRun(ThermalModelRunner):
     """
     Class for simulating thermal models during CTI runs under constant conditions.
