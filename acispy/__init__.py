@@ -6,4 +6,3 @@ from acispy.plots import DatePlot, MultiDatePlot, \
     PhasePlot, CustomDatePlot
 from acispy.thermal_models import SimulateCTIRun, \
     ThermalModelRunner, ThermalModelFromData
-from acispy.utils import mylog
