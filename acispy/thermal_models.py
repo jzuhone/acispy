@@ -17,14 +17,16 @@ import Ska.Numpy
 limits = {'dea': 35.5,
           'dpa': 35.5,
           'psmc': 52.5,
-          'fep1mong': 43.0,
-          'fep1actel': 43.0}
+          'fep1_mong': 43.0,
+          'fep1_actel': 43.0,
+          'bep_pcb': 43.0}
 
 msid_dict = {'dea': '1deamzt',
              'dpa': '1dpamzt',
              'psmc': '1pdeaat',
-             'fep1mong': 'tmp_fep1_mong',
-             'fep1actel': 'tmp_fep1_actel'}
+             'fep1_mong': 'tmp_fep1_mong',
+             'fep1_actel': 'tmp_fep1_actel',
+             'bep_pcb': 'tmp_bep_pcb'}
 
 default_json_path = os.path.join(os.environ["SKA"], "share/%s/%s_model_spec.json")
 
