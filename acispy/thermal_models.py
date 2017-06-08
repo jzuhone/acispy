@@ -258,6 +258,8 @@ class ThermalModelFromData(ThermalModelRunner):
         if 'dpa_power' in self.xija_model.comp:
             components.append('dpa_power')
 
+        self.name = name
+
         self.bad_times = self.xija_model.bad_times
         self.bad_times_indices = []
         for t0, t1 in self.bad_times:
