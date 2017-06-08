@@ -155,6 +155,27 @@ class DataContainer(object):
         self.add_derived_field(ftype, state, _state, units,
                                display_name=self.fields["states", state].display_name)
 
+    def add_diff_data_model_field(self, msid, ftype_model="model"):
+        r"""
+
+        Create a field which gives the difference between the data
+        and the model for a particular MSID.
+
+        Parameters
+        ----------
+        msid : string
+            The MSID to take the diff of data and model of.
+        ftype_model : string, optional
+            The model type (e.g., "model", "model0", etc.) of
+            the model field to be diffed with the MSID.
+        """
+        units = unit_table["msids"].get(msid, '')
+        def _diff(dc):
+            return dc["msids", msid]-dc[ftype_model, msid]
+        display_name = self.fields["msids", msid].display_name.replace('_', '\_')
+        self.add_derived_field(ftype_model, "diff_%s" % msid, _diff, units,
+                               display_name="$\mathrm{\Delta(%s)}$" % display_name)
+
     def times(self, ftype, fname):
         """
         Return the timing information in seconds from the beginning of the mission
