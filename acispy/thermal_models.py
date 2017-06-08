@@ -171,26 +171,26 @@ class ThermalModelRunner(DataContainer):
         return cls(name, tstart, tstop, states_dict, state_times, T_init,
                    model_spec=model_spec, include_bad_times=include_bad_times)
 
-    def write_model(self, model_file, overwrite=False):
+    def write_model(self, filename, overwrite=False):
         """
         Write the model data vs. time to an ASCII text file.
 
         Parameters
         ----------
-        model_file : string
+        filename : string
             The filename to write the data to.
         overwrite : boolean, optional
             If True, an existing file with the same name will be overwritten.
         """
-        if os.path.exists(model_file) and not overwrite:
-            raise IOError("File %s already exists, but overwrite=False!" % model_file)
+        if os.path.exists(filename) and not overwrite:
+            raise IOError("File %s already exists, but overwrite=False!" % filename)
         msid = msid_dict[self.name]
         T = self["model", msid].value
         times = self.times("model", msid).value
         dates = self.dates("model", msid)
         temp_array = np.rec.fromarrays([times, dates, T], names=('time', 'date', msid))
         fmt = {msid: '%.2f', 'time': '%.2f'}
-        out = open(model_file, 'w')
+        out = open(filename, 'w')
         Ska.Numpy.pprint(temp_array, fmt, out)
         out.close()
 
