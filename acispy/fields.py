@@ -28,6 +28,7 @@ class FieldContainer(object):
     def __init__(self):
         self.output_fields = {}
         self.derived_fields = {}
+        self.types = []
 
     def __getitem__(self, item):
         if item in self.derived_fields:

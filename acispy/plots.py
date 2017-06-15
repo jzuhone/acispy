@@ -340,12 +340,14 @@ class DatePlot(CustomDatePlot):
         if colors is None:
             colors = default_colors
         fields = ensure_list(fields)
-        self.fields = fields
         self.num_fields = len(fields)
         colors = ensure_list(colors)
         self.times = {}
         self.y = {}
+        self.fields = []
         for i, field in enumerate(fields):
+            field = dc._determine_field(field)
+            self.fields.append(field)
             src_name, fd = field
             drawstyle = drawstyles.get(fd, None)
             state_codes = dc.state_codes.get(field, None)
@@ -384,7 +386,7 @@ class DatePlot(CustomDatePlot):
             label.set_fontproperties(fontProperties)
         ymin, ymax = self.ax.get_ylim()
         self.ax.set_ylim(0.9 * ymin, 1.1 * ymax)
-        units = dc.fields[fields[0]].units
+        units = dc.fields[self.fields[0]].units
         if self.num_fields > 1:
             if units == '':
                 ylabel = ''
@@ -392,12 +394,13 @@ class DatePlot(CustomDatePlot):
                 ylabel = '%s (%s)' % (units_map[units], unit_labels.get(units, units))
             self.set_ylabel(ylabel)
         else:
-            ylabel = dc.fields[fields[0]].display_name
+            ylabel = dc.fields[self.fields[0]].display_name
             if units != '':
                 ylabel += ' (%s)' % unit_labels.get(units, units)
             self.set_ylabel(ylabel)
-        self.field2 = field2
         if field2 is not None:
+            field2 = dc._determine_field(field2)
+            self.field2 = field2
             src_name2, fd2 = field2
             self.ax2 = self.ax.twinx()
             drawstyle = drawstyles.get(fd2, None)
@@ -429,6 +432,8 @@ class DatePlot(CustomDatePlot):
             if units2 != '':
                 ylabel2 += ' (%s)' % unit_labels.get(units2, units2)
             self.set_ylabel2(ylabel2)
+        else:
+            self.field2 = None
         self._fill_bad_times()
 
     def _fill_bad_times(self):
@@ -569,6 +574,9 @@ class MultiDatePlot(object):
                 fd = field[0]
             else:
                 fd = field
+            # This next line is to raise an error if we have
+            # multiple field types with the same name
+            dc._determine_field(fd)
             self.plots[fd] = DatePlot(dc, field, fig=fig, ax=ax, lw=lw)
             ax.xaxis.label.set_size(fontsize)
             ax.yaxis.label.set_size(fontsize)
@@ -709,6 +717,10 @@ class PhasePlot(ACISPlot):
         if ax is None:
             ax = fig.add_subplot(111)
 
+        x_field = dc._determine_field(x_field)
+        y_field = dc._determine_field(y_field)
+        self.x_field = x_field
+        self.y_field = y_field
         xlabel = dc.fields[x_field].display_name
         ylabel = dc.fields[y_field].display_name
         xunit = dc.fields[x_field].units

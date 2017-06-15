@@ -11,6 +11,7 @@ from acispy.utils import unit_table, \
     ensure_list
 import numpy as np
 import os
+from six import string_types
 
 class DataContainer(object):
     def __init__(self, msids, states, model):
@@ -37,6 +38,7 @@ class DataContainer(object):
         self.state_codes.update(cmd_state_codes)
         self._times = {}
         self._dates = {}
+        self._checked_fields = []
 
     def _populate_fields(self, ftype, obj):
         if ftype.startswith("model"):
@@ -50,15 +52,51 @@ class DataContainer(object):
             df = DerivedField(ftype, fname, func, unit,
                               display_name=display_name)
             self.fields.output_fields[ftype, fname] = df
+            if ftype not in self.fields.types:
+                self.fields.types.append(ftype)
             self.field_list.append((ftype, fname))
 
     def __getitem__(self, item):
-        if item not in self.data:
-            self.data[item] = self.fields[item](self)
-        return self.data[item]
+        fd = self._determine_field(item)
+        if fd not in self.data:
+            self.data[fd] = self.fields[fd](self)
+        return self.data[fd]
 
     def __contains__(self, item):
-        return item in self.fields
+        fd = self._determine_field(item)
+        return fd in self.fields
+
+    def _determine_field(self, field):
+        if field not in self._checked_fields:
+            if isinstance(field, tuple):
+                if len(field) != 2:
+                    raise RuntimeError("Invalid field specification {}!".format(field))
+                fd = (field[0].lower(), field[1].lower())
+                if fd in self.fields:
+                    checked_field = fd
+                else:
+                    raise RuntimeError("Cannot find field {}!".format(field))
+            elif isinstance(field, string_types):
+                fd = field.lower()
+                candidates = []
+                for ftype in self.fields.types:
+                    if (ftype, fd) in self.fields:
+                        candidates.append((ftype, fd))
+                if len(candidates) > 1:
+                    msg = "Multiple field types for field name %s!\n" % field
+                    for c in candidates:
+                        msg += "    {}\n".format(c)
+                    raise RuntimeError(msg)
+                elif len(candidates) == 0:
+                    raise RuntimeError("Cannot find field {}!".format(field))
+                else:
+                    checked_field = candidates[0]
+            else:
+                raise RuntimeError("Invalid field specification {}!".format(field))
+            self._checked_fields.append(checked_field)
+        else:
+            checked_field = field
+        return checked_field
 
     @property
     def derived_field_list(self):
@@ -97,24 +135,25 @@ class DataContainer(object):
         df = DerivedField(ftype, fname, function, units,
                           display_name=display_name)
         self.fields.derived_fields[ftype, fname] = df
+        if ftype not in self.fields.types:
+            self.fields.types.append(ftype)
 
-    def add_averaged_field(self, ftype, fname, n=10):
+    def add_averaged_field(self, field, n=10):
         """
         Add a new field from an average of another.
 
         Parameters
         ----------
-        ftype : string
-            The type of the field to be averaged.
-        fname : string
-            The name of the field to be averaged.
+        field : string or (type, name) tuple
+            The field to be averaged.
         n : integer, optional
             The number of samples to average over. Default: 5
 
         Examples
         --------
-        >>> dc.add_averaged_field("msids", "1dpicacu", n=10) 
+        >>> dc.add_averaged_field(("msids", "1dpicacu"), n=10)
         """
+        ftype, fname = self._determine_field(field)
         def _avg(dc):
             v = dc[ftype, fname]
             return APQuantity(moving_average(v.value, n=n), v.times,
@@ -142,6 +181,9 @@ class DataContainer(object):
         --------
         >>> dc.map_state_to_msid("ccd_count", "1dpamzt")
         """
+        state = state.lower()
+        msid = msid.lower()
+        ftype = ftype.lower()
         units = unit_table['states'].get(state, '')
         def _state(dc):
             msid_times = dc.times(ftype, msid)
@@ -169,6 +211,8 @@ class DataContainer(object):
             The model type (e.g., "model", "model0", etc.) of
             the model field to be diffed with the MSID.
         """
+        msid = msid.lower()
+        ftype_model = ftype_model.lower()
         units = unit_table["msids"].get(msid, '')
         def _diff(dc):
             return dc["msids", msid]-dc[ftype_model, msid]
@@ -176,27 +220,37 @@ class DataContainer(object):
         self.add_derived_field(ftype_model, "diff_%s" % msid, _diff, units,
                                display_name="$\mathrm{\Delta(%s)}$" % display_name)
 
-    def times(self, ftype, fname):
+    def times(self, *args):
         """
         Return the timing information in seconds from the beginning of the mission
-        for a field given its *ftype* and *fname*.
+        for a field.
 
         Examples
         --------
         >>> dc.times("msids", "1deamzt")
         """
+        if len(args) > 1:
+            field = args[0], args[1]
+        else:
+            field = args[0]
+        ftype, fname = self._determine_field(field)
         if (ftype, fname) not in self._times:
             self._times[ftype, fname] = self[ftype, fname].times
         return self._times[ftype, fname]
 
-    def dates(self, ftype, fname):
+    def dates(self, *args):
         """
-        Return the timing information in date and time for a field given its *ftype* and *fname*.
+        Return the timing information in date and time for a field.
 
         Examples
         --------
         >>> dc.dates("states", "pitch")
         """
+        if len(args) > 1:
+            field = args[0], args[1]
+        else:
+            field = args[0]
+        ftype, fname = self._determine_field(field)
         if (ftype, fname) not in self._dates:
             self._dates[ftype, fname] = self[ftype, fname].dates
         return self._dates[ftype, fname]
