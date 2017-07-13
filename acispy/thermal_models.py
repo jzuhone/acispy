@@ -28,6 +28,13 @@ msid_dict = {'dea': '1deamzt',
              'fep1_actel': 'tmp_fep1_actel',
              'bep_pcb': 'tmp_bep_pcb'}
 
+full_name = {"dea": "DEA",
+             "dpa": "DPA",
+             "psmc": "PSMC",
+             "fep1_mong": "FEP1 Mongoose",
+             "fep1_actel": "FEP1 Actel",
+             "bep_pcb": "BEP PCB"}
+
 default_json_path = os.path.join(os.environ["SKA"], "share/%s/%s_model_spec.json")
 
 class ThermalModelRunner(DataContainer):
@@ -304,6 +311,40 @@ class ThermalModelFromData(ThermalModelRunner):
         out = [("msids", state) for state in states_to_map]
         out += [("msids", msid), ("model", msid), ("model", "diff_%s" % msid)]
         self.write_msids(filename, out, overwrite=overwrite)
+
+    def make_dashboard_plots(self, yplotlimits=None, errorplotlimits=None, fig=None):
+        """
+        Make dashboard plots for the particular thermal model.
+
+        Parameters
+        ----------
+        yplotlimits : two-element array_like, optional
+            The (min, max) bounds on the temperature to use for the
+            temperature vs. time plot. Default: Determine the min/max
+            bounds from the telemetry and model prediction and
+            decrease/increase by degrees to determine the plot limits.
+        errorplotlimits : two-element array_like, optional
+            The (min, max) error bounds to use for the error plot.
+            Default: [-15, 15]
+        """
+        from xijafit import dashboard as dash
+        msid = msid_dict[self.name]
+        telem = self["msids", msid]
+        pred = self["model", msid]
+        mask = np.logical_and(telem.mask, pred.mask)
+        times = telem.times.value[mask]
+        if yplotlimits is None:
+            ymin = min(telem.value[mask].min(), pred.value[mask].min())-2
+            ymax = min(telem.value[mask].max(), pred.value[mask].max())+2
+            yplotlimits = [ymin, ymax]
+        if errorplotlimits is None:
+            errorplotlimits = [-15, 15]
+        mylimits = {"units": "C", "caution_high": limits[self.name]+2,
+                    "planning_limit": limits[self.name]}
+        dash.dashboard(pred.value[mask], telem.value[mask], times, mylimits,
+                       msid=msid_dict[self.name], modelname=full_name[self.name],
+                       errorplotlimits=errorplotlimits, yplotlimits=yplotlimits,
+                       fig=fig)
 
 class SimulateCTIRun(ThermalModelRunner):
     """
