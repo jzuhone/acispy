@@ -308,7 +308,6 @@ texinfo_documents = [
 #texinfo_no_detailmenu = False
 
 intersphinx_mapping = {'http://docs.python.org/': None,
-                       'http://yt-project.org/doc/': None,
                        'http://docs.scipy.org/doc/numpy/': None,
                        'http://matplotlib.sourceforge.net/': None,
                        }
