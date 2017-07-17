@@ -35,7 +35,20 @@ full_name = {"dea": "DEA",
              "fep1_actel": "FEP1 Actel",
              "bep_pcb": "BEP PCB"}
 
-default_json_path = os.path.join(os.environ["SKA"], "share/%s/%s_model_spec.json")
+def find_json(name, model_spec):
+    if model_spec is None:
+        if name == "psmc":
+            path = "psmc_check"
+        else:
+            path = name
+        if "SKA" in os.environ and os.path.exists(os.environ["SKA"]):
+            model_spec = os.path.join(os.environ["SKA"],
+                                      "share/%s/%s_model_spec.json" % (path, name))
+        else:
+            model_spec = os.path.join(os.getcwd(), "%s_model_spec.json" % name)
+    if not os.path.exists(model_spec):
+        raise IOError("The JSON file %s does not exist!" % model_spec)
+    return model_spec
 
 class ThermalModelRunner(Dataset):
     """
@@ -83,14 +96,8 @@ class ThermalModelRunner(Dataset):
                  T_init, model_spec=None, include_bad_times=False):
         state_times = np.array([DateTime(state_times[0]).secs,
                                 DateTime(state_times[1]).secs])
-        if model_spec is None:
-            if name == "psmc":
-                path = "psmc_check"
-            else:
-                path = name
-            self.model_spec = os.path.join(default_json_path % (path, name))
-        else:
-            self.model_spec = model_spec
+
+        self.model_spec = find_json(name, model_spec)
 
         states["tstart"] = state_times[0,:]
         states["tstop"] = state_times[1,:]
@@ -241,14 +248,7 @@ class ThermalModelFromData(ThermalModelRunner):
         msids_obj = MSIDs.from_database([msid], start, tstop=tstop)
         msid_times = msids_obj[msid].times.value
 
-        if model_spec is None:
-            if name == "psmc":
-                path = "psmc_check"
-            else:
-                path = name
-            self.model_spec = os.path.join(default_json_path % (path, name))
-        else:
-            self.model_spec = model_spec
+        self.model_spec = find_json(name, model_spec)
 
         states_obj = States.from_database(start, tstop)
         states = dict((k, np.array(v)) for k, v in states_obj.items())
