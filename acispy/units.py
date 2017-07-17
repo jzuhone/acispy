@@ -84,6 +84,12 @@ class APStringArray(object):
     def __str__(self):
         return self.value.__str__()
 
+    def __eq__(self, other):
+        return self.value.__eq__(other)
+
+    def __ne__(self, other):
+        return self.value.__eq__(other)
+
 class APQuantity(Quantity):
     def __new__(cls, value, times, unit=None, mask=None, dtype=None):
         ret = Quantity.__new__(cls, value, unit=unit, dtype=dtype)
