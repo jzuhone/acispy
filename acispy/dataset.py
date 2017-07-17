@@ -13,7 +13,7 @@ import numpy as np
 import os
 from six import string_types
 
-class DataContainer(object):
+class Dataset(object):
     def __init__(self, msids, states, model):
         self.msids = msids
         self.states = states
@@ -127,9 +127,9 @@ class DataContainer(object):
 
         Examples
         --------
-        >>> def _dpaa_power(dc):
-        ...     return (dc["msids", "1dp28avo"]*dc["msids", "1dpicacu"]).to("W")
-        >>> dc.add_derived_field("msids", "dpa_a_power", _dpaa_power, 
+        >>> def _dpaa_power(ds):
+        ...     return (ds["msids", "1dp28avo"]*ds["msids", "1dpicacu"]).to("W")
+        >>> ds.add_derived_field("msids", "dpa_a_power", _dpaa_power,
         ...                      "W", display_name="DPA-A Power")
         """
         df = DerivedField(ftype, fname, function, units,
@@ -151,11 +151,11 @@ class DataContainer(object):
 
         Examples
         --------
-        >>> dc.add_averaged_field(("msids", "1dpicacu"), n=10)
+        >>> ds.add_averaged_field(("msids", "1dpicacu"), n=10)
         """
         ftype, fname = self._determine_field(field)
-        def _avg(dc):
-            v = dc[ftype, fname]
+        def _avg(ds):
+            v = ds[ftype, fname]
             return APQuantity(moving_average(v.value, n=n), v.times,
                               unit=v.unit, mask=v.mask)
         display_name = "Average %s" % self.fields[ftype, fname].display_name
@@ -179,17 +179,17 @@ class DataContainer(object):
 
         Examples
         --------
-        >>> dc.map_state_to_msid("ccd_count", "1dpamzt")
+        >>> ds.map_state_to_msid("ccd_count", "1dpamzt")
         """
         state = state.lower()
         msid = msid.lower()
         ftype = ftype.lower()
         units = unit_table['states'].get(state, '')
-        def _state(dc):
-            msid_times = dc.times(ftype, msid)
-            state_times = dc.times("states", state)[1]
+        def _state(ds):
+            msid_times = ds.times(ftype, msid)
+            state_times = ds.times("states", state)[1]
             indexes = np.searchsorted(state_times, msid_times)
-            v = dc["states", state][indexes].value
+            v = ds["states", state][indexes].value
             if v.dtype.char != 'S':
                 return APQuantity(v, msid_times, unit=units)
             else:
@@ -214,8 +214,8 @@ class DataContainer(object):
         msid = msid.lower()
         ftype_model = ftype_model.lower()
         units = unit_table["msids"].get(msid, '')
-        def _diff(dc):
-            return dc["msids", msid]-dc[ftype_model, msid]
+        def _diff(ds):
+            return ds["msids", msid]-ds[ftype_model, msid]
         display_name = self.fields["msids", msid].display_name.replace('_', '\_')
         self.add_derived_field(ftype_model, "diff_%s" % msid, _diff, units,
                                display_name="$\mathrm{\Delta(%s)}$" % display_name)
@@ -227,7 +227,7 @@ class DataContainer(object):
 
         Examples
         --------
-        >>> dc.times("msids", "1deamzt")
+        >>> ds.times("msids", "1deamzt")
         """
         if len(args) > 1:
             field = args[0], args[1]
@@ -244,7 +244,7 @@ class DataContainer(object):
 
         Examples
         --------
-        >>> dc.dates("states", "pitch")
+        >>> ds.dates("states", "pitch")
         """
         if len(args) > 1:
             field = args[0], args[1]
@@ -307,7 +307,7 @@ class DataContainer(object):
             raise IOError("File %s already exists, but overwrite=False!" % filename)
         Table(dict((k,v.value) for k, v in self.states.items())).write(filename, format='ascii')
 
-class ArchiveData(DataContainer):
+class ArchiveData(Dataset):
     def __init__(self, tstart, tstop, msid_keys=None, state_keys=None,
                  filter_bad=True, stat=None, interpolate_msids=False):
         """
@@ -341,7 +341,7 @@ class ArchiveData(DataContainer):
         >>> tstop = "2016:100:13:07:45.234"
         >>> msids = ["1deamzt", "1pin1at"]
         >>> states = ["pitch", "ccd_count"]
-        >>> dc = ArchiveData(tstart, tstop, msid_keys=msids, state_keys=states)
+        >>> ds = ArchiveData(tstart, tstop, msid_keys=msids, state_keys=states)
         """
         if msid_keys is not None:
             msids = MSIDs.from_database(msid_keys, tstart, tstop=tstop,
@@ -353,7 +353,7 @@ class ArchiveData(DataContainer):
         model = EmptyTimeSeries()
         super(ArchiveData, self).__init__(msids, states, model)
 
-class TracelogData(DataContainer):
+class TracelogData(Dataset):
     def __init__(self, filename, state_keys=None):
         """
         Fetch MSIDs from a tracelog file and states from the commanded
@@ -371,7 +371,7 @@ class TracelogData(DataContainer):
         --------
         >>> from acispy import TracelogData
         >>> states = ["ccd_count", "roll"]
-        >>> dc = TracelogData("acisENG10d_00985114479.70.tl", state_keys=states)
+        >>> ds = TracelogData("acisENG10d_00985114479.70.tl", state_keys=states)
         """
         # Figure out what kind of file this is
         f = open(filename, "r")
@@ -392,7 +392,7 @@ class TracelogData(DataContainer):
         model = EmptyTimeSeries()
         super(TracelogData, self).__init__(msids, states, model)
 
-class ModelDataFromLoad(DataContainer):
+class ModelDataFromLoad(Dataset):
     def __init__(self, load, comps=None, get_msids=False, interpolate_msids=False):
         """
         Fetch a temperature model and its associated commanded states
@@ -417,7 +417,7 @@ class ModelDataFromLoad(DataContainer):
         --------
         >>> from acispy import ModelDataFromLoad
         >>> comps = ["1deamzt", "1pdeaat", "fptemp_11"]
-        >>> dc = ModelDataFromLoad("APR0416C", comps, get_msids=True)
+        >>> ds = ModelDataFromLoad("APR0416C", comps, get_msids=True)
         """
         if comps is None:
             comps = ["1deamzt","1dpamzt","1pdeaat","fptemp_11"]
@@ -442,7 +442,7 @@ class ModelDataFromLoad(DataContainer):
             msids = EmptyTimeSeries()
         super(ModelDataFromLoad, self).__init__(msids, states, model)
 
-class ModelDataFromFiles(DataContainer):
+class ModelDataFromFiles(Dataset):
     def __init__(self, temp_files, state_file, get_msids=False, interpolate_msids=False):
         """
         Fetch multiple temperature models and their associated commanded states
@@ -467,11 +467,11 @@ class ModelDataFromFiles(DataContainer):
         Examples
         --------
         >>> from acispy import ModelDataFromFiles
-        >>> dc = ModelDataFromFiles(["old_model/temperatures.dat", "new_model/temperatures.dat"],
+        >>> ds = ModelDataFromFiles(["old_model/temperatures.dat", "new_model/temperatures.dat"],
         ...                         "old_model/states.dat", get_msids=True)
 
         >>> from acispy import ModelDataFromFiles
-        >>> dc = ModelDataFromFiles(["temperatures_dea.dat", "temperatures_dpa.dat"],
+        >>> ds = ModelDataFromFiles(["temperatures_dea.dat", "temperatures_dpa.dat"],
         ...                         "old_model/states.dat", get_msids=True)
         """
         temp_files = ensure_list(temp_files)

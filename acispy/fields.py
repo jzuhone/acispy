@@ -6,8 +6,8 @@ class OutputFieldFunction(object):
         self.ftype = ftype
         self.fname = fname
 
-    def __call__(self, dc):
-        obj = getattr(dc, self.ftype)
+    def __call__(self, ds):
+        obj = getattr(ds, self.ftype)
         return obj[self.fname]
 
 class DerivedField(object):
@@ -21,8 +21,8 @@ class DerivedField(object):
         else:
             self.display_name = display_name
 
-    def __call__(self, dc):
-        return self.function(dc)
+    def __call__(self, ds):
+        return self.function(ds)
 
 class FieldContainer(object):
     def __init__(self):
@@ -41,46 +41,46 @@ class FieldContainer(object):
     def __contains__(self, item):
         return item in self.output_fields or item in self.derived_fields
 
-def create_derived_fields(dcont):
+def create_derived_fields(dset):
 
     # Off-nominal roll
 
-    def _off_nominal_roll(dc):
-        return APQuantity(calc_off_nom_rolls(dc.states),
-                          dc.states["q1"].times, "deg")
+    def _off_nominal_roll(ds):
+        return APQuantity(calc_off_nom_rolls(ds.states),
+                          ds.states["q1"].times, "deg")
 
-    dcont.add_derived_field("states", "off_nominal_roll", _off_nominal_roll,
-                            "deg", display_name="Off-Nominal Roll")
+    dset.add_derived_field("states", "off_nominal_roll", _off_nominal_roll,
+                           "deg", display_name="Off-Nominal Roll")
 
     # DPA, DEA powers
 
-    def _dpaa_power(dc):
-        return (dc["msids", "1dp28avo"]*dc["msids", "1dpicacu"]).to("W")
+    def _dpaa_power(ds):
+        return (ds["msids", "1dp28avo"]*ds["msids", "1dpicacu"]).to("W")
 
-    dcont.add_derived_field("msids", "dpa_a_power", _dpaa_power, 
-                            "W", display_name="DPA-A Power")
+    dset.add_derived_field("msids", "dpa_a_power", _dpaa_power, 
+                           "W", display_name="DPA-A Power")
 
-    def _dpab_power(dc):
-        return (dc["msids", "1dp28bvo"]*dc["msids", "1dpicbcu"]).to("W")
+    def _dpab_power(ds):
+        return (ds["msids", "1dp28bvo"]*ds["msids", "1dpicbcu"]).to("W")
 
-    dcont.add_derived_field("msids", "dpa_b_power", _dpab_power, 
-                            "W", display_name="DPA-B Power")
+    dset.add_derived_field("msids", "dpa_b_power", _dpab_power, 
+                           "W", display_name="DPA-B Power")
 
-    def _deaa_power(dc):
-        return (dc["msids", "1de28avo"]*dc["msids", "1deicacu"]).to("W")
+    def _deaa_power(ds):
+        return (ds["msids", "1de28avo"]*ds["msids", "1deicacu"]).to("W")
 
-    dcont.add_derived_field("msids", "dea_a_power", _deaa_power, 
-                            "W", display_name="DEA-A Power")
+    dset.add_derived_field("msids", "dea_a_power", _deaa_power, 
+                           "W", display_name="DEA-A Power")
 
-    def _deab_power(dc):
-        return (dc["msids", "1de28bvo"]*dc["msids", "1deicbcu"]).to("W")
+    def _deab_power(ds):
+        return (ds["msids", "1de28bvo"]*ds["msids", "1deicbcu"]).to("W")
 
-    dcont.add_derived_field("msids", "dea_b_power", _deab_power, 
-                            "W", display_name="DEA-B Power")
+    dset.add_derived_field("msids", "dea_b_power", _deab_power, 
+                           "W", display_name="DEA-B Power")
 
-    def _simpos(dc):
-        return dc['msids', '3tscpos']*397.7225924607
-    dcont.add_derived_field("msids", "simpos", _simpos,
-                            "", display_name="SIM Position")
+    def _simpos(ds):
+        return ds['msids', '3tscpos']*397.7225924607
+    dset.add_derived_field("msids", "simpos", _simpos,
+                           "", display_name="SIM Position")
 
 

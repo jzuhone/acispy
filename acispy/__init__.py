@@ -1,6 +1,6 @@
 __version__ = "0.9.0-dev"
 
-from acispy.data_container import ArchiveData, \
+from acispy.dataset import ArchiveData, \
     TracelogData, ModelDataFromLoad, ModelDataFromFiles
 from acispy.plots import DatePlot, MultiDatePlot, \
     PhasePlot, CustomDatePlot

@@ -6,8 +6,8 @@ Loading Data in Python
 ACISpy can work with ACIS-related data from the commanded states 
 database, the engineering archive, or thermal models produced by Xija. 
 The first thing that must be done before any data can be worked with or 
-plotted is to ingest the data in a :class:`~acispy.data_container.DataContainer` 
-object. :class:`~acispy.data_container.DataContainer` objects can be created by a 
+plotted is to ingest the data in a :class:`~acispy.dataset.Dataset`
+object. :class:`~acispy.dataset.Dataset` objects can be created by a
 number of methods, which are documented here.
 
 Fetching Data from the Online Database
@@ -15,20 +15,19 @@ Fetching Data from the Online Database
 
 Often, one will want to fetch data directly from the Chandra engineering
 archive and the commanded states database within a particular date and time 
-range. The method :meth:`~acispy.data_container.DataContainer.fetch_from_database` 
-enables this functionality. The MSIDs you want to extract must be 
-specified. You may either specify a set of states using the ``state_keys``
-keyword argument; otherwise the full default set will be loaded.
+range. The :class:`~acispy.dataset.ArchiveData` class enables this
+functionality. The MSIDs you want to extract must be specified. You may
+either specify a set of states using the ``state_keys`` keyword argument;
+otherwise the full default set will be loaded.
 
 .. code-block:: python
 
-    from acispy import DataContainer
+    from acispy import ArchiveData
     tstart = "2016:091:01:00:00.000" 
     tstop = "2016:097:03:30:57.231"
     msids = ["1deamzt", "1dpamzt"]
     states = ["pitch", "ccd_count"]
-    dc = DataContainer.fetch_from_database(tstart, tstop, msid_keys=msids,
-                                           state_keys=states)
+    ds = ArchiveData(tstart, tstop, msid_keys=msids, state_keys=states)
 
 By default, the MSIDs are not at identical time values. You can enforce that
 the MSID data is interpolated to a common set of times by passing in the keyword
@@ -36,49 +35,48 @@ argument ``interpolate_msids=True``:
 
 .. code-block:: python
 
-    dc = DataContainer.fetch_from_database(tstart, tstop, msid_keys=msids,
-                                           interpolate_msids=True)
+    ds = ArchiveData(tstart, tstop, msid_keys=msids, interpolate_msids=True)
 
 Additional options are provided for filtering out bad data and choosing the
 time cadence for MSIDs; for details see the API doc entry for 
-:meth:`~acispy.data_container.DataContainer.fetch_from_database`. 
+:class:`~acispy.dataset.ArchiveData.
 
 Reading MSID Data From a Tracelog File
 --------------------------------------
 
 If you have a real-time tracelog file or one that has been extracted from a 
 dump, you can also read MSID data from this file, using the
-:meth:`~acispy.data_container.DataContainer.fetch_from_tracelog` method. In 
+:meth:`~acispy.data_container.Dataset.fetch_from_tracelog` method. In
 this case, the state data corresponding to the times spanned by the tracelog
 file will be extracted from the commanded states database. 
 
 .. code-block:: python
 
-    from acispy import DataContainer
+    from acispy import Dataset
     states = ["pitch", "ccd_count"]
-    dc = DataContainer.fetch_from_tracelog("acisENG10d_00985114479.70.tl",
+    ds = Dataset.fetch_from_tracelog("acisENG10d_00985114479.70.tl",
                                            state_keys=states)
     
 In this case, all of the MSIDs in the tracelog are ingested into the 
-:class:`~acispy.data_container.DataContainer`. You may either specify 
+:class:`~acispy.data_container.Dataset`. You may either specify
 a set of states using the ``state_keys`` keyword argument; otherwise 
 the full default set will be loaded.
 
 Reading Model Data from a Load
 ------------------------------
 
-You can also fill a :class:`~acispy.data_container.DataContainer` with predicted
+You can also fill a :class:`~acispy.data_container.Dataset` with predicted
 model data for a particular temperature model or multiple models corresponding to 
-a particular load review using :meth:`~acispy.data_container.DataContainer.fetch_model_from_load`:
+a particular load review using :meth:`~acispy.data_container.Dataset.fetch_model_from_load`:
 
 .. code-block:: python
 
-    from acispy import DataContainer
+    from acispy import Dataset
     comps = ["1deamzt","1dpamzt","fptemp_11"]
-    dc = DataContainer.fetch_model_from_load("APR0416C", comps)
+    ds = Dataset.fetch_model_from_load("APR0416C", comps)
 
 To get the corresponding MSIDs from the engineering archive during the same 
-time frame, pass to :meth:`~acispy.data_container.DataContainer.fetch_model_from_load`
+time frame, pass to :meth:`~acispy.data_container.Dataset.fetch_model_from_load`
 the keyword argument ``get_msids=True``. To interpolate the MSID data to a common
 set of times as the model data, use ``interpolate_msids=True``.
 
@@ -89,14 +87,14 @@ The model validation tools (such as `dea_check <http://github.com/acisops/dea_ch
 output ASCII table files ``"temperatures.dat"`` and ``"states.dat"`` that contain the 
 temperature and commanded state information as a function of time. If you have these
 files and would like to load them in, this can be done using the
-:meth:`~acispy.data_container.DataContainer.fetch_models_from_files` method:
+:meth:`~acispy.data_container.Dataset.fetch_models_from_files` method:
 
 .. code-block:: python
 
-    from acispy import DataContainer
+    from acispy import Dataset
     model_files = ["dea_model/temperatures.dat", "dpa_model/temperatures.dat",
                    "fp_model/temperatures.dat"]
-    dc = DataContainer.fetch_models_from_files(model_files, "dea_model/states.dat",
+    ds = Dataset.fetch_models_from_files(model_files, "dea_model/states.dat",
                                                get_msids=True)
                                                
 Like the previous method, this one takes the ``get_msids`` keyword argument to 
@@ -110,47 +108,47 @@ model runs:
 
 .. code-block:: python
 
-    from acispy import DataContainer
+    from acispy import Dataset
     model_files = ["old_model/temperatures.dat", "new_model/temperatures.dat"]
-    dc = DataContainer.fetch_models_from_files(model_files, "old_model/states.dat",
+    ds = Dataset.fetch_models_from_files(model_files, "old_model/states.dat",
                                                get_msids=True)
 
 Directly Accessing Times Series Data from the Container
 -------------------------------------------------------
 
-The :class:`~acispy.data_container.DataContainer` object has dictionary-like 
+The :class:`~acispy.data_container.Dataset` object has dictionary-like
 access so that the data may be accessed directly. Data can be accessed by querying 
-the :class:`~acispy.data_container.DataContainer` object with a tuple giving the 
+the :class:`~acispy.data_container.Dataset` object with a tuple giving the
 type of data desired and its name, for example:
 
 .. code-block:: python
 
-    # "dc" is a DataContainer object
-    dc["states", "pitch"] # gives you the "pitch" state
-    dc["msids", "fptemp_11"] # gives you the "fptemp_11" pseudo-MSID
-    dc["model", "1deamzt"] # gives you the "1deamzt" model component
+    # "ds" is a Dataset object
+    ds["states", "pitch"] # gives you the "pitch" state
+    ds["msids", "fptemp_11"] # gives you the "fptemp_11" pseudo-MSID
+    ds["model", "1deamzt"] # gives you the "1deamzt" model component
 
 A ``(type, name)`` pairing and its associated data are referred to as a "field". We'll
 encounter examples of :ref:`derived-fields` later, which are derivations of new fields from
 existing ones. For now, we'll use our example from before to fill up a 
-:class:`~acispy.data_container.DataContainer`:
+:class:`~acispy.data_container.Dataset`:
 
 .. code-block:: python
 
-    from acispy import DataContainer
+    from acispy import Dataset
     tstart = "2016:091:01:00:00.000" 
     tstop = "2016:097:03:30:57.231"
     msids = ["1deamzt", "1dpamzt"]
     states = ["pitch", "ccd_count"]
-    dc = DataContainer.fetch_from_database(tstart, tstop, msid_keys=msids,
+    ds = Dataset.fetch_from_database(tstart, tstop, msid_keys=msids,
                                            state_keys=states)
 
-To see what fields are available from the :class:`~acispy.data_container.DataContainer`,
+To see what fields are available from the :class:`~acispy.data_container.Dataset`,
 check the `field_list` attribute:
 
 .. code-block:: python
 
-    print dc.field_list
+    print ds.field_list
 
 .. code-block:: pycon
 
@@ -168,16 +166,16 @@ check the `field_list` attribute:
      ('states', 'ccd_count')]
 
 If you have loaded data for the same model component from more than one model, then
-these will appear in the :class:`~acispy.data_container.DataContainer` with field types
+these will appear in the :class:`~acispy.data_container.Dataset` with field types
 of the form ``"model[n]"``, where ``n`` is a a zero-based integer:
 
 .. code-block:: python
 
-    from acispy import DataContainer
+    from acispy import Dataset
     model_files = ["old_model/temperatures.dat", "new_model/temperatures.dat"]
-    dc = DataContainer.fetch_models_from_files(model_files, "old_model/states.dat",
+    ds = Dataset.fetch_models_from_files(model_files, "old_model/states.dat",
                                                get_msids=True)
-    print dc.field_list
+    print ds.field_list
 
 gives:
 
@@ -210,9 +208,9 @@ types of arrays:
 
 .. code-block:: python
 
-    print dc["states", "ccd_count"]
-    print dc["states", "pitch"]
-    print dc["msids", "1deamzt"]
+    print ds["states", "ccd_count"]
+    print ds["states", "pitch"]
+    print ds["msids", "1deamzt"]
 
 .. code-block:: pycon
 
@@ -238,7 +236,7 @@ masks only have ``False`` values for model arrays:
 
 .. code-block:: python
     
-    print dc["model", "1dpamzt"].mask
+    print ds["model", "1dpamzt"].mask
 
 .. code-block:: pycon
 
@@ -256,8 +254,8 @@ array gives the timing information in seconds from the beginning of the mission:
 
 .. code-block:: python
 
-    print dc["states", "pitch"].times
-    print dc["msids", "1deamzt"].times
+    print ds["states", "pitch"].times
+    print ds["msids", "1deamzt"].times
 
 prints something like:
 
@@ -285,8 +283,8 @@ date-time strings:
 
 .. code-block:: python
 
-    print dc["states", "pitch"].dates
-    print dc["msids", "1deamzt"].dates
+    print ds["states", "pitch"].dates
+    print ds["msids", "1deamzt"].dates
 
 .. code-block:: pycon
 
@@ -309,8 +307,8 @@ in the usual way:
 
 .. code-block:: python
 
-    dc["msids", "1pdeaat"][1]
-    dc["states", "ccd_count"][2:100]
+    ds["msids", "1pdeaat"][1]
+    ds["states", "ccd_count"][2:100]
     
 However, it is also possible to index and slice arrays with timing information, 
 whether with floating-point numbers (corresponding to seconds from the beginning
@@ -318,24 +316,24 @@ of the mission) or date-time strings:
 
 .. code-block:: python
 
-    dc["states", "pitch"][5.762e8] # indexing with a single time value
+    ds["states", "pitch"][5.762e8] # indexing with a single time value
     
-    dc["msids", "1deicacu"][5.5e8:5.6e8] # slicing between two time values
+    ds["msids", "1deicacu"][5.5e8:5.6e8] # slicing between two time values
     
-    dc["states", "fep_count"]["2016:091:03:25:40.500"] # indexing with a single date-time string
+    ds["states", "fep_count"]["2016:091:03:25:40.500"] # indexing with a single date-time string
     
-    dc["msids", "1pin1at"]["2017:050:00:00:00":"2017:060:00:00:00"] # slicing between two date-time strings
+    ds["msids", "1pin1at"]["2017:050:00:00:00":"2017:060:00:00:00"] # slicing between two date-time strings
 
 Timing Information
 ------------------
 
 The timing data for each model component, MSID, and state can also be easily
-accessed from the :meth:`~acispy.data_container.DataContainer.times` and 
-:meth:`~acispy.data_container.DataContainer.dates` methods:
+accessed from the :meth:`~acispy.data_container.Dataset.times` and
+:meth:`~acispy.data_container.Dataset.dates` methods:
 
 .. code-block:: python
 
-    print dc.times('msids', '1deamzt')
+    print ds.times('msids', '1deamzt')
 
 .. code-block:: pycon
 
@@ -343,13 +341,13 @@ accessed from the :meth:`~acispy.data_container.DataContainer.times` and
 
 .. code-block:: python
 
-    times = dc.times('states', 'pitch')
+    times = ds.times('states', 'pitch')
     times[0] # Gives you the start times
     times[1] # Gives you the stop times
 
 .. code-block:: python
 
-    print dc.dates('msids', '1deamzt')
+    print ds.dates('msids', '1deamzt')
 
 .. code-block:: pycon
 

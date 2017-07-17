@@ -1,6 +1,6 @@
-``DataContainer`` API
-=====================
+``Dataset`` API
+===============
 
-.. autoclass:: acispy.data_container.DataContainer
+.. autoclass:: acispy.dataset.Dataset
     :members:
     :exclude-members: keys

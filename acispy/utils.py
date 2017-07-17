@@ -267,5 +267,5 @@ def interpolate(times_in, times_out, data_in):
 def moving_average(a, n=5):
     return Ska.Numpy.smooth(a, window_len=n, window='flat')
 
-def convert_state_code(dc, field):
-    return np.array([dc.state_codes[field][val] for val in dc[field]])
+def convert_state_code(ds, field):
+    return np.array([ds.state_codes[field][val] for val in ds[field]])

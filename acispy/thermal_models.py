@@ -3,7 +3,7 @@ import xija
 import os
 from astropy.units import Quantity
 from astropy.io import ascii
-from acispy.data_container import DataContainer
+from acispy.dataset import Dataset
 from acispy.plots import DatePlot
 import numpy as np
 from Chandra.Time import secs2date, DateTime
@@ -37,7 +37,7 @@ full_name = {"dea": "DEA",
 
 default_json_path = os.path.join(os.environ["SKA"], "share/%s/%s_model_spec.json")
 
-class ThermalModelRunner(DataContainer):
+class ThermalModelRunner(Dataset):
     """
     Class for running Xija thermal models.
 

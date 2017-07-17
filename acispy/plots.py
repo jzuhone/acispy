@@ -300,8 +300,8 @@ class DatePlot(CustomDatePlot):
 
     Parameters
     ----------
-    dc : :class:`~acispy.data_container.DataContainer`
-        The DataContainer instance to get the data to plot from.
+    ds : :class:`~acispy.dataset.Dataset`
+        The Dataset instance to get the data to plot from.
     fields : tuple of strings or list of tuples of strings
         A single field or list of fields to plot on the left y-axis.
     field2 : tuple of strings, optional
@@ -326,14 +326,14 @@ class DatePlot(CustomDatePlot):
     Examples
     --------
     >>> from acispy import DatePlot
-    >>> p1 = DatePlot(dc, ("msids", "1dpamzt"), field2=("states", "pitch"),
+    >>> p1 = DatePlot(ds, ("msids", "1dpamzt"), field2=("states", "pitch"),
     ...               lw=2, colors="brown")
 
     >>> from acispy import DatePlot
     >>> fields = [("msids", "1dpamzt"), ("msids", "1deamzt"), ("msids", "1pdeaat")]
-    >>> p2 = DatePlot(dc, fields, fontsize=12, colors=["brown","black","orange"])
+    >>> p2 = DatePlot(ds, fields, fontsize=12, colors=["brown","black","orange"])
     """
-    def __init__(self, dc, fields, field2=None, lw=1.5, fontsize=18,
+    def __init__(self, ds, fields, field2=None, lw=1.5, fontsize=18,
                  colors=None, color2='magenta', fig=None, ax=None):
         if fig is None:
             fig = plt.figure(figsize=(10, 8))
@@ -346,34 +346,34 @@ class DatePlot(CustomDatePlot):
         self.y = {}
         self.fields = []
         for i, field in enumerate(fields):
-            field = dc._determine_field(field)
+            field = ds._determine_field(field)
             self.fields.append(field)
             src_name, fd = field
             drawstyle = drawstyles.get(fd, None)
-            state_codes = dc.state_codes.get(field, None)
+            state_codes = ds.state_codes.get(field, None)
             if state_codes is None:
-                y = dc[field].value
+                y = ds[field].value
             else:
                 state_codes = [(v, k) for k, v in state_codes.items()]
-                y = convert_state_code(dc, field)
+                y = convert_state_code(ds, field)
             if src_name == "states":
-                tstart, tstop = dc[field].times
+                tstart, tstop = ds[field].times
                 x = pointpair(tstart.value, tstop.value)
                 y = pointpair(y)
             else:
-                x = dc[field].times.value
-            label = dc.fields[field].display_name
+                x = ds[field].times.value
+            label = ds.fields[field].display_name
             ticklocs, fig, ax = plot_cxctime(x, y, fig=fig, lw=lw, ax=ax,
                                              color=colors[i],
                                              state_codes=state_codes,
                                              drawstyle=drawstyle, 
                                              label=label)
-            self.y[field] = dc[field]
-            self.times[field] = dc[field].times
+            self.y[field] = ds[field]
+            self.times[field] = ds[field].times
 
         self.fig = fig
         self.ax = ax
-        self.dc = dc
+        self.ds = ds
         self.ax.set_xlabel("Date", fontdict={"size": fontsize,
                                              "family": "serif"})
         if self.num_fields > 1:
@@ -386,7 +386,7 @@ class DatePlot(CustomDatePlot):
             label.set_fontproperties(fontProperties)
         ymin, ymax = self.ax.get_ylim()
         self.ax.set_ylim(0.9 * ymin, 1.1 * ymax)
-        units = dc.fields[self.fields[0]].units
+        units = ds.fields[self.fields[0]].units
         if self.num_fields > 1:
             if units == '':
                 ylabel = ''
@@ -394,41 +394,41 @@ class DatePlot(CustomDatePlot):
                 ylabel = '%s (%s)' % (units_map[units], unit_labels.get(units, units))
             self.set_ylabel(ylabel)
         else:
-            ylabel = dc.fields[self.fields[0]].display_name
+            ylabel = ds.fields[self.fields[0]].display_name
             if units != '':
                 ylabel += ' (%s)' % unit_labels.get(units, units)
             self.set_ylabel(ylabel)
         if field2 is not None:
-            field2 = dc._determine_field(field2)
+            field2 = ds._determine_field(field2)
             self.field2 = field2
             src_name2, fd2 = field2
             self.ax2 = self.ax.twinx()
             drawstyle = drawstyles.get(fd2, None)
-            state_codes = dc.state_codes.get(field2, None)
+            state_codes = ds.state_codes.get(field2, None)
             if state_codes is None:
-                y2 = dc[field2].value
+                y2 = ds[field2].value
             else:
                 state_codes = [(v, k) for k, v in state_codes.items()]
-                y2 = convert_state_code(dc, field2)
+                y2 = convert_state_code(ds, field2)
             if src_name2 == "states":
-                tstart, tstop = dc[field2].times
+                tstart, tstop = ds[field2].times
                 x = pointpair(tstart.value, tstop.value)
                 y2 = pointpair(y2)
             else:
-                x = dc[field2].times.value
+                x = ds[field2].times.value
             plot_cxctime(x, y2, fig=fig, ax=self.ax2, lw=lw,
                          drawstyle=drawstyle, color=color2,
                          state_codes=state_codes)
-            self.times[field2] = dc[field2].times
-            self.y[field2] = dc[field2]
+            self.times[field2] = ds[field2].times
+            self.y[field2] = ds[field2]
             for label in self.ax2.get_xticklabels():
                 label.set_fontproperties(fontProperties)
             for label in self.ax2.get_yticklabels():
                 label.set_fontproperties(fontProperties)
             ymin2, ymax2 = self.ax2.get_ylim()
             self.ax2.set_ylim(0.9*ymin2, 1.1*ymax2)
-            units2 = dc.fields[field2].units
-            ylabel2 = dc.fields[field2].display_name
+            units2 = ds.fields[field2].units
+            ylabel2 = ds.fields[field2].display_name
             if units2 != '':
                 ylabel2 += ' (%s)' % unit_labels.get(units2, units2)
             self.set_ylabel2(ylabel2)
@@ -536,8 +536,8 @@ class MultiDatePlot(object):
 
     Parameters
     ----------
-    dc : :class:`~acispy.data_container.DataContainer`
-        The DataContainer instance to get the data to plot from.
+    ds : :class:`~acispy.dataset.Dataset`
+        The Dataset instance to get the data to plot from.
     fields : list of tuples of strings
         A list of fields to plot.
     subplots : tuple of integers, optional
@@ -555,13 +555,13 @@ class MultiDatePlot(object):
     --------
     >>> from acispy import MultiDatePlot
     >>> fields = [("msids", "1deamzt"), ("model", "1deamzt"), ("states", "ccd_count")]
-    >>> mp = MultiDatePlot(dc, fields, lw=2, subplots=(2, 2))
+    >>> mp = MultiDatePlot(ds, fields, lw=2, subplots=(2, 2))
 
     >>> from acispy import MultiDatePlot
     >>> fields = [[("msids", "1deamzt"), ("model", "1deamzt")], ("states", "ccd_count")]
-    >>> mp = MultiDatePlot(dc, fields, lw=2)
+    >>> mp = MultiDatePlot(ds, fields, lw=2)
     """
-    def __init__(self, dc, fields, subplots=None,
+    def __init__(self, ds, fields, subplots=None,
                  fontsize=15, lw=1.5, fig=None):
         if fig is None:
             fig = plt.figure(figsize=(12, 12))
@@ -576,8 +576,8 @@ class MultiDatePlot(object):
                 fd = field
             # This next line is to raise an error if we have
             # multiple field types with the same name
-            dc._determine_field(fd)
-            self.plots[fd] = DatePlot(dc, field, fig=fig, ax=ax, lw=lw)
+            ds._determine_field(fd)
+            self.plots[fd] = DatePlot(ds, field, fig=fig, ax=ax, lw=lw)
             ax.xaxis.label.set_size(fontsize)
             ax.yaxis.label.set_size(fontsize)
             ax.xaxis.set_tick_params(labelsize=fontsize)
@@ -681,8 +681,8 @@ class PhasePlot(ACISPlot):
 
     Parameters
     ----------
-    dc : :class:`~acispy.data_container.DataContainer`
-        The DataContainer instance to get the data to plot from.
+    ds : :class:`~acispy.dataset.Dataset`
+        The Dataset instance to get the data to plot from.
     x_field : tuple of strings
         The field to plot on the x-axis.
     y_field : tuple of strings
@@ -707,9 +707,9 @@ class PhasePlot(ACISPlot):
     Examples
     --------
     >>> from acispy import PhasePlot
-    >>> pp = PhasePlot(dc, ("msids", "1deamzt"), ("msids", "1dpamzt"))
+    >>> pp = PhasePlot(ds, ("msids", "1deamzt"), ("msids", "1dpamzt"))
     """
-    def __init__(self, dc, x_field, y_field, c_field=None,
+    def __init__(self, ds, x_field, y_field, c_field=None,
                  fontsize=18, color='blue', cmap='hot',
                  fig=None, ax=None, **kwargs):
         if fig is None:
@@ -717,22 +717,22 @@ class PhasePlot(ACISPlot):
         if ax is None:
             ax = fig.add_subplot(111)
 
-        x_field = dc._determine_field(x_field)
-        y_field = dc._determine_field(y_field)
+        x_field = ds._determine_field(x_field)
+        y_field = ds._determine_field(y_field)
         self.x_field = x_field
         self.y_field = y_field
-        xlabel = dc.fields[x_field].display_name
-        ylabel = dc.fields[y_field].display_name
-        xunit = dc.fields[x_field].units
-        yunit = dc.fields[y_field].units
+        xlabel = ds.fields[x_field].display_name
+        ylabel = ds.fields[y_field].display_name
+        xunit = ds.fields[x_field].units
+        yunit = ds.fields[y_field].units
 
-        self.xx = dc[x_field]
-        self.yy = dc[y_field]
+        self.xx = ds[x_field]
+        self.yy = ds[y_field]
 
         if c_field is None:
             self.cc = color
         else:
-            self.cc = dc[c_field]
+            self.cc = ds[c_field]
 
         cm = plt.cm.get_cmap(cmap)
         scp = ax.scatter(np.array(self.xx), np.array(self.yy),
@@ -754,8 +754,8 @@ class PhasePlot(ACISPlot):
         self.set_xlabel(xlabel)
         self.set_ylabel(ylabel)
         if c_field is not None:
-            clabel = dc.fields[c_field].display_name
-            cunit = dc.fields[c_field].units
+            clabel = ds.fields[c_field].display_name
+            cunit = ds.fields[c_field].units
             if cunit != '':
                 clabel += ' (%s)' % unit_labels.get(cunit, cunit)
             divider = make_axes_locatable(ax)
