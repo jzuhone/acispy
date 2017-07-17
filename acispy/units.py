@@ -137,10 +137,16 @@ class APQuantity(Quantity):
     def dates(self):
         return secs2date(self.times.value)
 
-    def argmax(self):
+    def argmax(self, dates=False):
         idx = np.argmax(self.value)
-        return self.times[idx], self.dates[idx]
+        if dates:
+            return self.dates[idx]
+        else:
+            return self.times[idx]
 
-    def argmin(self):
+    def argmin(self, dates=False):
         idx = np.argmin(self.value)
-        return self.times[idx], self.dates[idx]
+        if dates:
+            return self.dates[idx]
+        else:
+            return self.times[idx]
