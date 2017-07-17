@@ -345,8 +345,8 @@ class ArchiveData(Dataset):
         """
         if msid_keys is not None:
             msids = MSIDs.from_database(msid_keys, tstart, tstop=tstop,
-                                       filter_bad=filter_bad, stat=stat,
-                                       interpolate=interpolate_msids)
+                                        filter_bad=filter_bad, stat=stat,
+                                        interpolate=interpolate_msids)
         else:
             msids = EmptyTimeSeries()
         states = States.from_database(tstart, tstop, states=state_keys)

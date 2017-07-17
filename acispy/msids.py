@@ -1,4 +1,4 @@
-from acispy.utils import get_time, mit_trans_table
+from acispy.utils import get_time, mit_trans_table, ensure_list
 import Ska.engarchive.fetch_sci as fetch
 from astropy.io import ascii
 import numpy as np
@@ -73,6 +73,7 @@ class MSIDs(TimeSeriesData):
     @classmethod
     def from_database(cls, msids, tstart, tstop=None, filter_bad=False,
                       stat='5min', interpolate=False, interpolate_times=None):
+        msids = ensure_list(msids)
         data = fetch.MSIDset(msids, tstart, stop=tstop, filter_bad=filter_bad,
                              stat=stat)
         if interpolate:

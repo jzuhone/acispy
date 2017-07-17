@@ -1,6 +1,6 @@
 from astropy.io import ascii
 import requests
-from acispy.utils import get_time, state_units
+from acispy.utils import get_time, state_units, ensure_list
 from Chandra.cmd_states import fetch_states
 from acispy.units import APQuantity, APStringArray, Quantity
 from acispy.time_series import TimeSeriesData
@@ -33,6 +33,7 @@ class States(TimeSeriesData):
 
     @classmethod
     def from_database(cls, tstart, tstop, states=None):
+        states = ensure_list(states)
         t = fetch_states(tstart, tstop, vals=states)
         table = dict((k, t[k]) for k in t.dtype.names)
         return cls(table)

@@ -3,7 +3,7 @@ from astropy.io import ascii
 import Ska.Numpy
 from acispy.utils import get_time
 from acispy.units import APQuantity, Quantity
-from acispy.utils import msid_units
+from acispy.utils import msid_units, ensure_list
 from acispy.time_series import TimeSeriesData
 
 comp_map = {"1deamzt": "dea",
@@ -38,8 +38,7 @@ class Model(TimeSeriesData):
 
     @classmethod
     def from_load_page(cls, load, components):
-        if not isinstance(components, list):
-            components = [components]
+        components = ensure_list(components)
         data = {}
         for comp in components:
             c = comp_map[comp].upper()
