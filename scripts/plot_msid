@@ -36,9 +36,8 @@ else:
 if len(states) == 0:
     states = None
 
-ds = acispy.DataContainer.fetch_from_database(args.tstart, args.tstop,
-                                              msid_keys=msids, state_keys=states,
-                                              filter_bad=True)
+ds = acispy.ArchiveData(args.tstart, args.tstop, msid_keys=msids,
+                        state_keys=states, filter_bad=True)
 
 cp = acispy.DatePlot(ds, y_axis, field2=y2_axis)
 plt.show()

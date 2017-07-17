@@ -25,6 +25,6 @@ if args.y2_axis is not None:
 else:
     y2_axis = None
 
-ds = acispy.DataContainer.fetch_model_from_load(args.load, args.y_axis)
+ds = acispy.ModelDataFromLoad(args.load, args.y_axis)
 cp = acispy.DatePlot(ds, y_axis, field2=y2_axis)
 plt.show()

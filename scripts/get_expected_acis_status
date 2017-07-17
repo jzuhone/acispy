@@ -18,13 +18,13 @@ parser.add_argument("--time", type=str, default="now",
                     help='The time to check the status at (default: current time)')
 args = parser.parse_args()
 
-dc = acispy.DataContainer.fetch_model_from_load(args.load, comps)
+ds = acispy.ModelDataFromLoad(args.load, comps)
 t = get_time(args.time)
-states = dc.states.get_states(t.date)
-values = dc.model.get_values(t.date)
+states = ds.states.get_states(t.date)
+values = ds.model.get_values(t.date)
 
-rolls = calc_off_nom_rolls(dc.states)
-idx = np.searchsorted(dc.states["tstart"].value, t.secs)-1
+rolls = calc_off_nom_rolls(ds.states)
+idx = np.searchsorted(ds.states["tstart"].value, t.secs)-1
 
 print("Getting expected ACIS state at %s." % t.date)
 
