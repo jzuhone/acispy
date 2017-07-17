@@ -91,8 +91,10 @@ class APStringArray(object):
         return self.value.__eq__(other)
 
 class APQuantity(Quantity):
-    def __new__(cls, value, times, unit=None, mask=None, dtype=None):
-        ret = Quantity.__new__(cls, value, unit=unit, dtype=dtype)
+    def __new__(cls, value, times, unit=None, mask=None, dtype=None, copy=True,
+                order=None, ndmin=0):
+        ret = Quantity.__new__(cls, value, unit=unit, dtype=dtype, copy=copy,
+                               order=order, subok=True, ndmin=ndmin)
         if mask is None:
             mask = np.ones(ret.size, dtype='bool')
         ret.mask = mask
@@ -101,14 +103,16 @@ class APQuantity(Quantity):
 
     def __array_wrap__(self, obj, context=None):
         ret = super(APQuantity, self).__array_wrap__(obj, context=context)
+        if ret.dtype == 'bool':
+            return ret
         mask = self.mask
         if context[0] in binary_operators:
             mask2 = getattr(context[1][1], "mask", None)
             if mask2 is not None:
                 mask = np.logical_and(mask, mask2)
-        ret_class = type(self)
-        return ret_class(ret.value, self.times, unit=ret.unit, mask=mask,
-                         dtype=ret.dtype)
+        ret.mask = mask
+        ret.times = self.times
+        return ret
 
     def __getitem__(self, item):
         idxs, t = find_indices(item, self.times.value)
@@ -126,9 +130,8 @@ class APQuantity(Quantity):
 
     def to(self, unit, equivalencies=[]):
         ret = super(APQuantity, self).to(unit, equivalencies=equivalencies)
-        ret_class = type(self)
-        return ret_class(ret.value, self.times, unit=ret.unit, mask=self.mask,
-                         dtype=ret.dtype)
+        return APQuantity(ret.value, self.times, unit=ret.unit, mask=self.mask,
+                          dtype=ret.dtype)
 
     @property
     def dates(self):
