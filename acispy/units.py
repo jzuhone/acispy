@@ -21,8 +21,11 @@ def parse_index(idx, times):
     if isinstance(idx, (int, np.ndarray)) or idx is None:
         return idx
     else:
+        orig_idx = idx
         if isinstance(idx, string_types):
             idx = DateTime(idx).secs
+        if idx < times[0] or idx > times[-1]:
+            raise RuntimeError("The time %s is outside the bounds of this dataset!" % orig_idx)
         idx = np.searchsorted(times, idx)
     return idx
 
