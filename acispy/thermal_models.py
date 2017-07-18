@@ -1,4 +1,3 @@
-from __future__ import print_function
 import xija
 import os
 from astropy.units import Quantity
