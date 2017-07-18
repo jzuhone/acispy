@@ -2,8 +2,8 @@ import requests
 from astropy.io import ascii
 import Ska.Numpy
 from acispy.utils import get_time
-from acispy.units import APQuantity, Quantity
-from acispy.utils import msid_units, ensure_list
+from acispy.units import APQuantity, Quantity, get_units
+from acispy.utils import ensure_list
 from acispy.time_series import TimeSeriesData
 
 comp_map = {"1deamzt": "dea",
@@ -14,7 +14,9 @@ comp_map = {"1deamzt": "dea",
 class Model(TimeSeriesData):
 
     @classmethod
-    def from_xija(cls, model, components, interp_times=None, masks={}):
+    def from_xija(cls, model, components, interp_times=None, masks=None):
+        if masks is None:
+            masks = {}
         if interp_times is None:
             t = model.times
         else:
@@ -26,7 +28,7 @@ class Model(TimeSeriesData):
                 mvals += model.comp[k].bias
             else:
                 mvals = model.comp[k].mvals
-            unit = msid_units.get(k, None)
+            unit = get_units("model", k)
             mask = masks.get(k, None)
             if interp_times is None:
                 v = mvals
@@ -49,7 +51,8 @@ class Model(TimeSeriesData):
             table = ascii.read(u.text)
             times = Quantity(table["time"], 's')
             data[comp] = APQuantity(table[table_key].data, times,
-                                    msid_units[comp], dtype=table[table_key].data.dtype)
+                                    get_units("model", comp), 
+                                    dtype=table[table_key].data.dtype)
         return cls(data)
 
     @classmethod
@@ -59,8 +62,9 @@ class Model(TimeSeriesData):
         comp = list(table.keys())[-1]
         key = "fptemp_11" if comp == "fptemp" else comp
         times = Quantity(table["time"], 's')
-        data[key] = APQuantity(table[comp].data, times, msid_units[key], 
-                                 dtype=table[comp].data.dtype)
+        data[key] = APQuantity(table[comp].data, times, 
+                               get_units("model", key), 
+                               dtype=table[comp].data.dtype)
         return cls(data)
 
     def get_values(self, time):
@@ -71,7 +75,7 @@ class Model(TimeSeriesData):
             v = Ska.Numpy.interpolate(self[key].value, 
                                       self[key].times.value,
                                       [time], method='linear')[0]
-            unit = msid_units.get(key, None)
+            unit = get_units("model", key)
             values[key] = APQuantity(v, t, unit=unit, dtype=v.dtype)
         return values
 

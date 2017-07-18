@@ -1,6 +1,7 @@
 from astropy.io import ascii
 import requests
-from acispy.utils import get_time, state_units, ensure_list
+from acispy.units import get_units
+from acispy.utils import get_time, ensure_list
 from Chandra.cmd_states import fetch_states
 from acispy.units import APQuantity, APStringArray, Quantity
 from acispy.time_series import TimeSeriesData
@@ -25,7 +26,7 @@ class States(TimeSeriesData):
         times = Quantity([table["tstart"], table["tstop"]], "s")
         for k, v in table.items():
             if v.dtype.char != 'S':
-                new_table[k] = APQuantity(v, times, state_units.get(k, None), 
+                new_table[k] = APQuantity(v, times, get_units("states", k), 
                                           dtype=v.dtype)
             else:
                 new_table[k] = APStringArray(v, times)

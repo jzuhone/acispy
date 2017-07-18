@@ -6,9 +6,9 @@ from Chandra.Time import secs2date, DateTime
 from acispy.fields import create_derived_fields, \
     DerivedField, FieldContainer, OutputFieldFunction
 from acispy.time_series import TimeSeriesData, EmptyTimeSeries
-from acispy.utils import unit_table, \
-    get_display_name, moving_average, \
+from acispy.utils import get_display_name, moving_average, \
     ensure_list
+from acispy.units import get_units
 import numpy as np
 import os
 from six import string_types
@@ -47,7 +47,7 @@ class Dataset(object):
             utype = ftype
         for fname in obj.keys():
             func = OutputFieldFunction(ftype, fname)
-            unit = unit_table[utype].get(fname, '')
+            unit = get_units(ftype, fname)
             display_name = get_display_name(ftype, fname)
             df = DerivedField(ftype, fname, func, unit,
                               display_name=display_name)
@@ -159,7 +159,7 @@ class Dataset(object):
             return APQuantity(moving_average(v.value, n=n), v.times,
                               unit=v.unit, mask=v.mask)
         display_name = "Average %s" % self.fields[ftype, fname].display_name
-        units = unit_table[ftype].get(fname, '')
+        units = get_units(ftype, fname)
         self.add_derived_field(ftype, "avg_%s" % fname, _avg, units,
                                display_name=display_name)
 
@@ -184,7 +184,7 @@ class Dataset(object):
         state = state.lower()
         msid = msid.lower()
         ftype = ftype.lower()
-        units = unit_table['states'].get(state, '')
+        units = get_units("states", state)
         def _state(ds):
             msid_times = ds.times(ftype, msid)
             state_times = ds.times("states", state)[1]
@@ -213,7 +213,7 @@ class Dataset(object):
         """
         msid = msid.lower()
         ftype_model = ftype_model.lower()
-        units = unit_table["msids"].get(msid, '')
+        units = get_units("msids", msid)
         def _diff(ds):
             return ds["msids", msid]-ds[ftype_model, msid]
         display_name = self.fields["msids", msid].display_name.replace('_', '\_')

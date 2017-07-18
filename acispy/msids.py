@@ -1,9 +1,9 @@
 from acispy.utils import get_time, mit_trans_table, ensure_list
+from acispy.units import get_units
 import Ska.engarchive.fetch_sci as fetch
 from astropy.io import ascii
 import numpy as np
 from acispy.units import APQuantity, APStringArray, Quantity
-from acispy.utils import msid_units
 from acispy.time_series import TimeSeriesData
 
 class MSIDs(TimeSeriesData):
@@ -13,7 +13,7 @@ class MSIDs(TimeSeriesData):
             mask = masks.get(k, None)
             t = Quantity(times[k], "s")
             if v.dtype.char != 'S':
-                unit = msid_units.get(k, None)
+                unit = get_units("model", k)
                 self.table[k] = APQuantity(v, t, unit=unit, dtype=v.dtype, 
                                            mask=mask)
             else:

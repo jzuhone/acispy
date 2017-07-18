@@ -3,7 +3,7 @@ from Ska.Matplotlib import plot_cxctime, pointpair, \
 from matplotlib import font_manager
 import matplotlib.pyplot as plt
 from matplotlib.dates import num2date
-from acispy.utils import unit_labels, ensure_list
+from acispy.utils import ensure_list
 from Chandra.Time import DateTime
 from datetime import datetime
 from collections import OrderedDict
@@ -25,6 +25,14 @@ units_map = {"deg_C": "Temperature",
              "W": "Power",
              "deg": 'Angle',
              "deg**2": "Solid Angle"}
+
+unit_labels = {"V": 'V',
+               "A": 'A',
+               "deg_C": '$\mathrm{^\circ{C}}$',
+               "deg_F": '$\mathrm{^\circ{F}}$',
+               "W": "W",
+               "s": "s",
+               "deg": "deg"}
 
 default_colors = ["b","r","g","k"]
 
