@@ -268,13 +268,14 @@ def get_units(fname, ftype):
     if ftype == "states":
         unit = state_units.get(fname, '')
     else:
-        try:
-            unit = Ska.tdb.msids[fname].eng_unit
-            unit = units_trans.get(unit, unit)
-        except KeyError:
-            mylog.info("Cannot find a unit for MSID %s in the TDB. " % fname +
-                       "Checking the ACISpy units table.")
-            unit = msid_units.get(fname, None)
+        unit = msid_units.get(fname, None)
         if unit is None:
-            mylog.warning("Cannot find a unit for MSID %s. Setting to dimensionless." % fname)
+            try:
+                unit = Ska.tdb.msids[fname].eng_unit
+                unit = units_trans.get(unit, unit)
+                msid_units[fname] = unit
+            except KeyError:
+                mylog.warning("Cannot find a unit for MSID %s. " % fname +
+                              "Setting to dimensionless.")
+                unit = ''
     return unit
