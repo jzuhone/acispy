@@ -41,10 +41,6 @@ class Dataset(object):
         self._checked_fields = []
 
     def _populate_fields(self, ftype, obj):
-        if ftype.startswith("model"):
-            utype = "model"
-        else:
-            utype = ftype
         for fname in obj.keys():
             func = OutputFieldFunction(ftype, fname)
             unit = get_units(ftype, fname)
