@@ -510,3 +510,6 @@ class ModelDataFromFiles(Dataset):
         else:
             msids = EmptyTimeSeries()
         super(ModelDataFromFiles, self).__init__(msids, states, models)
+
+class DataContainer(Dataset):
+    pass
