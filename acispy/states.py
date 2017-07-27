@@ -25,11 +25,11 @@ class States(TimeSeriesData):
         new_table = {}
         times = Quantity([table["tstart"], table["tstop"]], "s")
         for k, v in table.items():
-            if v.dtype.char != 'S':
-                new_table[k] = APQuantity(v, times, get_units("states", k), 
-                                          dtype=v.dtype)
-            else:
+            if v.dtype.char in ['S', 'U']:
                 new_table[k] = APStringArray(v, times)
+            else:
+                new_table[k] = APQuantity(v, times, get_units("states", k),
+                                          dtype=v.dtype)
         super(States, self).__init__(new_table)
 
     @classmethod
