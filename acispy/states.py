@@ -34,7 +34,8 @@ class States(TimeSeriesData):
 
     @classmethod
     def from_database(cls, tstart, tstop, states=None):
-        states = ensure_list(states)
+        if states is not None:
+            states = ensure_list(states)
         t = fetch_states(tstart, tstop, vals=states)
         table = dict((k, t[k]) for k in t.dtype.names)
         return cls(table)
