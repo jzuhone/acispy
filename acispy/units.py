@@ -263,7 +263,7 @@ units_trans = {"DEGC": "deg_C",
                "STEP": "",
                "DEGF": "deg_F"}
 
-def get_units(fname, ftype):
+def get_units(ftype, fname):
     import Ska.tdb
     if ftype == "states":
         unit = state_units.get(fname, '')
