@@ -536,7 +536,8 @@ class DatePlot(CustomDatePlot):
         --------
         >>> dp.set_field_label(("msids","1deamzt"), "DEA Temperature")
         """
-        idx = self.fields.index(field)
+        fd = self.ds._determine_field(field)
+        idx = self.fields.index(fd)
         self.set_line_label(idx, label)
 
 class MultiDatePlot(object):
