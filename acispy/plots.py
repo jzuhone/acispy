@@ -592,7 +592,7 @@ class MultiDatePlot(object):
             ax.xaxis.set_tick_params(labelsize=fontsize)
             ax.yaxis.set_tick_params(labelsize=fontsize)
         self.fig = fig
-        xmin, xmax = self.plots[self.plots.keys()[0]].ax.get_xlim()
+        xmin, xmax = self.plots[list(self.plots.keys())[0]].ax.get_xlim()
         self.set_xlim(num2date(xmin), num2date(xmax))
 
     def __getitem__(self, item):
@@ -649,7 +649,7 @@ class MultiDatePlot(object):
         --------
         >>> p.set_title("my awesome plot", fontsize=15, loc='left')
         """
-        self.plots.values()[0].set_title(label, fontsize=fontsize, loc=loc, **kwargs)
+        list(self.plots.values())[0].set_title(label, fontsize=fontsize, loc=loc, **kwargs)
 
     def set_grid(self, on):
         """
