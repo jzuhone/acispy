@@ -72,7 +72,7 @@ class ACISPlot(object):
         --------
         >>> p.set_title("my awesome plot", fontsize=15, loc='left')
         """
-        fontdict = {"family": "serif", "size": fontsize}
+        fontdict = {"size": fontsize}
         self.ax.set_title(label, fontdict=fontdict, loc=loc, **kwargs)
 
     def set_grid(self, on):
@@ -130,7 +130,7 @@ class ACISPlot(object):
         --------
         >>> pp.set_ylabel("DPA Temperature", fontsize=15)
         """
-        fontdict = {"size": fontsize, "family": "serif"}
+        fontdict = {"size": fontsize}
         self.ax.set_ylabel(ylabel, fontdict=fontdict, **kwargs)
 
     def redraw(self):
@@ -170,9 +170,8 @@ class CustomDatePlot(ACISPlot):
         dates = DateTime(dates).secs
         ticklocs, fig, ax = plot_cxctime(dates, np.array(values), fig=fig, ax=ax, lw=lw, **kwargs)
         super(CustomDatePlot, self).__init__(fig, ax)
-        self.ax.set_xlabel("Date", fontdict={"size": fontsize, "family": "serif"})
-        fontProperties = font_manager.FontProperties(family="serif",
-                                                     size=fontsize)
+        self.ax.set_xlabel("Date", fontdict={"size": fontsize})
+        fontProperties = font_manager.FontProperties(size=fontsize)
         for label in self.ax.get_xticklabels():
             label.set_fontproperties(fontProperties)
         for label in self.ax.get_yticklabels():
@@ -246,7 +245,7 @@ class CustomDatePlot(ACISPlot):
         """
         time = datetime.strptime(DateTime(time).iso, "%Y-%m-%d %H:%M:%S.%f")
         self.ax.text(time, y, text, fontsize=fontsize, color=color,
-                     family='serif', rotation=rotation, **kwargs)
+                     rotation=rotation, **kwargs)
 
     def set_line_label(self, line, label):
         """
@@ -295,7 +294,7 @@ class CustomDatePlot(ACISPlot):
         --------
         >>> p.set_legend(loc='right', fontsize=18)
         """
-        prop = {"family": "serif", "size": fontsize}
+        prop = {"size": fontsize}
         self.ax.legend(loc=loc, prop=prop, **kwargs)
 
 class DatePlot(CustomDatePlot):
@@ -382,12 +381,10 @@ class DatePlot(CustomDatePlot):
         self.fig = fig
         self.ax = ax
         self.ds = ds
-        self.ax.set_xlabel("Date", fontdict={"size": fontsize,
-                                             "family": "serif"})
+        self.ax.set_xlabel("Date", fontdict={"size": fontsize})
         if self.num_fields > 1:
-            self.ax.legend(loc=0, prop={"family": "serif"})
-        fontProperties = font_manager.FontProperties(family="serif",
-                                                     size=fontsize)
+            self.ax.legend(loc=0)
+        fontProperties = font_manager.FontProperties(size=fontsize)
         for label in self.ax.get_xticklabels():
             label.set_fontproperties(fontProperties)
         for label in self.ax.get_yticklabels():
@@ -495,7 +492,7 @@ class DatePlot(CustomDatePlot):
         --------
         >>> p1.set_ylabel2("Pitch Angle in Degrees", fontsize=14)
         """
-        fontdict = {"size": fontsize, "family": "serif"}
+        fontdict = {"size": fontsize}
         self.ax2.set_ylabel(ylabel, fontdict=fontdict, **kwargs)
 
     def add_hline2(self, y2, lw=2, ls='solid', color='green', **kwargs):
@@ -750,8 +747,7 @@ class PhasePlot(ACISPlot):
         super(PhasePlot, self).__init__(fig, ax)
         self.scp = scp
 
-        fontProperties = font_manager.FontProperties(family="serif",
-                                                     size=fontsize)
+        fontProperties = font_manager.FontProperties(size=fontsize)
         for label in self.ax.get_xticklabels():
             label.set_fontproperties(fontProperties)
         for label in self.ax.get_yticklabels():
@@ -770,7 +766,7 @@ class PhasePlot(ACISPlot):
             divider = make_axes_locatable(ax)
             cax = divider.append_axes("right", size="5%", pad=0.05)
             cb = plt.colorbar(scp, cax=cax)
-            fontdict = {"family": "serif", "size": fontsize}
+            fontdict = {"size": fontsize}
             cb.set_label(clabel, fontdict=fontdict)
             for label in cb.ax.get_yticklabels():
                 label.set_fontproperties(fontProperties)
@@ -797,7 +793,7 @@ class PhasePlot(ACISPlot):
         --------
         >>> pp.set_xlabel("DEA Temperature", fontsize=15)
         """
-        fontdict = {"size": fontsize, "family": "serif"}
+        fontdict = {"size": fontsize}
         self.ax.set_xlabel(xlabel, fontdict=fontdict, **kwargs)
 
     def add_vline(self, x, lw=2, ls='-', color='green', **kwargs):
@@ -849,4 +845,4 @@ class PhasePlot(ACISPlot):
         ...             fontsize=15, color='magenta')
         """
         self.ax.text(x, y, text, fontsize=fontsize, color=color,
-                     family='serif', rotation=rotation, **kwargs)
+                     rotation=rotation, **kwargs)
