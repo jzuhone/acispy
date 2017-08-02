@@ -1,3 +1,4 @@
+import astropy.units as u
 from astropy.units import Quantity
 from acispy.utils import mylog
 from six import string_types
@@ -9,6 +10,8 @@ from numpy import \
     bitwise_xor, left_shift, right_shift, greater, greater_equal, less, \
     less_equal, not_equal, equal, logical_and, logical_or, logical_xor, \
     maximum, minimum, fmax, fmin, copysign, nextafter, ldexp, fmod
+
+u.imperial.enable()
 
 state_units = {'ra': 'deg',
                'dec': 'deg',
