@@ -430,7 +430,7 @@ class ModelDataFromLoad(Dataset):
             msids = MSIDs.from_database(comps, tstart, tstop=tstop,
                                         interpolate=interpolate_msids,
                                         interpolate_times=interpolate_times)
-            if interpolate_msids and msids.times[comps[0]].size != times.size:
+            if interpolate_msids and msids[comps[0]].times.size != times.size:
                 raise RuntimeError("Lengths of time arrays for model data and MSIDs "
                                    "do not match. You probably ran a model past the "
                                    "end date in the engineering archive!")
