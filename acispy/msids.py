@@ -85,7 +85,8 @@ class MSIDs(TimeSeriesData):
             if msid.state_codes:
                 state_codes[k] = dict((k, v) for v, k in msid.state_codes)
             table[k] = msid.vals
-            masks[k] = ~msid.bads
+            if msid.bads is not None:
+                masks[k] = ~msid.bads
         times = dict((k, get_time(data[k].times).secs) for k in data.keys())
         return cls(table, times, state_codes=state_codes)
 
