@@ -7,7 +7,11 @@ from acispy.units import APQuantity, APStringArray, Quantity
 from acispy.time_series import TimeSeriesData
 
 class MSIDs(TimeSeriesData):
-    def __init__(self, table, times, state_codes={}, masks={}):
+    def __init__(self, table, times, state_codes=None, masks=None):
+        if state_codes is None:
+            state_codes = {}
+        if masks is None:
+            masks = {}
         self.table = {}
         for k, v in table.items():
             mask = masks.get(k, None)
