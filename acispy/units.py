@@ -264,7 +264,8 @@ class APQuantity(Quantity):
 
 units_trans = {"DEGC": "deg_C",
                "STEP": "",
-               "DEGF": "deg_F"}
+               "DEGF": "deg_F",
+               "RADPS": "rad/s"}
 
 def get_units(ftype, fname):
     import Ska.tdb
