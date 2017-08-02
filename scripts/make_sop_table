@@ -4,6 +4,7 @@ from __future__ import division
 import csv
 import numpy as np
 import argparse
+import six
 
 parser = argparse.ArgumentParser(description='Create a LaTeX table for a SOP from a tab-separated table file')
 parser.add_argument("tablefile", type=str, help='The input table file')
@@ -83,7 +84,12 @@ nright = 10
 ttime_left = ' & '.join(['','Total time:',str(total_time)]+['']*(nleft-3))+" \\\\\n"
 ttime_right = ' & '.join(['']*(nright+1))+" \\\\\n"
 
-rows = np.array(rows).astype("|S80")
+if six.PY2:
+    row_type = "|S80"
+else:
+    row_type = "|U80"
+
+rows = np.array(rows).astype(row_type)
 
 # Set columns and alignment for left and right
 cols_left = [0,1,2,3,4,7,8,9]
