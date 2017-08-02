@@ -305,7 +305,7 @@ class Dataset(object):
 
 class ArchiveData(Dataset):
     def __init__(self, tstart, tstop, msid_keys=None, state_keys=None,
-                 filter_bad=True, stat=None, interpolate_msids=False):
+                 filter_bad=False, stat=None, interpolate_msids=False):
         """
         Fetch MSIDs from the engineering archive and states from the commanded
         states database. 
@@ -322,7 +322,7 @@ class ArchiveData(Dataset):
             List of commanded states to pull from the commanded states database.
             If not supplied, a default list of states will be loaded. Default: None
         filter_bad : boolean, optional
-            Whether or not to filter out bad values of MSIDs. Default: True.
+            Whether or not to filter out bad values of MSIDs. Default: False.
         stat : string, optional
             return 5-minute or daily statistics ('5min' or 'daily') Default: '5min'
             If ``interpolate_msids=True`` this setting is ignored.
