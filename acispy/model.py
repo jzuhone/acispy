@@ -5,6 +5,7 @@ from acispy.utils import get_time
 from acispy.units import APQuantity, Quantity, get_units
 from acispy.utils import ensure_list
 from acispy.time_series import TimeSeriesData
+import numpy as np
 
 comp_map = {"1deamzt": "dea",
             "1dpamzt": "dpa",
@@ -39,7 +40,7 @@ class Model(TimeSeriesData):
         return cls(table)
 
     @classmethod
-    def from_load_page(cls, load, components):
+    def from_load_page(cls, load, components, time_range=None):
         components = ensure_list(components)
         data = {}
         for comp in components:
@@ -49,8 +50,13 @@ class Model(TimeSeriesData):
             url += "%s/ofls%s/temperatures.dat" % (load[:-1].upper(), load[-1].lower())
             u = requests.get(url)
             table = ascii.read(u.text)
-            times = Quantity(table["time"], 's')
-            data[comp] = APQuantity(table[table_key].data, times,
+            if time_range is None:
+                idxs = np.ones(table["time"].size, dtype='bool')
+            else:
+                idxs = np.logical_and(table["time"] >= time_range[0],
+                                      table["time"] <= time_range[1])
+            times = Quantity(table["time"][idxs], 's')
+            data[comp] = APQuantity(table[table_key].data[idxs], times,
                                     get_units("model", comp), 
                                     dtype=table[table_key].data.dtype)
         return cls(data)
