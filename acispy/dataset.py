@@ -2,7 +2,7 @@ from acispy.msids import MSIDs
 from acispy.states import States, cmd_state_codes
 from acispy.model import Model
 from acispy.units import APQuantity, APStringArray
-from Chandra.Time import secs2date, DateTime
+from Chandra.Time import secs2date, DateTime, date2secs
 from acispy.fields import create_derived_fields, \
     DerivedField, FieldContainer, OutputFieldFunction
 from acispy.time_series import TimeSeriesData, EmptyTimeSeries
@@ -389,7 +389,8 @@ class TracelogData(Dataset):
         super(TracelogData, self).__init__(msids, states, model)
 
 class ModelDataFromLoad(Dataset):
-    def __init__(self, load, comps=None, get_msids=False, interpolate_msids=False):
+    def __init__(self, load, comps=None, get_msids=False, interpolate_msids=False,
+                 time_range=None):
         """
         Fetch a temperature model and its associated commanded states
         from a load review. Optionally get MSIDs for the same time period.
@@ -417,7 +418,9 @@ class ModelDataFromLoad(Dataset):
         """
         if comps is None:
             comps = ["1deamzt","1dpamzt","1pdeaat","fptemp_11"]
-        model = Model.from_load_page(load, comps)
+        if time_range is not None:
+            time_range = [date2secs(t) for t in time_range]
+        model = Model.from_load_page(load, comps, time_range=time_range)
         states = States.from_load_page(load)
         if get_msids:
             times = model[comps[0]].times.value
