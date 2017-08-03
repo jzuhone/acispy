@@ -3,9 +3,24 @@ from acispy.dataset import ModelDataFromLoad
 from acispy.plots import DatePlot, MultiDatePlot
 from collections import defaultdict
 from Chandra.Time import date2secs, secs2date
+import numpy as np
 
 lr_root = "/data/acis/LoadReviews"
 lr_file = "ACIS-LoadReview.txt"
+
+colors = {"perigee": "green",
+          "apogee": "purple",
+          "sim_trans": "brown",
+          "radmon_disable": "orange",
+          "radmon_enable": "orange"}
+
+styles = {"perigee": "--",
+          "apogee": "--",
+          "sim_trans": "-",
+          "radmon_enable": "-",
+          "radmon_disable": "-"}
+
+offsets = {"sim_trans": 0.75}
 
 class LoadReviewEvent(object):
     def __init__(self, name, event):
@@ -36,7 +51,9 @@ class LoadReview(object):
         self.first_time = secs2date(self.first_time)
         self.last_time = secs2date(self.last_time)
         self.ds = ModelDataFromLoad(load_name, get_msids=get_msids,
-                                    interpolate_msids=True)
+                                    interpolate_msids=True,
+                                    time_range=[self.first_time, 
+                                                self.last_time])
 
     def _get_start_status(self):
         j = -1
@@ -63,7 +80,7 @@ class LoadReview(object):
                         event = "obsid_change"
                         state = words[-1]
                     if "SIMTRANS" in line:
-                        event = "sim_translation"
+                        event = "sim_trans"
                         state = (int(words[-2]), words[-1].strip("()"))
                     if "HETGIN" in line:
                         event = "hetg_in"
@@ -109,15 +126,42 @@ class LoadReview(object):
     def __getattr__(self, item):
         return LoadReviewEvent(item, self.events[item])
 
+    def _add_annotations(self, plot, annotations):
+        for i, line in enumerate(plot.ax.lines):
+            line.set_zorder(100-i)
+        if annotations is None:
+            annotations = list(colors.keys())
+        for key in self.events:
+            if key not in annotations:
+                continue
+            color = colors[key]
+            ls = styles[key]
+            for i, t in enumerate(self.events[key]["times"]):
+                plot.add_vline(t, color=color, ls=ls)
+                if "state" in self.events[key]:
+                    text = self.events[key]["state"][i]
+                    if isinstance(text, tuple):
+                        text = text[-1]
+                    tdt = secs2date(date2secs(t) + 3600.0)
+                    y = offsets[key]*np.sum(plot.ax.get_ylim())
+                    plot.add_text(tdt, y, text,
+                                  fontsize=15,
+                                  rotation='vertical',
+                                  color=color)
+
     def plot(self, fields, field2=None, lw=1.5, fontsize=18,
-             colors=None, color2='magenta', fig=None, ax=None):
+             colors=None, color2='magenta', fig=None, ax=None,
+             tmin=None, tmax=None, annotations=None):
         dp = DatePlot(self.ds, fields, field2=field2, lw=lw,
                       fontsize=fontsize, colors=colors, color2=color2,
                       fig=fig, ax=ax)
+        self._add_annotations(dp, annotations)
         return dp
 
     def multi_plot(self, fields, subplots=None,
-                   fontsize=15, lw=1.5, fig=None):
+                   fontsize=15, lw=1.5, fig=None,
+                   tmin=None, tmax=None, annotations=None):
         mdp = MultiDatePlot(self.ds, fields, subplots=subplots,
                             fontsize=fontsize, lw=lw, fig=fig)
+        self._add_annotations(mdp, annotations)
         return mdp
