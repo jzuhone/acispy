@@ -1,16 +1,25 @@
 import os
-from acispy.dataset import Dataset
+from acispy.dataset import ModelDataFromLoad
+from acispy.plots import DatePlot, MultiDatePlot
 from collections import defaultdict
 from Chandra.Time import date2secs, secs2date
 
 lr_root = "/data/acis/LoadReviews"
 lr_file = "ACIS-LoadReview.txt"
 
-class LoadReviewDataset(Dataset):
-    pass
+class LoadReviewEvent(object):
+    def __init__(self, name, event):
+        self.event = event
+        self.name = name
+
+    def __repr__(self):
+        return self.name
+
+    def __getattr__(self, item):
+        return self.event[item]
 
 class LoadReview(object):
-    def __init__(self, load_name):
+    def __init__(self, load_name, get_msids=False):
         self.load_name = load_name
         self.load_week = load_name[:-1]
         self.load_year = "20%s" % self.load_week[5:7]
@@ -26,6 +35,8 @@ class LoadReview(object):
         self._populate_event_times()
         self.first_time = secs2date(self.first_time)
         self.last_time = secs2date(self.last_time)
+        self.ds = ModelDataFromLoad(load_name, get_msids=get_msids,
+                                    interpolate_msids=True)
 
     def _get_start_status(self):
         j = -1
@@ -83,12 +94,30 @@ class LoadReview(object):
                         event = "radmon_enable"
                     if event is not None:
                         if event not in self.events:
-                            self.events[event] = defaultdict(list)
-                        self.events[event]["time"].append(words[0])
+                            self.events[event] = {"times": []}
+                        self.events[event]["times"].append(words[0])
                         time = date2secs(words[0])
                         if time < self.first_time:
                             self.first_time = time
                         if time > self.last_time:
                             self.last_time = time
                         if state is not None:
+                            if "state" not in self.events[event]:
+                                self.events[event]["state"] = []
                             self.events[event]["state"].append(state)
+
+    def __getattr__(self, item):
+        return LoadReviewEvent(item, self.events[item])
+
+    def plot(self, fields, field2=None, lw=1.5, fontsize=18,
+             colors=None, color2='magenta', fig=None, ax=None):
+        dp = DatePlot(self.ds, fields, field2=field2, lw=lw,
+                      fontsize=fontsize, colors=colors, color2=color2,
+                      fig=fig, ax=ax)
+        return dp
+
+    def multi_plot(self, fields, subplots=None,
+                   fontsize=15, lw=1.5, fig=None):
+        mdp = MultiDatePlot(self.ds, fields, subplots=subplots,
+                            fontsize=fontsize, lw=lw, fig=fig)
+        return mdp
