@@ -42,13 +42,16 @@ class LoadReviewEvent(object):
 class LoadReview(object):
     def __init__(self, load_name, get_msids=False):
         self.load_name = load_name
-        self.load_week = load_name[:-1]
+        if len(load_name) == 7:
+            self.load_week = load_name
+            oflsdir = "ofls"
+        else:
+            self.load_week = load_name[:-1]
+            oflsdir = "ofls%s" % load_name[-1].lower()
         self.load_year = "20%s" % self.load_week[5:7]
         self.next_year = str(int(self.load_year)+1)
-        self.load_letter = load_name[-1].lower()
         self.load_file = os.path.join(lr_root, self.load_year, 
-                                      self.load_week,
-                                      "ofls%s" % self.load_letter,
+                                      self.load_week, oflsdir,
                                       lr_file)
         self.events = defaultdict(dict)
         self.start_status = self._get_start_status()
