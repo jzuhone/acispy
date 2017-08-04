@@ -3,13 +3,14 @@ from acispy.dataset import ModelDataFromLoad
 from acispy.plots import DatePlot, MultiDatePlot
 from collections import defaultdict
 from Chandra.Time import date2secs, secs2date
+from Ska.Matplotlib import cxctime2plotdate
 import numpy as np
 
 lr_root = "/data/acis/LoadReviews"
 lr_file = "ACIS-LoadReview.txt"
 
-colors = {"perigee": "green",
-          "apogee": "purple",
+colors = {"perigee": "dodgerblue",
+          "apogee": "fuchsia",
           "sim_trans": "brown",
           "radmon_disable": "orange",
           "radmon_enable": "orange"}
@@ -112,7 +113,11 @@ class LoadReview(object):
                     if event is not None:
                         if event not in self.events:
                             self.events[event] = {"times": []}
-                        self.events[event]["times"].append(words[0])
+                        if event == "comm_begins":
+                            time = secs2date(date2secs(words[0])+1800.0)
+                        else:
+                            time = words[0]
+                        self.events[event]["times"].append(time)
                         time = date2secs(words[0])
                         if time < self.first_time:
                             self.first_time = time
@@ -128,16 +133,16 @@ class LoadReview(object):
 
     def _add_annotations(self, plot, annotations, tbegin, tend):
         if hasattr(plot, "plots"):
-            plots = plot.plots
+            plots = list(plot.plots.values())
         else:
             plots = [plot]
         for p in plots:
             for i, line in enumerate(p.ax.lines):
                 line.set_zorder(100-i)
-        if annotations is None:
-            annotations = list(colors.keys())
-        for key in self.events:
-            if key not in annotations:
+        plot_comms = False
+        for key in annotations:
+            if key == "comms":
+                plot_comms = True
                 continue
             color = colors[key]
             ls = styles[key]
@@ -151,11 +156,29 @@ class LoadReview(object):
                     if isinstance(text, tuple):
                         text = text[-1]
                     tdt = secs2date(tt + 3600.0)
-                    y = offsets[key]*np.sum(plot.ax.get_ylim())
-                    plot.add_text(tdt, y, text,
-                                  fontsize=15,
-                                  rotation='vertical',
-                                  color=color)
+                    y = offsets[key]*np.sum(plots[0].ax.get_ylim())
+                    plots[0].add_text(tdt, y, text,
+                                      fontsize=15,
+                                      rotation='vertical',
+                                      color=color)
+        if plot_comms:
+            tc_start = list(self.events["comm_begins"]["times"])
+            tc_end = list(self.events["comm_ends"]["times"])
+            if tc_end[0] < tc_start[0]:
+                tc_start.insert(0, self.first_time)
+            if tc_start[-1] > tc_end[-1]:
+                tc_end.append(self.last_time)
+            assert len(tc_start) == len(tc_end)
+            tc_start = date2secs(tc_start)
+            tc_end = date2secs(tc_end)
+            for p in plots:
+                ybot, ytop = p.ax.get_ylim()
+                t = np.linspace(tbegin, tend, 500)
+                tplot = cxctime2plotdate(t)
+                for tcs, tce in zip(tc_start, tc_end):
+                    in_comm = (t >= tcs) & (t <= tce)
+                    p.ax.fill_between(tplot, ybot, ytop, 
+                                      where=in_comm, color='pink')
 
     def plot(self, fields, field2=None, lw=1.5, fontsize=18,
              colors=None, color2='magenta', fig=None, ax=None,
@@ -169,7 +192,8 @@ class LoadReview(object):
         if tend is None:
             tend = self.last_time
         tend = date2secs(tend)
-        self._add_annotations(dp, annotations, tbegin, tend)
+        if annotations is not None:
+            self._add_annotations(dp, annotations, tbegin, tend)
         return dp
 
     def multi_plot(self, fields, subplots=None,
@@ -183,5 +207,6 @@ class LoadReview(object):
         if tend is None:
             tend = self.last_time
         tend = date2secs(tend)
-        self._add_annotations(mdp, annotations, tbegin, tend)
+        if annotations is not None:
+            self._add_annotations(mdp, annotations, tbegin, tend)
         return mdp
