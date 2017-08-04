@@ -1,6 +1,7 @@
 import os
 from acispy.dataset import ModelDataFromLoad
 from acispy.plots import DatePlot, MultiDatePlot
+from acispy.utils import get_time
 from collections import defaultdict
 from Chandra.Time import date2secs, secs2date
 from Ska.Matplotlib import cxctime2plotdate
@@ -23,6 +24,10 @@ styles = {"perigee": "--",
 
 offsets = {"sim_trans": 0.75}
 
+cti_simodes = ["TE_007AC", "TE_00B26", "TE_007AE",
+               "TE_00CA8", "TE_00C60", "TE_007AE",
+               "TN_000B4", "TN_000B6"]
+
 class LoadReviewEvent(object):
     def __init__(self, name, event):
         self.event = event
@@ -39,34 +44,40 @@ class LoadReview(object):
         self.load_name = load_name
         self.load_week = load_name[:-1]
         self.load_year = "20%s" % self.load_week[5:7]
+        self.next_year = str(int(self.load_year)+1)
         self.load_letter = load_name[-1].lower()
         self.load_file = os.path.join(lr_root, self.load_year, 
                                       self.load_week,
                                       "ofls%s" % self.load_letter,
                                       lr_file)
         self.events = defaultdict(dict)
-        self.first_time = 1.0e20
-        self.last_time = 0.0
         self.start_status = self._get_start_status()
         self._populate_event_times()
-        self.first_time = secs2date(self.first_time)
-        self.last_time = secs2date(self.last_time)
         self.ds = ModelDataFromLoad(load_name, get_msids=get_msids,
                                     interpolate_msids=True,
                                     time_range=[self.first_time, 
                                                 self.last_time])
+        self._find_cti_runs()
 
     def _get_start_status(self):
         j = -1
+        find_first_time = True
+        time = None
         with open(self.load_file, "r") as f:
             for i, line in enumerate(f.readlines()):
                 words = line.strip().split()
                 if len(words) > 0:
+                    if (line.startswith(self.load_year) or
+                        line.startswith(self.next_year)):
+                        time = words[0]
+                    if find_first_time and time is not None:
+                        self.first_time = time
+                        find_first_time = False
                     if line.startswith("CHANDRA STATUS ARRAY"):
                         j = i+2
                     if i == j:
                         status = line.strip().split()[-1]
-                        break
+        self.last_time = time
         status = status.strip("()").split(",")
         return status
 
@@ -118,15 +129,26 @@ class LoadReview(object):
                         else:
                             time = words[0]
                         self.events[event]["times"].append(time)
-                        time = date2secs(words[0])
-                        if time < self.first_time:
-                            self.first_time = time
-                        if time > self.last_time:
-                            self.last_time = time
                         if state is not None:
                             if "state" not in self.events[event]:
                                 self.events[event]["state"] = []
                             self.events[event]["state"].append(state)
+
+    def _find_cti_runs(self):
+        self.events["start_cti"] = {"times": [], "state": []}
+        self.events["end_cti"] = {"times": [], "state": []}
+        si_modes = self.ds["si_mode"]
+        power_cmds = self.ds["power_cmd"]
+        for mode in cti_simodes:
+            where_mode = np.logical_and(si_modes == mode, 
+                                        power_cmds == "XTZ0000005")
+            idxs = np.concatenate([[False], where_mode, [False]])
+            idxs = np.flatnonzero(idxs[1:] != idxs[:-1]).reshape(-1, 2)
+            for ii, jj in idxs:
+                self.events["start_cti"]["times"].append(si_modes.dates[0,ii])
+                self.events["end_cti"]["times"].append(si_modes.dates[0,jj+1])
+                self.events["start_cti"]["state"].append(mode)
+                self.events["end_cti"]["state"].append(mode)
 
     def __getattr__(self, item):
         return LoadReviewEvent(item, self.events[item])
@@ -140,9 +162,13 @@ class LoadReview(object):
             for i, line in enumerate(p.ax.lines):
                 line.set_zorder(100-i)
         plot_comms = False
+        plot_cti_runs = False
         for key in annotations:
             if key == "comms":
                 plot_comms = True
+                continue
+            if key == "cti_runs":
+                plot_cti_runs = True
                 continue
             color = colors[key]
             ls = styles[key]
@@ -162,23 +188,30 @@ class LoadReview(object):
                                       rotation='vertical',
                                       color=color)
         if plot_comms:
-            tc_start = list(self.events["comm_begins"]["times"])
-            tc_end = list(self.events["comm_ends"]["times"])
-            if tc_end[0] < tc_start[0]:
-                tc_start.insert(0, self.first_time)
-            if tc_start[-1] > tc_end[-1]:
-                tc_end.append(self.last_time)
-            assert len(tc_start) == len(tc_end)
-            tc_start = date2secs(tc_start)
-            tc_end = date2secs(tc_end)
-            for p in plots:
-                ybot, ytop = p.ax.get_ylim()
-                t = np.linspace(tbegin, tend, 500)
-                tplot = cxctime2plotdate(t)
-                for tcs, tce in zip(tc_start, tc_end):
-                    in_comm = (t >= tcs) & (t <= tce)
-                    p.ax.fill_between(tplot, ybot, ytop, 
-                                      where=in_comm, color='pink')
+            self._plot_bands(tbegin, tend, plots, 
+                             ["comm_begins", "comm_ends"], "pink")
+        if plot_cti_runs:
+            self._plot_bands(tbegin, tend, plots,
+                             ["start_cti", "end_cti"], "gold")
+
+    def _plot_bands(self, tbegin, tend, plots, events, color):
+        tc_start = list(self.events[events[0]]["times"])
+        tc_end = list(self.events[events[1]]["times"])
+        if tc_end[0] < tc_start[0]:
+            tc_start.insert(0, self.first_time)
+        if tc_start[-1] > tc_end[-1]:
+            tc_end.append(self.last_time)
+        assert len(tc_start) == len(tc_end)
+        tc_start = date2secs(tc_start)
+        tc_end = date2secs(tc_end)
+        for p in plots:
+            ybot, ytop = p.ax.get_ylim()
+            t = np.linspace(tbegin, tend, 500)
+            tplot = cxctime2plotdate(t)
+            for tcs, tce in zip(tc_start, tc_end):
+                in_evt = (t >= tcs) & (t <= tce)
+                p.ax.fill_between(tplot, ybot, ytop,
+                                  where=in_evt, color=color)
 
     def plot(self, fields, field2=None, lw=1.5, fontsize=18,
              colors=None, color2='magenta', fig=None, ax=None,
@@ -188,10 +221,11 @@ class LoadReview(object):
                       fig=fig, ax=ax)
         if tbegin is None:
             tbegin = self.first_time
-        tbegin = date2secs(tbegin)
         if tend is None:
             tend = self.last_time
-        tend = date2secs(tend)
+        dp.set_xlim(tbegin, tend)
+        tbegin = get_time(tbegin).secs
+        tend = get_time(tend).secs
         if annotations is not None:
             self._add_annotations(dp, annotations, tbegin, tend)
         return dp
@@ -203,10 +237,10 @@ class LoadReview(object):
                             fontsize=fontsize, lw=lw, fig=fig)
         if tbegin is None:
             tbegin = self.first_time
-        tbegin = date2secs(tbegin)
+        tbegin = get_time(tbegin).secs
         if tend is None:
             tend = self.last_time
-        tend = date2secs(tend)
+        tend = get_time(tend).secs
         if annotations is not None:
             self._add_annotations(mdp, annotations, tbegin, tend)
         return mdp
