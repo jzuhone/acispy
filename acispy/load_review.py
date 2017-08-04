@@ -54,7 +54,7 @@ class LoadReview(object):
                                       self.load_week, oflsdir,
                                       lr_file)
         self.load_letter = os.path.realpath(self.load_file)[-1]
-        self.load_name = load_week + self.load_letter.upper()
+        self.load_name = self.load_week + self.load_letter.upper()
         self.events = defaultdict(dict)
         self.start_status = self._get_start_status()
         self._populate_event_times()
