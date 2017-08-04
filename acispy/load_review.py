@@ -17,8 +17,8 @@ colors = {"perigee": "green",
 styles = {"perigee": "--",
           "apogee": "--",
           "sim_trans": "-",
-          "radmon_enable": "-",
-          "radmon_disable": "-"}
+          "radmon_enable": "--",
+          "radmon_disable": "--"}
 
 offsets = {"sim_trans": 0.75}
 
@@ -126,9 +126,14 @@ class LoadReview(object):
     def __getattr__(self, item):
         return LoadReviewEvent(item, self.events[item])
 
-    def _add_annotations(self, plot, annotations):
-        for i, line in enumerate(plot.ax.lines):
-            line.set_zorder(100-i)
+    def _add_annotations(self, plot, annotations, tbegin, tend):
+        if hasattr(plot, "plots"):
+            plots = plot.plots
+        else:
+            plots = [plot]
+        for p in plots:
+            for i, line in enumerate(p.ax.lines):
+                line.set_zorder(100-i)
         if annotations is None:
             annotations = list(colors.keys())
         for key in self.events:
@@ -137,12 +142,15 @@ class LoadReview(object):
             color = colors[key]
             ls = styles[key]
             for i, t in enumerate(self.events[key]["times"]):
+                tt = date2secs(t)
+                if tt < tbegin or tt > tend:
+                    continue
                 plot.add_vline(t, color=color, ls=ls)
                 if "state" in self.events[key]:
                     text = self.events[key]["state"][i]
                     if isinstance(text, tuple):
                         text = text[-1]
-                    tdt = secs2date(date2secs(t) + 3600.0)
+                    tdt = secs2date(tt + 3600.0)
                     y = offsets[key]*np.sum(plot.ax.get_ylim())
                     plot.add_text(tdt, y, text,
                                   fontsize=15,
@@ -151,17 +159,29 @@ class LoadReview(object):
 
     def plot(self, fields, field2=None, lw=1.5, fontsize=18,
              colors=None, color2='magenta', fig=None, ax=None,
-             tmin=None, tmax=None, annotations=None):
+             tbegin=None, tend=None, annotations=None):
         dp = DatePlot(self.ds, fields, field2=field2, lw=lw,
                       fontsize=fontsize, colors=colors, color2=color2,
                       fig=fig, ax=ax)
-        self._add_annotations(dp, annotations)
+        if tbegin is None:
+            tbegin = self.first_time
+        tbegin = date2secs(tbegin)
+        if tend is None:
+            tend = self.last_time
+        tend = date2secs(tend)
+        self._add_annotations(dp, annotations, tbegin, tend)
         return dp
 
     def multi_plot(self, fields, subplots=None,
                    fontsize=15, lw=1.5, fig=None,
-                   tmin=None, tmax=None, annotations=None):
+                   tbegin=None, tend=None, annotations=None):
         mdp = MultiDatePlot(self.ds, fields, subplots=subplots,
                             fontsize=fontsize, lw=lw, fig=fig)
-        self._add_annotations(mdp, annotations)
+        if tbegin is None:
+            tbegin = self.first_time
+        tbegin = date2secs(tbegin)
+        if tend is None:
+            tend = self.last_time
+        tend = date2secs(tend)
+        self._add_annotations(mdp, annotations, tbegin, tend)
         return mdp
