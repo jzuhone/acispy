@@ -50,10 +50,10 @@ class LoadReview(object):
             oflsdir = "ofls%s" % load_name[-1].lower()
         self.load_year = "20%s" % self.load_week[5:7]
         self.next_year = str(int(self.load_year)+1)
-        self.load_file = os.path.join(lr_root, self.load_year, 
-                                      self.load_week, oflsdir,
-                                      lr_file)
-        self.load_letter = os.path.realpath(self.load_file)[-1]
+        oflsdir = os.path.join(lr_root, self.load_year,
+                               self.load_week, oflsdir)
+        self.load_file = os.path.join(oflsdir, lr_file)
+        self.load_letter = os.path.realpath(oflsdir)[-1]
         self.load_name = self.load_week + self.load_letter.upper()
         self.events = defaultdict(dict)
         self.start_status = self._get_start_status()
