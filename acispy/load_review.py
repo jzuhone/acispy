@@ -182,7 +182,8 @@ class LoadReview(object):
                     if isinstance(text, tuple):
                         text = text[-1]
                     tdt = secs2date(tt + 3600.0)
-                    y = offsets[key]*np.sum(plots[0].ax.get_ylim())
+                    ymin, ymax = plots[0].ax.get_ylim()
+                    y = (1.0-offsets[key])*ymin+offsets[key]*ymax
                     plots[0].add_text(tdt, y, text,
                                       fontsize=15,
                                       rotation='vertical',
