@@ -53,10 +53,12 @@ class LoadReview(object):
         self.load_file = os.path.join(lr_root, self.load_year, 
                                       self.load_week, oflsdir,
                                       lr_file)
+        self.load_letter = os.path.realpath(self.load_file)[-1]
+        self.load_name = load_week + self.load_letter.upper()
         self.events = defaultdict(dict)
         self.start_status = self._get_start_status()
         self._populate_event_times()
-        self.ds = ModelDataFromLoad(load_name, get_msids=get_msids,
+        self.ds = ModelDataFromLoad(self.load_name, get_msids=get_msids,
                                     interpolate_msids=True,
                                     time_range=[self.first_time, 
                                                 self.last_time])
