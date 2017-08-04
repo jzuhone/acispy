@@ -390,7 +390,15 @@ class DatePlot(CustomDatePlot):
         for label in self.ax.get_yticklabels():
             label.set_fontproperties(fontProperties)
         ymin, ymax = self.ax.get_ylim()
-        self.ax.set_ylim(0.9 * ymin, 1.1 * ymax)
+        if ymin > 0:
+            ymin *= 0.95
+        else:
+            ymin *= 1.05
+        if ymax > 0:
+            ymax *= 1.05
+        else:
+            ymax *= 0.95
+        self.ax.set_ylim(ymin, ymax)
         units = ds.fields[self.fields[0]].units
         if self.num_fields > 1:
             if units == '':
@@ -431,7 +439,15 @@ class DatePlot(CustomDatePlot):
             for label in self.ax2.get_yticklabels():
                 label.set_fontproperties(fontProperties)
             ymin2, ymax2 = self.ax2.get_ylim()
-            self.ax2.set_ylim(0.9*ymin2, 1.1*ymax2)
+            if ymin2 > 0:
+                ymin2 *= 0.95
+            else:
+                ymin2 *= 1.05
+            if ymax2 > 0:
+                ymax2 *= 1.05
+            else:
+                ymax2 *= 0.95
+            self.ax2.set_ylim(ymin2, ymax2)
             units2 = ds.fields[field2].units
             ylabel2 = ds.fields[field2].display_name
             if units2 != '':
