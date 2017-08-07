@@ -159,21 +159,16 @@ class LoadReview(object):
         return LoadReviewEvent(item, self.events[item])
 
     def _add_annotations(self, plot, annotations, tbegin, tend):
-        if hasattr(plot, "plots"):
-            plots = list(plot.plots.values())
-        else:
-            plots = [plot]
-        for p in plots:
-            for i, line in enumerate(p.ax.lines):
-                line.set_zorder(100-i)
+        for i, line in enumerate(plot.ax.lines):
+            line.set_zorder(100-i)
         plot_comms = False
-        plot_cti_runs = False
+        plot_belts = False
         for key in annotations:
             if key == "comms":
                 plot_comms = True
                 continue
-            if key == "cti_runs":
-                plot_cti_runs = True
+            if key == "belts":
+                plot_belts = True
                 continue
             color = colors[key]
             ls = styles[key]
@@ -186,21 +181,21 @@ class LoadReview(object):
                     text = self.events[key]["state"][i]
                     if isinstance(text, tuple):
                         text = text[-1]
-                    tdt = secs2date(tt + 3600.0)
-                    ymin, ymax = plots[0].ax.get_ylim()
+                    tdt = secs2date(tt + 1800.0)
+                    ymin, ymax = plot.ax.get_ylim()
                     y = (1.0-offsets[key])*ymin+offsets[key]*ymax
-                    plots[0].add_text(tdt, y, text,
-                                      fontsize=15,
-                                      rotation='vertical',
-                                      color=color)
-        if plot_comms:
-            self._plot_bands(tbegin, tend, plots, 
-                             ["comm_begins", "comm_ends"], "pink")
-        if plot_cti_runs:
-            self._plot_bands(tbegin, tend, plots,
-                             ["start_cti", "end_cti"], "gold")
+                    plot.add_text(tdt, y, text, fontsize=15,
+                                  rotation='vertical', color=color)
 
-    def _plot_bands(self, tbegin, tend, plots, events, color):
+        if plot_comms:
+            self._plot_bands(tbegin, tend, plot, 
+                             ["comm_begins", "comm_ends"], "pink")
+        if plot_belts:
+            self._plot_bands(tbegin, tend, plot,
+                             ["radmon_disable", "radmon_enable"], 
+                             "mediumpurple", alpha=0.333333)
+
+    def _plot_bands(self, tbegin, tend, plot, events, color, alpha=1.0):
         tc_start = list(self.events[events[0]]["times"])
         tc_end = list(self.events[events[1]]["times"])
         if tc_end[0] < tc_start[0]:
@@ -210,43 +205,35 @@ class LoadReview(object):
         assert len(tc_start) == len(tc_end)
         tc_start = date2secs(tc_start)
         tc_end = date2secs(tc_end)
-        for p in plots:
-            ybot, ytop = p.ax.get_ylim()
-            t = np.linspace(tbegin, tend, 500)
-            tplot = cxctime2plotdate(t)
-            for tcs, tce in zip(tc_start, tc_end):
-                in_evt = (t >= tcs) & (t <= tce)
-                p.ax.fill_between(tplot, ybot, ytop,
-                                  where=in_evt, color=color)
+        ybot, ytop = plot.ax.get_ylim()
+        t = np.linspace(tbegin, tend, 500)
+        tplot = cxctime2plotdate(t)
+        for tcs, tce in zip(tc_start, tc_end):
+            in_evt = (t >= tcs) & (t <= tce)
+            plot.ax.fill_between(tplot, ybot, ytop,
+                                 where=in_evt, color=color,
+                                 alpha=alpha)
 
     def plot(self, fields, field2=None, lw=1.5, fontsize=18,
              colors=None, color2='magenta', fig=None, ax=None,
-             tbegin=None, tend=None, annotations=None):
+             tbegin=None, tend=None, annotations=None, ymin=None,
+             ymax=None):
         dp = DatePlot(self.ds, fields, field2=field2, lw=lw,
                       fontsize=fontsize, colors=colors, color2=color2,
                       fig=fig, ax=ax)
+        ylimits = dp.ax.get_ylim()
+        if ymin is None:
+            ymin = ylimits[0]
+        if ymax is None:
+            ymax = ylimits[1]
+        dp.set_ylim(ymin, ymax)
         if tbegin is None:
             tbegin = self.first_time
         if tend is None:
             tend = self.last_time
-        dp.set_xlim(tbegin, tend)
         tbegin = get_time(tbegin).secs
         tend = get_time(tend).secs
         if annotations is not None:
             self._add_annotations(dp, annotations, tbegin, tend)
+        dp.set_xlim(secs2date(tbegin), secs2date(tend))        
         return dp
-
-    def multi_plot(self, fields, subplots=None,
-                   fontsize=15, lw=1.5, fig=None,
-                   tbegin=None, tend=None, annotations=None):
-        mdp = MultiDatePlot(self.ds, fields, subplots=subplots,
-                            fontsize=fontsize, lw=lw, fig=fig)
-        if tbegin is None:
-            tbegin = self.first_time
-        tbegin = get_time(tbegin).secs
-        if tend is None:
-            tend = self.last_time
-        tend = get_time(tend).secs
-        if annotations is not None:
-            self._add_annotations(mdp, annotations, tbegin, tend)
-        return mdp
