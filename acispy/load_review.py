@@ -163,6 +163,7 @@ class LoadReview(object):
             line.set_zorder(100-i)
         plot_comms = False
         plot_belts = False
+        plot_cti_runs = False
         for key in annotations:
             if key == "comms":
                 plot_comms = True
@@ -170,6 +171,9 @@ class LoadReview(object):
             if key == "belts":
                 plot_belts = True
                 continue
+            if key == "cti_runs":
+                plot_cti_runs = True
+                continue 
             color = colors[key]
             ls = styles[key]
             for i, t in enumerate(self.events[key]["times"]):
@@ -194,6 +198,10 @@ class LoadReview(object):
             self._plot_bands(tbegin, tend, plot,
                              ["radmon_disable", "radmon_enable"], 
                              "mediumpurple", alpha=0.333333)
+        if plot_cti_runs:
+            self._plot_bands(tbegin, tend, plot,
+                             ["start_cti", "end_cti"], "orange")
+
 
     def _plot_bands(self, tbegin, tend, plot, events, color, alpha=1.0):
         tc_start = list(self.events[events[0]]["times"])
