@@ -225,7 +225,7 @@ class LoadReview(object):
     def plot(self, fields, field2=None, lw=1.5, fontsize=18,
              colors=None, color2='magenta', fig=None, ax=None,
              tbegin=None, tend=None, annotations=None, ymin=None,
-             ymax=None):
+             ymax=None, ymin2=None, ymax2=None):
         dp = DatePlot(self.ds, fields, field2=field2, lw=lw,
                       fontsize=fontsize, colors=colors, color2=color2,
                       fig=fig, ax=ax)
@@ -235,6 +235,13 @@ class LoadReview(object):
         if ymax is None:
             ymax = ylimits[1]
         dp.set_ylim(ymin, ymax)
+        if field2 is not None:
+            ylimits2 = dp.ax2.get_ylim()
+            if ymin2 is None:
+                ymin2 = ylimits2[0]
+            if ymax2 is None:
+                ymax2 = ylimits2[1]
+            dp.set_ylim2(ymin2, ymax2)
         if tbegin is None:
             tbegin = self.first_time
         if tend is None:
@@ -243,5 +250,5 @@ class LoadReview(object):
         tend = get_time(tend).secs
         if annotations is not None:
             self._add_annotations(dp, annotations, tbegin, tend)
-        dp.set_xlim(secs2date(tbegin), secs2date(tend))        
+        dp.set_xlim(secs2date(tbegin), secs2date(tend))
         return dp
