@@ -129,8 +129,8 @@ class LoadReview(object):
                     if event is not None:
                         if event not in self.events:
                             self.events[event] = {"times": []}
-                        if event == "comm_begins":
-                            time = secs2date(date2secs(words[0])+1800.0)
+                        if event == "comm_ends":
+                            time = secs2date(date2secs(words[0])-1800.0)
                         else:
                             time = words[0]
                         self.events[event]["times"].append(time)
