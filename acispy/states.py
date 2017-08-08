@@ -8,6 +8,8 @@ from acispy.time_series import TimeSeriesData
 
 cmd_state_codes = {("states", "hetg"): {"RETR": 0, "INSR": 1},
                    ("states", "letg"): {"RETR": 0, "INSR": 1},
+                   ("states", "grating"): {"NONE": 0, "LETG": 1,
+                                           "HETG": 2},
                    ("states", "dither"): {"DISA": 0, "ENAB": 1},
                    ("states", "pcad_mode"): {"STBY": 0, "NPNT": 1, 
                                              "NMAN": 2, "NSUN": 3, 

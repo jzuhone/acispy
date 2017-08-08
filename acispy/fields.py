@@ -1,5 +1,6 @@
-from acispy.units import APQuantity
+from acispy.units import APQuantity, APStringArray
 from acispy.utils import calc_off_nom_rolls
+import numpy as np
 
 class OutputFieldFunction(object):
     def __init__(self, ftype, fname):
@@ -52,6 +53,17 @@ def create_derived_fields(dset):
     dset.add_derived_field("states", "off_nominal_roll", _off_nominal_roll,
                            "deg", display_name="Off-Nominal Roll")
 
+    # Grating
+
+    def _grating(ds):
+        grat = np.array(["NONE"]*ds.states["hetg"].value.size)
+        grat[ds.states["hetg"] == "INSR"] = "HETG"
+        grat[ds.states["letg"] == "INSR"] = "LETG"
+        return APStringArray(grat, ds.states["hetg"].times)
+
+    dset.add_derived_field("states", "grating", _grating, "",
+                           display_name="Grating")
+    
     # DPA, DEA powers
 
     def _dpaa_power(ds):
