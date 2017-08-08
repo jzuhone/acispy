@@ -40,7 +40,8 @@ class LoadReviewEvent(object):
         return self.event[item]
 
 class LoadReview(object):
-    def __init__(self, load_name, get_msids=False):
+    def __init__(self, load_name, get_msids=False,
+                 tl_file=None):
         self.load_name = load_name
         if len(load_name) == 7:
             self.load_week = load_name
@@ -59,9 +60,8 @@ class LoadReview(object):
         self.start_status = self._get_start_status()
         self._populate_event_times()
         self.ds = ModelDataFromLoad(self.load_name, get_msids=get_msids,
-                                    interpolate_msids=True,
-                                    time_range=[self.first_time, 
-                                                self.last_time])
+                                    interpolate_msids=True, tl_file=tl_file,
+                                    time_range=[self.first_time, self.last_time])
         self._find_cti_runs()
 
     def _get_start_status(self):
