@@ -5,6 +5,15 @@ from astropy.io import ascii
 import numpy as np
 from acispy.units import APQuantity, APStringArray, Quantity
 from acispy.time_series import TimeSeriesData
+import six
+
+if six.PY2:
+    str_type = "|S4"
+else:
+    str_type = "|U4"
+
+tl_states = ["1dppsax", "1dppsa", "1dppsbx", "1dppsb",
+             "1depsax", "1depsa", "1depsbx", "1depsb"]
 
 class MSIDs(TimeSeriesData):
     def __init__(self, table, times, state_codes=None, masks=None):
@@ -60,12 +69,17 @@ class MSIDs(TimeSeriesData):
     def from_tracelog(cls, filename):
         f = open(filename, "r")
         header = f.readline().split()
-        dtype = [(msid.lower(), '<f8') for msid in header]
+        dtype = []
+        for msid in header:
+            if msid.lower() in tl_states:
+                dtype.append((msid.lower(), str_type))
+            else:
+                dtype.append((msid.lower(), '<f8'))
         data = []
         for line in f:
             words = line.split()
             if len(words) == len(header):
-                data.append(tuple(map(float, words)))
+                data.append(tuple(words))
         f.close()
         data = np.array(data, dtype=dtype)
         # Convert times in the TIME column to Chandra 1998 time
