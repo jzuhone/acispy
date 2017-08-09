@@ -15,8 +15,8 @@ colors = {"perigee": "dodgerblue",
           "sim_trans": "brown",
           "radmon_disable": "orange",
           "radmon_enable": "orange",
-          "start_cti": "fuchsia",
-          "end_cti": "fuchsia"}
+          "start_cti": "darkgreen",
+          "end_cti": "darkgreen"}
 
 styles = {"perigee": "--",
           "apogee": ":",
