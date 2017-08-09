@@ -11,16 +11,20 @@ lr_root = "/data/acis/LoadReviews"
 lr_file = "ACIS-LoadReview.txt"
 
 colors = {"perigee": "dodgerblue",
-          "apogee": "fuchsia",
+          "apogee": "dodgerblue",
           "sim_trans": "brown",
           "radmon_disable": "orange",
-          "radmon_enable": "orange"}
+          "radmon_enable": "orange",
+          "start_cti": "fuchsia",
+          "end_cti": "fuchsia"}
 
 styles = {"perigee": "--",
-          "apogee": "--",
+          "apogee": ":",
           "sim_trans": "-",
           "radmon_enable": "--",
-          "radmon_disable": "--"}
+          "radmon_disable": "--",
+          "start_cti": '--',
+          "end_cti": '--'}
 
 offsets = {"sim_trans": 0.75}
 
@@ -163,7 +167,6 @@ class LoadReview(object):
             line.set_zorder(100-i)
         plot_comms = False
         plot_belts = False
-        plot_cti_runs = False
         for key in annotations:
             if key == "comms":
                 plot_comms = True
@@ -171,9 +174,6 @@ class LoadReview(object):
             if key == "belts":
                 plot_belts = True
                 continue
-            if key == "cti_runs":
-                plot_cti_runs = True
-                continue 
             color = colors[key]
             ls = styles[key]
             for i, t in enumerate(self.events[key]["times"]):
@@ -181,7 +181,7 @@ class LoadReview(object):
                 if tt < tbegin or tt > tend:
                     continue
                 plot.add_vline(t, color=color, ls=ls)
-                if "state" in self.events[key]:
+                if "state" in self.events[key] and key in offsets:
                     text = self.events[key]["state"][i]
                     if isinstance(text, tuple):
                         text = text[-1]
@@ -191,16 +191,15 @@ class LoadReview(object):
                     plot.add_text(tdt, y, text, fontsize=15,
                                   rotation='vertical', color=color)
 
-        if plot_comms:
-            self._plot_bands(tbegin, tend, plot, 
-                             ["comm_begins", "comm_ends"], "pink")
         if plot_belts:
             self._plot_bands(tbegin, tend, plot,
                              ["radmon_disable", "radmon_enable"], 
                              "mediumpurple", alpha=0.333333)
-        if plot_cti_runs:
+
+        if plot_comms:
             self._plot_bands(tbegin, tend, plot,
-                             ["start_cti", "end_cti"], "orange")
+                             ["comm_begins", "comm_ends"], "pink",
+                             alpha=1.0)
 
 
     def _plot_bands(self, tbegin, tend, plot, events, color, alpha=1.0):
