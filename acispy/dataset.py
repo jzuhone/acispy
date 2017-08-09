@@ -43,7 +43,7 @@ class Dataset(object):
     def _populate_fields(self, ftype, obj):
         for fname in obj.keys():
             func = OutputFieldFunction(ftype, fname)
-            unit = get_units(ftype, fname)
+            unit = str(getattr(obj[fname], "unit", ""))
             display_name = get_display_name(ftype, fname)
             df = DerivedField(ftype, fname, func, unit,
                               display_name=display_name)
@@ -186,10 +186,10 @@ class Dataset(object):
             state_times = ds.times("states", state)[1]
             indexes = np.searchsorted(state_times, msid_times)
             v = ds["states", state][indexes].value
-            if v.dtype.char != 'S':
-                return APQuantity(v, msid_times, unit=units)
-            else:
+            if v.dtype.char in ['S', 'U']:
                 return APStringArray(v, msid_times)
+            else:
+                return APQuantity(v, msid_times, unit=units)
         self.add_derived_field(ftype, state, _state, units,
                                display_name=self.fields["states", state].display_name)
 
