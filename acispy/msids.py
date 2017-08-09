@@ -28,7 +28,7 @@ class MSIDs(TimeSeriesData):
             if v.dtype.char in ['S', 'U']:
                 self.table[k] = APStringArray(v, t, mask=mask)
             else:
-                unit = get_units("model", k)
+                unit = get_units("msids", k)
                 self.table[k] = APQuantity(v, t, unit=unit, dtype=v.dtype, 
                                            mask=mask)
         self.state_codes = state_codes
