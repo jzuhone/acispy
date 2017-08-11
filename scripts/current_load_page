@@ -1,0 +1,336 @@
+#!/usr/bin/env python
+
+from datetime import datetime, timedelta
+import os
+import time
+import matplotlib
+matplotlib.use("agg")
+import acispy
+import matplotlib.pyplot as plt
+from Chandra.Time import date2secs, secs2date
+
+load_root = "/data/acis/LoadReviews"
+review_file = "ACIS-LoadReview.txt"
+outfile = "/data/wdocs/jzuhone/current_acis_load.html"
+
+plot_limits = {"fptemp_11": (-120.0, -110.0),
+               "1deamzt": (5.0, 42.0),
+               "1dpamzt": (5.0, 42.0),
+               "1pdeaat": (15.0, 63.0)}
+planning_limits = {"1deamzt": 35.5,
+                   "1dpamzt": 35.5,
+                   "1pdeaat": 52.5}
+yellow_limits = {"1deamzt": 37.5,
+                 "1dpamzt": 37.5,
+                 "1pdeaat": 57.0}
+red_limits = {"1deamzt": 40.5,
+              "1dpamzt": 40.5,
+              "1pdeaat": 62.0}
+
+def find_the_load(now_time_utc, year_string, last_year_string):
+
+    # Now we check for the currently running load. We start today
+    # and begin working backwards, assembling possible filenames 
+    # for load review text files. If a file exists, we open it 
+    # and check for the time of the first command. If that time
+    # is less than the current time, we found the load.
+
+    found_load = False
+
+    for j in range(0, 16):
+        # Step backward in time the past 15 days to look for the load
+        time_utc = now_time_utc - timedelta(days=j)
+        # Assemble the name of the load review directory
+        load_year = str(time_utc.year)
+        day = "%02d" % time_utc.day
+        month = time_utc.strftime("%b").upper()
+        load_dir = "".join([month, day, load_year[-2:]])
+        # Now assemble the full filename and check to see if it exists
+        oflsdir = os.path.join(load_root, load_year, load_dir, "ofls")
+        fn = os.path.join(oflsdir, review_file)
+        if os.path.exists(fn):
+            # Open the file and search for the first time
+            with open(fn, "r") as infile:
+                for line in infile:
+                    if line.startswith(year_string) or line.startswith(last_year_string):
+                        words = line.strip().split()
+                        # First time found, so check to see if 
+                        # it is less than the current time
+                        the_time = datetime.strptime(words[0], "%Y:%j:%H:%M:%S.%f")
+                        if the_time < now_time_utc:
+                            found_load = True
+                            break
+        if found_load:
+            # Don't check anymore
+            break
+
+    # If for some reason we didn't find it, error out.
+    if not found_load:
+        raise RuntimeError("The current load could not be found!")
+    
+    load_name = load_dir+os.path.realpath(oflsdir)[-1].upper()
+
+    return load_year, load_dir, load_name
+ 
+def process_load(load_year, load_dir):
+
+    obsid_link = "https://icxc.harvard.edu/cgi-bin/mp/target_param.cgi?"
+
+    next_year = str(int(load_year)+1)
+
+    infile = os.path.join(load_root, load_year, load_dir, "ofls", review_file)
+
+    f = open(infile, 'r')
+    inlines = f.readlines()
+    f.close()
+
+    outlines = []
+
+    inScience = False
+    instr = "NONE"
+    grating = "NOT_SET"
+    zsim = "99.99"
+    radzone = 0  # not in radzone
+    find_first_status = True
+
+    for i, line in enumerate(inlines):
+    
+        the_pad = ""
+        a_line = line.strip()
+        words = a_line.split()
+        
+        the_line = None
+
+        # Pad lines so highlighting happens across the page
+        if len(a_line) < 74:
+            the_pad = ' '*(74 - len(a_line))
+            a_line = a_line + the_pad
+    
+        # Parse the first status
+        if a_line.startswith("CHANDRA STATUS ARRAY AT START") and find_first_status:
+            find_first_status = False
+            stat_words = inlines[i+2].strip().split(",")
+            instr = stat_words[0][3:]
+            if stat_words[1].endswith("IN"):
+                grating = "HETG"
+            elif stat_words[2].endswith("IN"):
+                grating = "LETG"
+            else:
+                grating = "NONE"
+            if stat_words[4] == "OORMPDS":
+                radzone = 1
+
+        # Color obsid changes pink
+        if "MP_OBSID" in a_line:
+            if int(words[-1]) > 40000:
+                the_line = a_line
+            else:
+                obsid = "<a href=\"%s%s\"><font color=\"blue\">%s</font></a>" % (obsid_link, words[-1], words[-1])
+                the_line = "%s    %s  MP_OBSID    %s                       " % (words[0], words[1], obsid)
+            the_line = "<obsidline>%s</obsidline>" % the_line
+
+        # Highlight radmon entry/exit, triplet, first ascending ACIS stop science
+        if "COMMAND_SW" in a_line and "OORMP" in a_line:
+            the_line = "<padtime>%s</padtime>" % a_line
+            if "OORMPDS" in a_line:
+                radzone += 1
+            else:
+                radzone = 0
+
+        if radzone != 0:
+            if radzone == 1 and inScience and "AA00000000" in a_line:
+                # Looking for descending stop science?
+                radzone += 1
+            elif radzone == 2 and ("AA00000000" in a_line or
+                                   "WSVIDALLDN" in a_line or 
+                                   "RS_0000001" in a_line):
+                the_line = "<padtime>%s</padtime>" % a_line
+                if "RS_0000001" in a_line:
+                    # radzone state 3 - look for ascend ACIS cmd
+                    radzone += 1
+            elif radzone == 2 and "POINT" in a_line and "EPERIGEE" in a_line:
+                # Missing triplet
+                radzone += 1
+            elif radzone == 3 and "ACISPKT" in a_line:
+                # first asc CTI ACIS cmd?
+                the_line =  "<padtime>%s</padtime>" % a_line
+                radzone += 1
+
+        # Start science
+        if not inScience and "Z0000005" in a_line:
+            inScience = True
+
+        # Stop science
+        if inScience and "AA00000000" in a_line:
+            inScience = False
+
+        # Highlight comms in blue
+        if "REAL-TIME COMM" in a_line:
+            if "ENDS" in a_line:
+                time1 = secs2date(date2secs(words[0])-1800.0)
+                time2 = secs2date(date2secs(words[-2])-1800.0)
+                the_line = "%s   REAL-TIME COMM ENDS     %s  EDT" % (time1, time2)
+            elif "BEGINS" in a_line:
+                the_line = a_line[:71]
+            the_line = "<commline>%s</commline>" % the_line
+
+        if "COMM DURATION" in a_line:
+            duration = float(words[-2]) - 30.0
+            the_line = "==> COMM DURATION:  %4.2f mins." % duration
+
+        # Mechanical motions
+        if "COMMAND_SW" in a_line and "ETG" in a_line or "SIMTRANS" in a_line:
+            the_line = "<mechline>%s</mechline>" % a_line
+
+        if the_line is None:
+            if a_line.startswith(load_year) or \
+               a_line.startswith(next_year) or \
+               "WSPOW COMMAND LOADS" in a_line or \
+               "CHANDRA STATUS ARRAY" in a_line or \
+               "ACIS integration time" in a_line or \
+               "requested time" in a_line or \
+               "ObsID change" in a_line or \
+               "THERE IS A Z-SIM" in a_line or \
+               "==> DITHER" in a_line:
+                the_line = a_line
+
+        if the_line is not None:
+            outlines.append(the_line)
+            outlines.append(" ")
+
+    outlines += ["</pre>", "</body>"]
+
+    return outlines
+
+find_load = True
+lr = None
+last_tl_ts = 0.0
+load_name = ""
+
+while True:
+
+    # Find the current time                                                                                                    
+    now_time_utc = datetime.utcnow()
+    now_time_local = datetime.now()
+    year_string = "%s:" % now_time_utc.year
+    last_year_string = "%s:" % (now_time_utc.year-1)
+    next_year_string = "%s:" % (now_time_utc.year+1)
+
+    if find_load:
+        load_year, load_dir, load_name = find_the_load(now_time_utc, year_string, last_year_string)
+        outlines = process_load(load_year, load_dir)
+        find_load = False
+        
+    find_time = True
+
+    # HTML header stuff                                                                                        
+
+    newlines = ['<?xml version="1.0" encoding="UTF-8">',
+                '<!DOCTYPE html PUBLIC "-//W3C/DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">',
+                '<html lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml">',
+                '<head>\n<meta http-equiv="refresh" content="30" />',
+                '<title>Current ACIS Load Real-Time</title>',
+                '<link href="lr_web.css" rel="stylesheet" type="text/css">\n</head>',
+                '<body text="#000000" bgcolor="#ffffff" link="#ff0000" vlink="#ffff22" alink="#7500FF">\n<pre>',
+                '<h1><font face="times">Current ACIS Load Real-Time</font></h1>',
+                "<a name=\"review\"><h2><font face=\"times\">Load Commands</font></h2></a>",
+                "<font face=\"times\">This is the <a href=\"http://cxc.cfa.harvard.edu/acis/lr_texts/2017/%s_lr.html\"><font style=\"color:blue\">%s</font></a> load.</font>" % (load_name, load_name),
+                " ", " "]
+
+    the_time = now_time_utc - timedelta(days=2)
+    begin_time = now_time_utc - timedelta(days=1)
+    end_time = now_time_utc + timedelta(days=1)
+
+    for i, outline in enumerate(outlines):
+        # Now check for the current time                                                                             
+        if year_string in outline or next_year_string in outline:
+            idx = outline.find(year_string)
+            if idx < 0:
+                idx = outline.find(next_year_string)
+            the_time = datetime.strptime(outline[idx:idx+17], "%Y:%j:%H:%M:%S")            
+            if the_time > now_time_utc and find_time:
+                new_line = '<a name="now"></a>NOW: %s (%s)' % (now_time_utc.strftime("%Y:%j:%H:%M:%S"),
+                                                               now_time_local.strftime("%D %H:%M:%S"))
+                new_line += ' '*(92 - len(new_line))
+                new_line = '<font style="background-color:#5AC831"><b>%s</b></font>\n' % new_line
+                newlines.append(new_line)
+                find_time = False        
+        if the_time >= begin_time and the_time <= end_time:
+             newlines.append(outline.strip())    
+
+    if find_time:
+        # Need to determine the load again because we ran out
+        find_load = True
+        lr = None
+    else:
+        tl_ts = os.path.getmtime("/data/acis/eng_plots/acis_eng_10day.tl")
+        if lr is None or tl_ts != last_tl_ts:
+            lr = acispy.LoadReview(load_dir, get_msids=True, 
+                                   tl_file="/data/acis/eng_plots/acis_eng_10day.tl")
+            last_tl_ts = tl_ts
+
+        tnow = now_time_utc.strftime("%Y:%j:%H:%M:%S")
+
+        tbegin = secs2date(max(date2secs(tnow)-3600.0*24.0, date2secs(lr.first_time)))
+        tend = secs2date(min(date2secs(tnow)+3600.0*24.0, date2secs(lr.last_time)))
+
+        for temp in ["fptemp_11", "1dpamzt", "1deamzt", "1pdeaat"]:
+            fields = [("model", temp)]
+            if temp != "fptemp_11":
+                fields.append(("msids", temp))
+            dp = lr.plot(fields, field2="pitch", annotations=["belts","sim_trans","comms", "perigee","start_cti", "end_cti"],
+                         tbegin=tbegin, tend=tend, fig=plt.figure(figsize=(10,8)), ymin=plot_limits[temp][0],
+                         ymax=plot_limits[temp][1])
+            dp.add_vline(tnow, lw=3)
+            title_str = "%s\nCurrent %s prediction: %g $\mathrm{^\circ{C}}$\nCurrent pitch: %g degrees"
+            dp.set_title(title_str % (tnow, temp.upper(), lr.ds["model", temp][tnow].value, lr.ds["pitch"][tnow].value))
+            if temp != "fptemp_11":
+                dp.add_hline(planning_limits[temp], color='g')
+                dp.add_hline(yellow_limits[temp], color='gold')
+                dp.add_hline(red_limits[temp], color='r')
+            dp.fig.subplots_adjust(right=0.8)
+            dp.savefig("/data/wdocs/jzuhone/current_%s.png" % temp)
+
+        w1, h1 = dp.fig.get_size_inches()
+
+        ccd = lr.plot("ccd_count", field2=("states","simpos"), tbegin=tbegin, tend=tend, 
+                      annotations=["belts","sim_trans","comms", "perigee", "start_cti", "end_cti"],
+                      fig=plt.figure(figsize=(10,8)))
+        ccd.add_vline(tnow, lw=3)
+        title_str = "%s\nCurrent CCD count: %d\nCurrent SIM-Z: %g" % (tnow, lr.ds["ccd_count"][tnow].value,
+                                                                      lr.ds["states","simpos"][tnow].value)
+        ccd.set_title(title_str)
+
+        w2, h2 = ccd.fig.get_size_inches()
+        lm = dp.fig.subplotpars.left*w1/w2
+        rm = dp.fig.subplotpars.right*w1/w2
+        ccd.fig.subplots_adjust(left=lm, right=rm)
+        ccd.savefig("/data/wdocs/jzuhone/current_ccd.png")
+
+        roll = lr.plot("off_nominal_roll", field2="grating", tbegin=tbegin, tend=tend, ymin=-20.0, ymax=20.0,
+                       annotations=["belts","sim_trans","comms", "perigee","start_cti", "end_cti"],
+                       fig=plt.figure(figsize=(10,8)))
+        roll.add_vline(tnow, lw=3)
+        title_str = "%s\nCurrent Off-nominal roll: %4.3f degree\nGrating: %s" % (tnow, 
+                                                                                 lr.ds["off_nominal_roll"][tnow].value,
+                                                                                 lr.ds["grating"][tnow])
+        roll.set_title(title_str)
+
+        w3, h3 = roll.fig.get_size_inches()
+        lm = dp.fig.subplotpars.left*w1/w2
+        rm = dp.fig.subplotpars.right*w1/w2
+        roll.fig.subplots_adjust(left=lm, right=rm)
+        roll.savefig("/data/wdocs/jzuhone/current_roll.png")
+
+        plt.close("all")
+
+        newlines.append("<a name=\"plots\"><h2><font face=\"times\">Temperature Models</font></h2></a>")
+        newlines.append("<a href=\"http://cxc.cfa.harvard.edu/acis/Thermal/%s/%s.html\"><font face=\"times\" color=\"blue\">Full thermal models for %s</font></a>" % (load_year, load_dir, load_name))
+        for fig in ["fptemp_11", "1dpamzt", "1deamzt", "1pdeaat", "ccd", "roll"]:
+            newlines.append("<img src=\"current_%s.png\" />" % fig)
+            newlines.append("<p />")
+
+        f = open(outfile, "w")
+        f.write("\n".join(newlines))
+        f.close()
+        time.sleep(30)
