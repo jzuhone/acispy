@@ -7,6 +7,7 @@ from collections import defaultdict
 from Chandra.Time import date2secs, secs2date
 from Ska.Matplotlib import cxctime2plotdate
 import numpy as np
+from datetime import datetime
 
 lr_root = "/data/acis/LoadReviews"
 lr_file = "ACIS-LoadReview.txt"
@@ -216,6 +217,26 @@ class ACISLoadReview(object):
     def list_attributes(self):
         for key in self.events.keys():
             print("%s: %s" % (key, pretty_names[key]))
+
+    def get_updated_dsn_comms(self):
+        dsnfile = "/data/acis/dsn_summary.dat"
+        tstart = date2secs(self.first_time)
+        tstop = date2secs(self.last_time)
+        bots = []
+        eots = []
+        with open(dsnfile) as f:
+            for line in f.readlines()[2:]:
+                words = line.strip().split()
+                bot = datetime.strptime("%s:%s:00:00:00" % (words[-4], words[-3][:3]), "%Y:%j:%H:%M:%S")
+                eot = datetime.strptime("%s:%s:00:00:00" % (words[-2], words[-1][:3]), "%Y:%j:%H:%M:%S")
+                time_bot = date2secs(bot.strftime("%Y:%j:%H:%M:%S"))+86400.0*(float(words[-3]) % 1)
+                time_eot = date2secs(eot.strftime("%Y:%j:%H:%M:%S"))+86400.0*(float(words[-1]) % 1)
+                if tstart >= time_bot >= tstop:
+                    bots.append(time_bot)
+                if tstart >= time_eot >= tstop:
+                    eots.append(time_eot)
+        self.events["comm_begins"]["times"] = secs2date(bots)
+        self.events["comm_ends"]["times"] = secs2date(eots)
 
     def __getattr__(self, item):
         return LoadReviewEvent(item, self.events[item])
