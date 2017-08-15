@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import os
 import time
 import matplotlib
@@ -8,6 +8,7 @@ matplotlib.use("agg")
 import acispy
 import matplotlib.pyplot as plt
 from Chandra.Time import date2secs, secs2date
+import numpy as np
 
 load_root = "/data/acis/LoadReviews"
 review_file = "ACIS-LoadReview.txt"
@@ -72,8 +73,20 @@ def find_the_load(now_time_utc, year_string, last_year_string):
     load_name = load_dir+sorted(os.listdir(load_path))[-1][-1].upper()
 
     return load_year, load_dir, load_name
- 
-def process_load(load_year, load_dir):
+
+def find_first_time(load_year, load_dir, year_string, next_year_string):
+    infile = os.path.join(load_root, load_year, load_dir, "ofls", review_file)
+    with open(infile, "r") as f:
+        for line in f.readlines():
+            words = line.strip().split()
+            if len(words) > 0:
+                if (line.startswith(year_string) or
+                    line.startswith(next_year_string)):
+                    time = words[0]
+                    break
+    return time
+
+def process_load(load_year, load_dir, year_string, next_year_string):
 
     obsid_link = "https://icxc.harvard.edu/cgi-bin/mp/target_param.cgi?"
 
@@ -86,15 +99,22 @@ def process_load(load_year, load_dir):
     f.close()
 
     outlines = []
+    times = []
 
     inScience = False
     radzone = 0  # not in radzone
     find_first_status = True
 
+    the_time = find_first_time(load_year, load_dir, year_string, next_year_string)
+
     for i, line in enumerate(inlines):
 
         a_line = line.strip()
         words = a_line.split()
+
+        if a_line.startswith(load_year) or \
+            a_line.startswith(next_year):
+            the_time = words[0]
 
         the_line = None
 
@@ -155,6 +175,7 @@ def process_load(load_year, load_dir):
             inScience = False
 
         # Highlight comms in blue
+        """
         if "REAL-TIME COMM" in a_line:
             if "ENDS" in a_line:
                 time1 = secs2date(date2secs(words[0])-1800.0)
@@ -167,6 +188,7 @@ def process_load(load_year, load_dir):
         if "COMM DURATION" in a_line:
             duration = float(words[-2]) - 30.0
             the_line = "==> COMM DURATION:  %4.2f mins." % duration
+        """
 
         # Mechanical motions
         if "COMMAND_SW" in a_line and "ETG" in a_line or "SIMTRANS" in a_line:
@@ -187,6 +209,7 @@ def process_load(load_year, load_dir):
         if the_line is not None:
             outlines.append(the_line)
             outlines.append(" ")
+            times.append(the_time)
 
     outlines += ["</pre>", "</body>"]
 
@@ -210,7 +233,8 @@ while True:
     load_year, load_dir, load_name = find_the_load(now_time_utc, year_string, last_year_string)
 
     if load_name != old_load_name or find_load:
-        outlines = process_load(load_year, load_dir)
+        outlines, times = process_load(load_year, load_dir, year_string, next_year_string)
+        assert len(outlines) == len(times)
         find_load = False
         old_load_name = load_name
 
@@ -218,21 +242,26 @@ while True:
 
     # HTML header stuff
 
-    newlines = ['<?xml version="1.0" encoding="UTF-8">',
-                '<!DOCTYPE html PUBLIC "-//W3C/DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">',
-                '<html lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml">',
-                '<head>\n<meta http-equiv="refresh" content="30" />',
-                '<title>Current ACIS Load Real-Time</title>',
-                '<link href="lr_web.css" rel="stylesheet" type="text/css">\n</head>',
-                '<body text="#000000" bgcolor="#ffffff" link="#ff0000" vlink="#ffff22" alink="#7500FF">\n<pre>',
-                '<h1><font face="times">Current ACIS Load Real-Time</font></h1>',
-                "<a name=\"review\"><h2><font face=\"times\">Load Commands</font></h2></a>",
-                "<font face=\"times\">This is the <a href=\"http://cxc.cfa.harvard.edu/acis/lr_texts/2017/%s_lr.html\"><font style=\"color:blue\">%s</font></a> load.</font>" % (load_name, load_name),
-                " ", " "]
+    header = ['<?xml version="1.0" encoding="UTF-8">',
+              '<!DOCTYPE html PUBLIC "-//W3C/DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">',
+              '<html lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml">',
+              '<head>\n<meta http-equiv="refresh" content="30" />',
+              '<title>Current ACIS Load Real-Time</title>',
+              '<link href="lr_web.css" rel="stylesheet" type="text/css">\n</head>',
+              '<body text="#000000" bgcolor="#ffffff" link="#ff0000" vlink="#ffff22" alink="#7500FF">\n<pre>',
+              '<h1><font face="times">Current ACIS Load Real-Time</font></h1>',
+              "<a name=\"review\"><h2><font face=\"times\">Load Commands</font></h2></a>",
+              "<font face=\"times\">This is the <a href=\"http://cxc.cfa.harvard.edu/acis/lr_texts/2017/%s_lr.html\"><font style=\"color:blue\">%s</font></a> load.</font>" % (load_name, load_name),
+              " ", " "]
 
     the_time = now_time_utc - timedelta(days=2)
     begin_time = now_time_utc - timedelta(days=1)
     end_time = now_time_utc + timedelta(days=1)
+
+    newtimes = []
+    newlines = []
+
+    find_time = True
 
     for i, outline in enumerate(outlines):
         # Now check for the current time
@@ -262,6 +291,8 @@ while True:
                                        tl_file="/data/acis/eng_plots/acis_eng_10day.tl")
             last_tl_ts = tl_ts
 
+        lr.get_updated_dsn_comms()
+
         tnow = now_time_utc.strftime("%Y:%j:%H:%M:%S")
 
         tbegin = secs2date(max(date2secs(tnow)-3600.0*24.0, date2secs(lr.first_time)))
@@ -286,7 +317,7 @@ while True:
 
         w1, h1 = dp.fig.get_size_inches()
 
-        ccd = lr.plot("ccd_count", field2=("states","simpos"), tbegin=tbegin, tend=tend, 
+        ccd = lr.plot("ccd_count", field2=("states","simpos"), tbegin=tbegin, tend=tend,
                       annotations=["belts", "sim_trans", "comms", "perigee", "cti_runs"],
                       fig=plt.figure(figsize=(10,8)))
         ccd.add_vline(tnow, lw=3)
@@ -317,13 +348,37 @@ while True:
 
         plt.close("all")
 
-        newlines.append("<a name=\"plots\"><h2><font face=\"times\">Temperature Models</font></h2></a>")
-        newlines.append("<a href=\"http://cxc.cfa.harvard.edu/acis/Thermal/%s/%s.html\"><font face=\"times\" color=\"blue\">Full thermal models for %s</font></a>" % (load_year, load_dir, load_name))
+        footer = ["<a name=\"plots\"><h2><font face=\"times\">Temperature Models</font></h2></a>",
+                  "<a href=\"http://cxc.cfa.harvard.edu/acis/Thermal/%s/%s.html\"><font face=\"times\" color=\"blue\">Full thermal models for %s</font></a>" % (load_year, load_dir, load_name)]
+
         for fig in ["fptemp_11", "1dpamzt", "1deamzt", "1pdeaat", "ccd", "roll"]:
-            newlines.append("<img src=\"current_%s.png\" />" % fig)
-            newlines.append("<p />")
+            footer.append("<img src=\"current_%s.png\" />" % fig)
+            footer.append("<p />")
+
+        begin_comm_secs = date2secs(lr.comm_begins.times)
+        end_comm_secs = date2secs(lr.comm_ends.times)
+        newsecs = date2secs(newtimes)
+
+        all_secs = np.concatenate(newsecs, begin_comm_secs, end_comm_secs)
+
+        begin_comm_lines = []
+        end_comm_lines = []
+
+        for tbegin in lr.comm_begins.times:
+            tbegin_edt = datetime.strptime(tbegin, "%Y:%j:%H:%M:%S.%f").replace(tzinfo=timezone.utc).astimezone(tz=None)
+            the_line = "%s   REAL-TIME COMM BEGINS   %s  EDT" % (tbegin, tbegin_edt.strftime("%Y:%j:%H:%M:%S.%f"))
+            begin_comm_lines.append("<commline>%s</commline>" % the_line)
+
+        for tend in lr.comm_ends.times:
+            tend_edt = datetime.strptime(tend, "%Y:%j:%H:%M:%S.%f").replace(tzinfo=timezone.utc).astimezone(tz=None)
+            the_line = "%s   REAL-TIME COMM ENDS     %s  EDT" % (tend, tend_edt.strftime("%Y:%j:%H:%M:%S.%f"))
+            end_comm_lines.append("<commline>%s</commline>" % the_line)
+
+        all_lines = newlines+begin_comm_lines+end_comm_lines
+        writelines = [l for (t, l) in sorted(zip(all_secs, all_lines))]
 
         f = open(outfile, "w")
-        f.write("\n".join(newlines))
+        f.write("\n".join(header+writelines+footer))
         f.close()
+
         time.sleep(30)
