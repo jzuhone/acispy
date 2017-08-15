@@ -231,9 +231,9 @@ class ACISLoadReview(object):
                 eot = datetime.strptime("%s:%s:00:00:00" % (words[-2], words[-1][:3]), "%Y:%j:%H:%M:%S")
                 time_bot = date2secs(bot.strftime("%Y:%j:%H:%M:%S"))+86400.0*(float(words[-3]) % 1)
                 time_eot = date2secs(eot.strftime("%Y:%j:%H:%M:%S"))+86400.0*(float(words[-1]) % 1)
-                if tstart >= time_bot >= tstop:
+                if tstart <= time_bot <= tstop:
                     bots.append(time_bot)
-                if tstart >= time_eot >= tstop:
+                if tstart <= time_eot <= tstop:
                     eots.append(time_eot)
         self.events["comm_begins"]["times"] = secs2date(bots)
         self.events["comm_ends"]["times"] = secs2date(eots)
