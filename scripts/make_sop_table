@@ -12,7 +12,7 @@ parser.add_argument("-c", type=str, default="1.5in", help='Width of Command Desc
 parser.add_argument("-d", type=str, default="3.0in", help='Width of Description field')
 parser.add_argument("-p", type=str, default="2.1in", help='Width of Title field')
 parser.add_argument("-t", type=str, default="1.7in", help='Width of Telemetry EGSE field')
-parser.add_argument("-l", type=int, default=27, help='Maximum number of lines per page')
+parser.add_argument("-l", type=str, default="27", help='Maximum number of lines per page')
 parser.add_argument("-f", type=str, default="",
                     help='File to write to. Default is to change the suffix of the input file.')
 
@@ -23,7 +23,7 @@ dwidth = 'p{%s}' % args.d
 pwidth = 'p{%s}' % args.p
 twidth = 'p{%s}' % args.t
 pline = 18 # height of line in points
-lmax = args.l
+lmax = np.array(args.l.split(',')).astype("int")
 
 table_footer = ["\\hline\n", "\\end{tabular}\n", "\\end{table}\n", "\\end{landscape}\n"]
 
@@ -122,7 +122,11 @@ for i in range(num_rows):
             left_rows[i][1] += " \\\\"
     nline += 1 + int(lbl or lbr)
     npages = len(pages)
-    if nline - last_nline >= lmax-int(npages > 0)*2:
+    if lmax.size == 1:
+        maxlines = lmax[0]
+    else:
+        maxlines = lmax[last_i]
+    if nline - last_nline >= maxlines-int(npages > 0)*2:
         pages.append([last_i, i])
         last_i = i
         last_nline = nline
