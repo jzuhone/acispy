@@ -56,7 +56,7 @@ class ThermalModelRunner(Dataset):
     Parameters
     ----------
     name : string
-        The name of the model to simulate. Can be "dea", "dpa", "psmc", or "fep1mong".
+        The name of the model to simulate. Can be "dea", "dpa", "psmc", or "fep1_mong".
     tstart : string
         The start time in YYYY:DOY:HH:MM:SS format.
     tstop : string
