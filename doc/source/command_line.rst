@@ -59,7 +59,7 @@ Returns:
     usage: make_sop_table [-h] [-c C] [-d D] [-p P] [-t T] [-l L] [-f F] tablefile
     
     Create a LaTeX table for a SOP from a tab-separated table file
-        
+    
     positional arguments:
       tablefile   The input table file
     
@@ -69,16 +69,21 @@ Returns:
       -d D        Width of Description field
       -p P        Width of Title field
       -t T        Width of Telemetry EGSE field
-      -l L        Maximum number of lines per page
+      -l L        Maximum number of lines per page, can either be a single value
+                  or a comma-separated list
       -f F        File to write to. Default is to change the suffix of the input
                   file.
 
-Example
-+++++++
+Examples
+++++++++
 
 .. code-block:: bash
 
     [~]$ make_sop_table switch_deaa_b.tsv -c 2.0in -l 24 -f my_table.tab 
+
+.. code-block:: bash
+
+    [~]$ make_sop_table -p 1.8in -t 2.6in -d 2.17in -l 25,22,29,24 deaa_on_test_vid.tsv
 
 ``multiplot_archive``
 ---------------------

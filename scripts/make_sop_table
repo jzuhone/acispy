@@ -12,7 +12,9 @@ parser.add_argument("-c", type=str, default="1.5in", help='Width of Command Desc
 parser.add_argument("-d", type=str, default="3.0in", help='Width of Description field')
 parser.add_argument("-p", type=str, default="2.1in", help='Width of Title field')
 parser.add_argument("-t", type=str, default="1.7in", help='Width of Telemetry EGSE field')
-parser.add_argument("-l", type=str, default="27", help='Maximum number of lines per page')
+parser.add_argument("-l", type=str, default="27", help='Maximum number of lines per page, '
+                                                       'can either be a single value or '
+                                                       'a comma-separated list')
 parser.add_argument("-f", type=str, default="",
                     help='File to write to. Default is to change the suffix of the input file.')
 
