@@ -1,6 +1,7 @@
+from __future__ import print_function
 import os
 from acispy.dataset import ModelDataFromLoad
-from acispy.plots import DatePlot, MultiDatePlot
+from acispy.plots import DatePlot
 from acispy.utils import get_time
 from collections import defaultdict
 from Chandra.Time import date2secs, secs2date
@@ -26,6 +27,20 @@ styles = {"perigee": "--",
           "start_cti": '--',
           "end_cti": '--'}
 
+pretty_names = {"comm_ends": "End of Comm",
+                "comm_begins": "Beginning of Comm",
+                "perigee": "Perigee",
+                "apogee": "Apogee",
+                "radmon_enable": "Enable Radiation Monitor",
+                "radmon_disable": "Disable Radiation Monitor",
+                "start_cti": "Start CTI Run",
+                "end_cti": "End CTI Run",
+                "obsid_change": "Change of OBSID",
+                "sim_trans": "SIM Translation",
+                "enter_belts": "Enter Radiation Belts",
+                "exit_belts": "Exit Radiation Belts",
+                "fmt_change": "Change of Telemetry Format"}
+
 offsets = {"sim_trans": 0.75}
 
 cti_simodes = ["TE_007AC", "TE_00B26", "TE_007AE",
@@ -37,8 +52,11 @@ class LoadReviewEvent(object):
         self.event = event
         self.name = name
 
-    def __repr__(self):
+    def __str__(self):
         return self.name
+
+    def __repr__(self):
+        return pretty_names[self.name]
 
     def __getattr__(self, item):
         return self.event[item]
@@ -55,11 +73,11 @@ class LoadReview(object):
             oflsdir = "ofls%s" % load_name[-1].lower()
         self.load_year = "20%s" % self.load_week[5:7]
         self.next_year = str(int(self.load_year)+1)
-        oflsdir = os.path.join(lr_root, self.load_year,
-                               self.load_week, oflsdir)
+        loaddir = os.path.join(lr_root, self.load_year, self.load_week)
+        oflsdir = os.path.join(loaddir, oflsdir)
         self.load_file = os.path.join(oflsdir, lr_file)
-        self.load_letter = os.path.realpath(oflsdir)[-1]
-        self.load_name = self.load_week + self.load_letter.upper()
+        self.load_letter = sorted(os.listdir(loaddir))[-1][-1].upper()
+        self.load_name = self.load_week + self.load_letter
         self.events = defaultdict(dict)
         self.start_status = self._get_start_status()
         self._populate_event_times()
@@ -67,6 +85,12 @@ class LoadReview(object):
                                     interpolate_msids=True, tl_file=tl_file,
                                     time_range=[self.first_time, self.last_time])
         self._find_cti_runs()
+
+    def __repr__(self):
+        return self.load_name
+
+    def __str__(self):
+        return self.load_name
 
     def _get_start_status(self):
         j = -1
@@ -87,7 +111,14 @@ class LoadReview(object):
                     if i == j:
                         status = line.strip().split()[-1]
         self.last_time = time
-        status = status.strip("()").split(",")
+        status_values = status.strip("()").split(",")
+        status = {"instrument": status_values[0],
+                  "hetg_status": status_values[1],
+                  "letg_status": status_values[2],
+                  "current_obsid": status_values[3],
+                  "radmon_status": status_values[4],
+                  "telemetry_format": status_values[5],
+                  "dither_status": status_values[6]}
         return status
 
     def _populate_event_times(self):
@@ -158,6 +189,10 @@ class LoadReview(object):
                 self.events["end_cti"]["times"].append(si_modes.dates[0,jj+1])
                 self.events["start_cti"]["state"].append(mode)
                 self.events["end_cti"]["state"].append(mode)
+
+    def list_attributes(self):
+        for key in self.events.keys():
+            print("%s: %s" % (key, pretty_names[key]))
 
     def __getattr__(self, item):
         return LoadReviewEvent(item, self.events[item])
