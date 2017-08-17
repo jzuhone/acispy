@@ -103,6 +103,7 @@ right_rows = rows[:, cols_right]
 
 # Now figure out which rows need to take up two rows
 # and how we need to split the table up into pages
+warnpage = False
 pages = []
 nline = 0
 last_nline = 0 
@@ -127,13 +128,16 @@ for i in range(num_rows):
         maxlines = lmax[0]
     else:
         if page_i >= len(lmax):
-            print("WARNING: Number of pages is now greater "
-                  "than that specified in the '-l' argument. "
-                  "Using the last entry of '-l' for page %d." % (page_i+1))
+            if warnpage:
+                print("WARNING: Number of pages is now greater "
+                      "than that specified in the '-l' argument. "
+                      "Using the last entry of '-l' for page %d." % (page_i+1))
+                warnpage = False
             maxlines = lmax[-1]
         else:
             maxlines = lmax[page_i]
     if nline - last_nline >= maxlines-int(npages > 0)*2:
+        warnpage = True
         page_i += 1
         pages.append([last_i, i])
         last_i = i
