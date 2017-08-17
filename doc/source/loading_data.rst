@@ -45,39 +45,38 @@ Reading MSID Data From a Tracelog File
 --------------------------------------
 
 If you have a real-time tracelog file or one that has been extracted from a 
-dump, you can also read MSID data from this file, using the
-:meth:`~acispy.data_container.Dataset.fetch_from_tracelog` method. In
-this case, the state data corresponding to the times spanned by the tracelog
-file will be extracted from the commanded states database. 
+dump, you can also read MSID data from this file, using
+:class:`~acispy.dataset.TracelogData`. In this case, the state data 
+corresponding to the times spanned by the tracelog file will be extracted 
+from the commanded states database. 
 
 .. code-block:: python
 
-    from acispy import Dataset
+    from acispy import TracelogData
     states = ["pitch", "ccd_count"]
-    ds = Dataset.fetch_from_tracelog("acisENG10d_00985114479.70.tl",
-                                           state_keys=states)
+    ds = TracelogData("acisENG10d_00985114479.70.tl", state_keys=states)
     
 In this case, all of the MSIDs in the tracelog are ingested into the 
-:class:`~acispy.data_container.Dataset`. You may either specify
+:class:`~acispy.dataset.TracelogData` dataset. You may either specify
 a set of states using the ``state_keys`` keyword argument; otherwise 
 the full default set will be loaded.
 
 Reading Model Data from a Load
 ------------------------------
 
-You can also fill a :class:`~acispy.data_container.Dataset` with predicted
+You can also fill a :class:`~acispy.dataset.Dataset` with predicted
 model data for a particular temperature model or multiple models corresponding to 
-a particular load review using :meth:`~acispy.data_container.Dataset.fetch_model_from_load`:
+a particular load review using :class:`~acispy.dataset.ModelDataFromLoad`:
 
 .. code-block:: python
 
-    from acispy import Dataset
+    from acispy import ModelDataFromLoad
     comps = ["1deamzt","1dpamzt","fptemp_11"]
-    ds = Dataset.fetch_model_from_load("APR0416C", comps)
+    ds = ModelDataFromLoad("APR0416C", comps)
 
 To get the corresponding MSIDs from the engineering archive during the same 
-time frame, pass to :meth:`~acispy.data_container.Dataset.fetch_model_from_load`
-the keyword argument ``get_msids=True``. To interpolate the MSID data to a common
+time frame, pass to :class:`~acispy.dataset.ModelDataFromLoad` the keyword 
+argument ``get_msids=True``. To interpolate the MSID data to a common
 set of times as the model data, use ``interpolate_msids=True``.
 
 Reading Model Data from Files
@@ -86,39 +85,37 @@ Reading Model Data from Files
 The model validation tools (such as `dea_check <http://github.com/acisops/dea_check>`_)
 output ASCII table files ``"temperatures.dat"`` and ``"states.dat"`` that contain the 
 temperature and commanded state information as a function of time. If you have these
-files and would like to load them in, this can be done using the
-:meth:`~acispy.data_container.Dataset.fetch_models_from_files` method:
+files and would like to load them in, this can be done using
+:class:`~acispy.dataset.ModelDataFromFiles`:
 
 .. code-block:: python
 
-    from acispy import Dataset
+    from acispy import ModelDataFromFiles
     model_files = ["dea_model/temperatures.dat", "dpa_model/temperatures.dat",
                    "fp_model/temperatures.dat"]
-    ds = Dataset.fetch_models_from_files(model_files, "dea_model/states.dat",
-                                               get_msids=True)
+    ds = ModelDataFromFiles(model_files, "dea_model/states.dat", get_msids=True)
                                                
-Like the previous method, this one takes the ``get_msids`` keyword argument to 
-obtain the corresponding MSIDs from the archive if desired. To interpolate the 
-MSID data to a common set of times as the model data, use ``interpolate_msids=True``.
-However, this only really works if the all of the model fields are also at the same
-times. 
+Like the previous :class:`~acispy.dataset.Dataset` type, this one takes the 
+``get_msids`` keyword argument to obtain the corresponding MSIDs from the archive 
+if desired. To interpolate the MSID data to a common set of times as the model data, 
+use ``interpolate_msids=True``. However, this only really works if the all of the 
+model fields are also at the same times. 
 
-This method can also be used to import model data for the same MSID for different
-model runs:
+This :class:`~acispy.dataset.Dataset` type can also be used to import model data 
+for the same MSID for different model runs:
 
 .. code-block:: python
 
-    from acispy import Dataset
+    from acispy import ModelDataFromFiles
     model_files = ["old_model/temperatures.dat", "new_model/temperatures.dat"]
-    ds = Dataset.fetch_models_from_files(model_files, "old_model/states.dat",
-                                               get_msids=True)
+    ds = ModelDataFromFiles(model_files, "old_model/states.dat", get_msids=True)
 
-Directly Accessing Times Series Data from the Container
--------------------------------------------------------
+Directly Accessing Time Series Data from the Container
+------------------------------------------------------
 
-The :class:`~acispy.data_container.Dataset` object has dictionary-like
+The :class:`~acispy.dataset.Dataset` object has dictionary-like
 access so that the data may be accessed directly. Data can be accessed by querying 
-the :class:`~acispy.data_container.Dataset` object with a tuple giving the
+the :class:`~acispy.dataset.Dataset` object with a tuple giving the
 type of data desired and its name, for example:
 
 .. code-block:: python
@@ -130,25 +127,46 @@ type of data desired and its name, for example:
 
 A ``(type, name)`` pairing and its associated data are referred to as a "field". We'll
 encounter examples of :ref:`derived-fields` later, which are derivations of new fields from
-existing ones. For now, we'll use our example from before to fill up a 
-:class:`~acispy.data_container.Dataset`:
+existing ones.
+
+It is not strictly necessary to specify the ``(type, name)`` tuple if the ``name`` is 
+unique in the :class:`~acispy.dataset.Dataset` object. So the fields in the last
+block could also be accessed like this:
 
 .. code-block:: python
 
-    from acispy import Dataset
+    ds["pitch"] # gives you the "pitch" state
+    ds["fptemp_11"] # gives you the "fptemp_11" pseudo-MSID
+    ds["1deamzt"] # gives you the "1deamzt" model component
+
+However, if the ``name`` is not unique (say it exists both as MSID data and a model 
+component), then an error will be raised:
+
+.. code-block:: python
+
+    # "ds" is a Dataset object
+    ds["pitch"] # gives you the "pitch" state
+    ds["fptemp_11"] # gives you the "fptemp_11" pseudo-MSID
+    ds["1deamzt"] # gives you the "1deamzt" model component
+
+
+We'll use our example from before to fill up a :class:`~acispy.dataset.Dataset`:
+
+.. code-block:: python
+
+    from acispy import ArchiveData
     tstart = "2016:091:01:00:00.000" 
     tstop = "2016:097:03:30:57.231"
     msids = ["1deamzt", "1dpamzt"]
     states = ["pitch", "ccd_count"]
-    ds = Dataset.fetch_from_database(tstart, tstop, msid_keys=msids,
-                                           state_keys=states)
+    ds = ArchiveData(tstart, tstop, msid_keys=msids, state_keys=states)
 
-To see what fields are available from the :class:`~acispy.data_container.Dataset`,
+To see what fields are available from the :class:`~acispy.dataset.Dataset`,
 check the `field_list` attribute:
 
 .. code-block:: python
 
-    print ds.field_list
+    print(ds.field_list)
 
 .. code-block:: pycon
 
@@ -166,16 +184,15 @@ check the `field_list` attribute:
      ('states', 'ccd_count')]
 
 If you have loaded data for the same model component from more than one model, then
-these will appear in the :class:`~acispy.data_container.Dataset` with field types
+these will appear in the :class:`~acispy.dataset.Dataset` with field types
 of the form ``"model[n]"``, where ``n`` is a a zero-based integer:
 
 .. code-block:: python
 
-    from acispy import Dataset
+    from acispy import ModelDataFromFiles
     model_files = ["old_model/temperatures.dat", "new_model/temperatures.dat"]
-    ds = Dataset.fetch_models_from_files(model_files, "old_model/states.dat",
-                                               get_msids=True)
-    print ds.field_list
+    ds = ModelDataFromFiles(model_files, "old_model/states.dat", get_msids=True)
+    print(ds.field_list)
 
 gives:
 
@@ -203,14 +220,14 @@ Units
 One such attribute is units, for those quantities which possess them. Units are
 added to ACISpy arrays using 
 `AstroPy Quantities <http://docs.astropy.org/en/stable/units/quantity.html>`_. 
-The following print statements illustrate how units are attached to various
+The following ``print`` statements illustrate how units are attached to various
 types of arrays:
 
 .. code-block:: python
 
-    print ds["states", "ccd_count"]
-    print ds["states", "pitch"]
-    print ds["msids", "1deamzt"]
+    print(ds["ccd_count"])
+    print(ds["pitch"])
+    print(ds["1deamzt"])
 
 .. code-block:: pycon
 
@@ -236,7 +253,7 @@ masks only have ``False`` values for model arrays:
 
 .. code-block:: python
     
-    print ds["model", "1dpamzt"].mask
+    print(ds["1dpamzt"].mask)
 
 .. code-block:: pycon
 
@@ -254,8 +271,8 @@ array gives the timing information in seconds from the beginning of the mission:
 
 .. code-block:: python
 
-    print ds["states", "pitch"].times
-    print ds["msids", "1deamzt"].times
+    print(ds["pitch"].times)
+    print(ds["1deamzt"].times)
 
 prints something like:
 
@@ -283,8 +300,7 @@ date-time strings:
 
 .. code-block:: python
 
-    print ds["states", "pitch"].dates
-    print ds["msids", "1deamzt"].dates
+    print(ds["pitch"].dates)
 
 .. code-block:: pycon
 
@@ -307,8 +323,8 @@ in the usual way:
 
 .. code-block:: python
 
-    ds["msids", "1pdeaat"][1]
-    ds["states", "ccd_count"][2:100]
+    ds["1pdeaat"][1]
+    ds["ccd_count"][2:100]
     
 However, it is also possible to index and slice arrays with timing information, 
 whether with floating-point numbers (corresponding to seconds from the beginning
@@ -316,24 +332,24 @@ of the mission) or date-time strings:
 
 .. code-block:: python
 
-    ds["states", "pitch"][5.762e8] # indexing with a single time value
+    ds["pitch"][5.762e8] # indexing with a single time value
     
-    ds["msids", "1deicacu"][5.5e8:5.6e8] # slicing between two time values
+    ds["1deicacu"][5.5e8:5.6e8] # slicing between two time values
     
-    ds["states", "fep_count"]["2016:091:03:25:40.500"] # indexing with a single date-time string
+    ds["fep_count"]["2016:091:03:25:40.500"] # indexing with a single date-time string
     
-    ds["msids", "1pin1at"]["2017:050:00:00:00":"2017:060:00:00:00"] # slicing between two date-time strings
+    ds["1pin1at"]["2017:050:00:00:00":"2017:060:00:00:00"] # slicing between two date-time strings
 
 Timing Information
 ------------------
 
 The timing data for each model component, MSID, and state can also be easily
-accessed from the :meth:`~acispy.data_container.Dataset.times` and
-:meth:`~acispy.data_container.Dataset.dates` methods:
+accessed from the :meth:`~acispy.dataset.Dataset.times` and
+:meth:`~acispy.dataset.Dataset.dates` methods:
 
 .. code-block:: python
 
-    print ds.times('msids', '1deamzt')
+    print(ds.times('1deamzt'))
 
 .. code-block:: pycon
 
@@ -341,13 +357,13 @@ accessed from the :meth:`~acispy.data_container.Dataset.times` and
 
 .. code-block:: python
 
-    times = ds.times('states', 'pitch')
+    times = ds.times('pitch')
     times[0] # Gives you the start times
     times[1] # Gives you the stop times
 
 .. code-block:: python
 
-    print ds.dates('msids', '1deamzt')
+    print(ds.dates('1deamzt'))
 
 .. code-block:: pycon
 

@@ -308,7 +308,7 @@ class ArchiveData(Dataset):
                  filter_bad=False, stat=None, interpolate_msids=False):
         """
         Fetch MSIDs from the engineering archive and states from the commanded
-        states database. 
+        states database.
 
         Parameters
         ----------
