@@ -239,7 +239,10 @@ class ACISLoadReview(object):
         self.events["comm_ends"]["times"] = secs2date(eots)
 
     def __getattr__(self, item):
-        return LoadReviewEvent(item, self.events[item])
+        if item in self.events:
+            return LoadReviewEvent(item, self.events[item])
+        else:
+            raise AttributeError("'LoadReview' object has no attribute '%s'" % item)
 
     def _add_annotations(self, plot, annotations, tbegin, tend):
         for i, line in enumerate(plot.ax.lines):
