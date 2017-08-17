@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from __future__ import division
+from __future__ import division, print_function
 import csv
 import numpy as np
 import argparse
@@ -107,6 +107,7 @@ pages = []
 nline = 0
 last_nline = 0 
 last_i = 0
+page_i = 0
 for i in range(num_rows):
     lbl = not np.all(np.char.count(left_rows[i], '\\\\') == 0)
     lbr = not np.all(np.char.count(right_rows[i], '\\\\') == 0)
@@ -125,8 +126,15 @@ for i in range(num_rows):
     if lmax.size == 1:
         maxlines = lmax[0]
     else:
-        maxlines = lmax[last_i]
+        if page_i >= len(lmax):
+            print("WARNING: Number of pages is now greater "
+                  "than that specified in the '-l' argument. "
+                  "Using the last entry of '-l' for page %d." % (page_i+1))
+            maxlines = lmax[-1]
+        else:
+            maxlines = lmax[page_i]
     if nline - last_nline >= maxlines-int(npages > 0)*2:
+        page_i += 1
         pages.append([last_i, i])
         last_i = i
         last_nline = nline
