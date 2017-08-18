@@ -61,8 +61,8 @@ class LoadReviewEvent(object):
     def __getattr__(self, item):
         return self.event[item]
 
-class LoadReview(object):
-    def __init__(self, load_name, get_msids=False,
+class ACISLoadReview(object):
+    def __init__(self, load_name, get_msids=True,
                  tl_file=None):
         self.load_name = load_name
         if len(load_name) == 7:

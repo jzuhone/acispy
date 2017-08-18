@@ -265,8 +265,8 @@ while True:
     else:
         tl_ts = os.path.getmtime("/data/acis/eng_plots/acis_eng_10day.tl")
         if lr is None or tl_ts != last_tl_ts:
-            lr = acispy.LoadReview(load_dir, get_msids=True, 
-                                   tl_file="/data/acis/eng_plots/acis_eng_10day.tl")
+            lr = acispy.ACISLoadReview(load_dir, get_msids=True, 
+                                       tl_file="/data/acis/eng_plots/acis_eng_10day.tl")
             last_tl_ts = tl_ts
 
         tnow = now_time_utc.strftime("%Y:%j:%H:%M:%S")
