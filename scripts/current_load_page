@@ -67,8 +67,8 @@ def find_the_load(now_time_utc, year_string, last_year_string):
     # If for some reason we didn't find it, error out.
     if not found_load:
         raise RuntimeError("The current load could not be found!")
-    
-    load_name = load_dir+os.path.realpath(oflsdir)[-1].upper()
+
+    load_name = load_dir+sorted(os.listdir(load_dir))[-1][-1].upper()
 
     return load_year, load_dir, load_name
  
