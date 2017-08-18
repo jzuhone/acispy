@@ -87,25 +87,21 @@ def process_load(load_year, load_dir):
     outlines = []
 
     inScience = False
-    instr = "NONE"
-    grating = "NOT_SET"
-    zsim = "99.99"
     radzone = 0  # not in radzone
     find_first_status = True
 
     for i, line in enumerate(inlines):
-    
-        the_pad = ""
+
         a_line = line.strip()
         words = a_line.split()
-        
+
         the_line = None
 
         # Pad lines so highlighting happens across the page
         if len(a_line) < 74:
             the_pad = ' '*(74 - len(a_line))
             a_line = a_line + the_pad
-    
+
         # Parse the first status
         if a_line.startswith("CHANDRA STATUS ARRAY AT START") and find_first_status:
             find_first_status = False
@@ -209,7 +205,7 @@ load_name = ""
 
 while True:
 
-    # Find the current time                                                                                                    
+    # Find the current time
     now_time_utc = datetime.utcnow()
     now_time_local = datetime.now()
     year_string = "%s:" % now_time_utc.year
@@ -220,10 +216,10 @@ while True:
         load_year, load_dir, load_name = find_the_load(now_time_utc, year_string, last_year_string)
         outlines = process_load(load_year, load_dir)
         find_load = False
-        
+
     find_time = True
 
-    # HTML header stuff                                                                                        
+    # HTML header stuff
 
     newlines = ['<?xml version="1.0" encoding="UTF-8">',
                 '<!DOCTYPE html PUBLIC "-//W3C/DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">',
@@ -242,21 +238,21 @@ while True:
     end_time = now_time_utc + timedelta(days=1)
 
     for i, outline in enumerate(outlines):
-        # Now check for the current time                                                                             
+        # Now check for the current time
         if year_string in outline or next_year_string in outline:
             idx = outline.find(year_string)
             if idx < 0:
                 idx = outline.find(next_year_string)
-            the_time = datetime.strptime(outline[idx:idx+17], "%Y:%j:%H:%M:%S")            
+            the_time = datetime.strptime(outline[idx:idx+17], "%Y:%j:%H:%M:%S")
             if the_time > now_time_utc and find_time:
                 new_line = '<a name="now"></a>NOW: %s (%s)' % (now_time_utc.strftime("%Y:%j:%H:%M:%S"),
                                                                now_time_local.strftime("%D %H:%M:%S"))
                 new_line += ' '*(92 - len(new_line))
                 new_line = '<font style="background-color:#5AC831"><b>%s</b></font>\n' % new_line
                 newlines.append(new_line)
-                find_time = False        
+                find_time = False
         if the_time >= begin_time and the_time <= end_time:
-             newlines.append(outline.strip())    
+             newlines.append(outline.strip())
 
     if find_time:
         # Need to determine the load again because we ran out
