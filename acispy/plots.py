@@ -854,8 +854,8 @@ class PhaseScatterPlot(PhasePlot):
             self.cc = ds[c_field]
 
         cm = plt.cm.get_cmap(cmap)
-        pp = ax.scatter(np.array(self.xx), np.array(self.yy),
-                        c=self.cc, cmap=cm, **kwargs)
+        pp = self.ax.scatter(np.array(self.xx), np.array(self.yy),
+                             c=self.cc, cmap=cm, **kwargs)
 
         self.pp = pp
 
@@ -886,8 +886,8 @@ class PhaseHistogramPlot(PhasePlot):
             norm = LogNorm()
         else:
             norm = Normalize()
-        counts, xedges, yedges, pp = ax.hist2d(self.xx, self.yy, [x_bins, y_bins],
-                                               cmap=cm, norm=norm, **kwargs)
+        counts, xedges, yedges, pp = self.ax.hist2d(self.xx, self.yy, [x_bins, y_bins],
+                                                    cmap=cm, norm=norm, **kwargs)
         self.pp = pp
         self.counts = counts
         self.xedges = xedges
