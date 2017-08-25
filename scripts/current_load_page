@@ -202,6 +202,7 @@ find_load = True
 lr = None
 last_tl_ts = 0.0
 load_name = ""
+old_load_name = ""
 
 while True:
 
@@ -212,10 +213,12 @@ while True:
     last_year_string = "%s:" % (now_time_utc.year-1)
     next_year_string = "%s:" % (now_time_utc.year+1)
 
-    if find_load:
-        load_year, load_dir, load_name = find_the_load(now_time_utc, year_string, last_year_string)
+    load_year, load_dir, load_name = find_the_load(now_time_utc, year_string, last_year_string)
+
+    if load_name != old_load_name or find_load:
         outlines = process_load(load_year, load_dir)
         find_load = False
+        old_load_name = load_name
 
     find_time = True
 
