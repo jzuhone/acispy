@@ -839,8 +839,8 @@ class PhaseScatterPlot(PhasePlot):
 
     Examples
     --------
-    >>> from acispy import PhasePlot
-    >>> pp = PhasePlot(ds, ("msids", "1deamzt"), ("msids", "1dpamzt"))
+    >>> from acispy import PhaseScatterPlot
+    >>> pp = PhaseScatterPlot(ds, ("msids", "1deamzt"), ("msids", "1dpamzt"))
     """
     def __init__(self, ds, x_field, y_field, c_field=None,
                  fontsize=18, color='blue', cmap='hot',
@@ -876,6 +876,48 @@ class PhaseScatterPlot(PhasePlot):
             self.cb = cb
 
 class PhaseHistogramPlot(PhasePlot):
+    r""" Make a single-panel 2D binned histogram plot of one quantity 
+    vs. another.
+
+    The one restriction is that the two fields must have an equal amount
+    of samples, achievable by interoplating one field to another's times
+    or creating a fake MSID field from a state field using
+    :meth:`~acispy.dataset.Dataset.map_state_to_msid`.
+
+    Parameters
+    ----------
+    ds : :class:`~acispy.dataset.Dataset`
+        The Dataset instance to get the data to plot from.
+    x_field : tuple of strings
+        The field to plot on the x-axis.
+    y_field : tuple of strings
+        The field to plot on the y-axis.
+    x_bins : int or NumPy array
+        The bins for the x-axis of the histogram. If an int, it will
+        make that many bins between the minimum and maximum values.
+        If a NumPy array, it will use it as the bin edges.
+    y_bins : int or NumPy array
+        The bins for the y-axis of the histogram. If an int, it will
+        make that many bins between the minimum and maximum values.
+        If a NumPy array, it will use it as the bin edges.
+    scale : string, optional
+        The scaling of the plot. "linear" or "log". Default: "linear"
+    cmap : string, optional
+        The colormap for the histogram. Default: 'heat'
+    fontsize : integer, optional
+        The font size for the labels in the plot. Default: 18 pt.
+    fig : :class:`~matplotlib.figure.Figure`, optional
+        A Figure instance to plot in. Default: None, one will be
+        created if not provided.
+    ax : :class:`~matplotlib.axes.Axes`, optional
+        An Axes instance to plot in. Default: None, one will be
+        created if not provided.
+
+    Examples
+    --------
+    >>> from acispy import PhaseHistogramPlot
+    >>> pp = PhaseHistogramPlot(ds, "1deamzt", "1dpamzt", 100, 100)
+    """
     def __init__(self, ds, x_field, y_field, x_bins, y_bins, scale='linear',
                  cmap='hot', fontsize=18, fig=None, ax=None, **kwargs):
         from matplotlib.colors import LogNorm, Normalize
