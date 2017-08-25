@@ -696,97 +696,38 @@ class MultiDatePlot(object):
         self.fig.canvas.draw()
 
 class PhasePlot(ACISPlot):
-    r""" Make a single-panel plot of one quantity vs. another.
-
-    The one restriction is that you cannot plot a state on the y-axis
-    if the quantity on the x-axis is not a state. 
-
-    Parameters
-    ----------
-    ds : :class:`~acispy.dataset.Dataset`
-        The Dataset instance to get the data to plot from.
-    x_field : tuple of strings
-        The field to plot on the x-axis.
-    y_field : tuple of strings
-        The field to plot on the y-axis.
-    c_field : tuple of strings, optional
-        The field to use to color the dots on the plot. Default: None
-    fontsize : integer, optional
-        The font size for the labels in the plot. Default: 18 pt.
-    color : string, optional
-        The color of the dots on the phase plot. Only used if a
-        color field is not provided. Default: 'blue'
-    cmap : string, optional
-        The colormap for the dots if a color field has been provided.
-        Default: 'heat'
-    fig : :class:`~matplotlib.figure.Figure`, optional
-        A Figure instance to plot in. Default: None, one will be
-        created if not provided.
-    ax : :class:`~matplotlib.axes.Axes`, optional
-        An Axes instance to plot in. Default: None, one will be
-        created if not provided.
-
-    Examples
-    --------
-    >>> from acispy import PhasePlot
-    >>> pp = PhasePlot(ds, ("msids", "1deamzt"), ("msids", "1dpamzt"))
-    """
-    def __init__(self, ds, x_field, y_field, c_field=None,
-                 fontsize=18, color='blue', cmap='hot',
-                 fig=None, ax=None, **kwargs):
+    def __init__(self, ds, x_field, y_field, fig=None, ax=None):
         if fig is None:
             fig = plt.figure(figsize=(12, 12))
         if ax is None:
             ax = fig.add_subplot(111)
-
-        x_field = ds._determine_field(x_field)
-        y_field = ds._determine_field(y_field)
-        self.x_field = x_field
-        self.y_field = y_field
-        xlabel = ds.fields[x_field].display_name
-        ylabel = ds.fields[y_field].display_name
-        xunit = ds.fields[x_field].units
-        yunit = ds.fields[y_field].units
+        self.x_field = ds._determine_field(x_field)
+        self.y_field = ds._determine_field(y_field)
+        self.xlabel = ds.fields[self.x_field].display_name
+        self.ylabel = ds.fields[self.y_field].display_name
+        self.xunit = ds.fields[self.x_field].units
+        self.yunit = ds.fields[self.y_field].units
 
         self.xx = ds[x_field]
         self.yy = ds[y_field]
 
-        if c_field is None:
-            self.cc = color
-        else:
-            self.cc = ds[c_field]
-
-        cm = plt.cm.get_cmap(cmap)
-        scp = ax.scatter(np.array(self.xx), np.array(self.yy),
-                         c=self.cc, cmap=cm, **kwargs)
+        self.ds = ds
 
         super(PhasePlot, self).__init__(fig, ax)
-        self.scp = scp
 
+    def _annotate_plot(self, fontsize):
         fontProperties = font_manager.FontProperties(size=fontsize)
         for label in self.ax.get_xticklabels():
             label.set_fontproperties(fontProperties)
         for label in self.ax.get_yticklabels():
             label.set_fontproperties(fontProperties)
-        if xunit != '':
-            xlabel += ' (%s)' % unit_labels.get(xunit, xunit)
-        if yunit != '':
-            ylabel += ' (%s)' % unit_labels.get(yunit, yunit)
-        self.set_xlabel(xlabel)
-        self.set_ylabel(ylabel)
-        if c_field is not None:
-            clabel = ds.fields[c_field].display_name
-            cunit = ds.fields[c_field].units
-            if cunit != '':
-                clabel += ' (%s)' % unit_labels.get(cunit, cunit)
-            divider = make_axes_locatable(ax)
-            cax = divider.append_axes("right", size="5%", pad=0.05)
-            cb = plt.colorbar(scp, cax=cax)
-            fontdict = {"size": fontsize}
-            cb.set_label(clabel, fontdict=fontdict)
-            for label in cb.ax.get_yticklabels():
-                label.set_fontproperties(fontProperties)
-            self.cb = cb
+        if self.xunit != '':
+            self.xlabel += ' (%s)' % unit_labels.get(self.xunit, self.xunit)
+        if self.yunit != '':
+            self.ylabel += ' (%s)' % unit_labels.get(self.yunit, self.yunit)
+        self.set_xlabel(self.xlabel)
+        self.set_ylabel(self.ylabel)
+        return fontProperties
 
     def set_xlim(self, xmin, xmax):
         """
@@ -835,7 +776,7 @@ class PhasePlot(ACISPlot):
         """
         self.ax.axvline(x=x, lw=lw, ls=ls, color=color, **kwargs)
 
-    def add_text(self, x, y, text, fontsize=18, color='black', 
+    def add_text(self, x, y, text, fontsize=18, color='black',
                  rotation='horizontal', **kwargs):
         """
         Add text to a PhasePlot.
@@ -862,3 +803,103 @@ class PhasePlot(ACISPlot):
         """
         self.ax.text(x, y, text, fontsize=fontsize, color=color,
                      rotation=rotation, **kwargs)
+
+class PhaseScatterPlot(PhasePlot):
+    r""" Make a single-panel phase scatter plot of one quantity vs. another.
+
+    The one restriction is that the two fields must have an equal amount
+    of samples, achievable by interoplating one field to another's times
+    or creating a fake MSID field from a state field using
+    :meth:`~acispy.dataset.Dataset.map_state_to_msid`.
+
+    Parameters
+    ----------
+    ds : :class:`~acispy.dataset.Dataset`
+        The Dataset instance to get the data to plot from.
+    x_field : tuple of strings
+        The field to plot on the x-axis.
+    y_field : tuple of strings
+        The field to plot on the y-axis.
+    c_field : tuple of strings, optional
+        The field to use to color the dots on the plot. Default: None
+    fontsize : integer, optional
+        The font size for the labels in the plot. Default: 18 pt.
+    color : string, optional
+        The color of the dots on the phase plot. Only used if a
+        color field is not provided. Default: 'blue'
+    cmap : string, optional
+        The colormap for the dots if a color field has been provided.
+        Default: 'heat'
+    fig : :class:`~matplotlib.figure.Figure`, optional
+        A Figure instance to plot in. Default: None, one will be
+        created if not provided.
+    ax : :class:`~matplotlib.axes.Axes`, optional
+        An Axes instance to plot in. Default: None, one will be
+        created if not provided.
+
+    Examples
+    --------
+    >>> from acispy import PhasePlot
+    >>> pp = PhasePlot(ds, ("msids", "1deamzt"), ("msids", "1dpamzt"))
+    """
+    def __init__(self, ds, x_field, y_field, c_field=None,
+                 fontsize=18, color='blue', cmap='hot',
+                 fig=None, ax=None, **kwargs):
+
+        super(PhaseScatterPlot, self).__init__(ds, x_field, y_field, fig=fig, ax=ax)
+
+        if c_field is None:
+            self.cc = color
+        else:
+            self.cc = ds[c_field]
+
+        cm = plt.cm.get_cmap(cmap)
+        pp = ax.scatter(np.array(self.xx), np.array(self.yy),
+                        c=self.cc, cmap=cm, **kwargs)
+
+        self.pp = pp
+
+        fontProperties = self._annotate_plot(fontsize)
+
+        if c_field is not None:
+            clabel = self.ds.fields[c_field].display_name
+            cunit = self.ds.fields[c_field].units
+            if cunit != '':
+                clabel += ' (%s)' % unit_labels.get(cunit, cunit)
+            divider = make_axes_locatable(self.ax)
+            cax = divider.append_axes("right", size="5%", pad=0.05)
+            cb = plt.colorbar(self.pp, cax=cax)
+            fontdict = {"size": fontsize}
+            cb.set_label(clabel, fontdict=fontdict)
+            for label in cb.ax.get_yticklabels():
+                label.set_fontproperties(fontProperties)
+            self.cb = cb
+
+class PhaseHistogramPlot(PhasePlot):
+    def __init__(self, ds, x_field, y_field, x_bins, y_bins, scale='linear',
+                 cmap='hot', fontsize=18, fig=None, ax=None, **kwargs):
+        from matplotlib.colors import LogNorm, Normalize
+        super(PhaseHistogramPlot, self).__init__(ds, x_field, y_field, fig=fig, ax=ax)
+
+        cm = plt.cm.get_cmap(cmap)
+        if scale == "log":
+            norm = LogNorm()
+        else:
+            norm = Normalize()
+        counts, xedges, yedges, pp = ax.hist2d(self.xx, self.yy, [x_bins, y_bins],
+                                               cmap=cm, norm=norm, **kwargs)
+        self.pp = pp
+        self.counts = counts
+        self.xedges = xedges
+        self.yedges = yedges
+
+        fontProperties = self._annotate_plot(fontsize)
+
+        divider = make_axes_locatable(self.ax)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        cb = plt.colorbar(self.pp, cax=cax)
+        fontdict = {"size": fontsize}
+        cb.set_label("Counts", fontdict=fontdict)
+        for label in cb.ax.get_yticklabels():
+            label.set_fontproperties(fontProperties)
+        self.cb = cb
