@@ -1,23 +1,38 @@
+.. _activating:
+
 Activating ACISpy
 =================
 
-From anywhere on the HEAD LAN, source the activation script for ACISpy:
+.. warning::
 
-bash:
+    ACISpy and the Ska3 environment associated with it are currently not 
+    approved for flight, and only the official, flight-approved Ska 
+    environment and its associated packages should be used for conducting
+    load reviews, etc.
+
+On the HEAD LAN, ACISpy is installed into the ACIS Ops Ska3 Python stack at
+``/data/acis/ska3``. To activate this stack and ACISpy, add the following alias
+to your ``.bashrc`` if you are using the Bash shell (or a variant):
+
+.. code-block:: bash
+
+    ska3 () {
+        PATH=/data/acis/ska3/bin:${PATH}
+        export SKA=/proj/sot/ska
+        PS1="[ska3:\u@\h \W]\$ "
+    }
+
+Or, if you are a mascohist or are otherwise compelled to use the C shell or a 
+variant of it, add this alias to your ``.cshrc.user``:
 
 .. code-block:: bash
    
-   [~]$ source /home/acisdude/python/bin/activate.sh
-   
-tcsh:
-
-.. code-block:: bash
-   
-   [~]$ source /home/acisdude/python/bin/activate.csh
+    alias ska3 'set path = (/data/acis/ska3/bin $path); \
+      	        setenv SKA /proj/sot/ska; \
+	            set prompt = "(ska3) %m.%n:%c[%h]> "' 
 
 .. warning::
 
-    This should be done in a "clean" terminal window where you are not trying
-    to do anything else (i.e., load reviews, SACGS) as sourcing these scripts
-    activates the ska environment and messes with environment variables and
-    paths. 
+    ACISpy should be used in a "clean" terminal window where you are not trying
+    to do anything else (i.e., load reviews, SACGS) as setting up the Ska3 
+    environment messes with environment variables and paths. 
