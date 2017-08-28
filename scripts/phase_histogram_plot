@@ -46,5 +46,6 @@ elif x_field[0] != "states" and y_field[0] == "states":
     ds.map_state_to_msid(y_field[1], x_field[1])
     y_field = ("msids", y_field[1])
 
-pp = acispy.PhaseHistogramPlot(ds, x_field, y_field, x_bins, y_bins, scale=args.scale, cmap=args.cmap)
+pp = acispy.PhaseHistogramPlot(ds, args.x_field, args.y_field, args.x_bins, args.y_bins, 
+                               scale=args.scale, cmap=args.cmap)
 plt.show()

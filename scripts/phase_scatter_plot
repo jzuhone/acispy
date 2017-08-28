@@ -51,10 +51,13 @@ if x_field[0] == "states" and y_field[0] != "states":
 elif x_field[0] != "states" and y_field[0] == "states":
     ds.map_state_to_msid(y_field[1], x_field[1])
     y_field = ("msids", y_field[1])
-if c_field is not None:
+if args.c_field is not None:
     if c_field[0] == "states" and x_field[0] != "states":
         ds.map_state_to_msid(c_field[1], x_field[1])
     c_field = ("msids", c_field[1])
 
-pp = acispy.PhaseScatterPlot(ds, x_field, y_field, c_field=c_field, cmap=cmap)
+if args.c_field is None:
+    c_field = None
+
+pp = acispy.PhaseScatterPlot(ds, x_field, y_field, c_field=c_field, cmap=args.cmap)
 plt.show()
