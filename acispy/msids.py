@@ -101,7 +101,7 @@ class MSIDs(TimeSeriesData):
         masks = {}
         for k, msid in data.items():
             if msid.state_codes:
-                state_codes[k.lower()] = dict((k.lower(), v) for v, k in msid.state_codes)
+                state_codes[k] = dict((k, v) for v, k in msid.state_codes)
             table[k.lower()] = msid.vals
             if msid.bads is not None:
                 masks[k.lower()] = ~msid.bads
