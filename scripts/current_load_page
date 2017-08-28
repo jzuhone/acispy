@@ -278,7 +278,7 @@ while True:
             fields = [("model", temp)]
             if temp != "fptemp_11":
                 fields.append(("msids", temp))
-            dp = lr.plot(fields, field2="pitch", annotations=["belts","sim_trans","comms", "perigee","start_cti", "end_cti"],
+            dp = lr.plot(fields, field2="pitch", annotations=["belts", "sim_trans", "comms", "perigee", "cti_runs"],
                          tbegin=tbegin, tend=tend, fig=plt.figure(figsize=(10,8)), ymin=plot_limits[temp][0],
                          ymax=plot_limits[temp][1])
             dp.add_vline(tnow, lw=3)
@@ -294,7 +294,7 @@ while True:
         w1, h1 = dp.fig.get_size_inches()
 
         ccd = lr.plot("ccd_count", field2=("states","simpos"), tbegin=tbegin, tend=tend, 
-                      annotations=["belts","sim_trans","comms", "perigee", "start_cti", "end_cti"],
+                      annotations=["belts", "sim_trans", "comms", "perigee", "cti_runs"],
                       fig=plt.figure(figsize=(10,8)))
         ccd.add_vline(tnow, lw=3)
         title_str = "%s\nCurrent CCD count: %d\nCurrent SIM-Z: %g" % (tnow, lr.ds["ccd_count"][tnow].value,
@@ -308,7 +308,7 @@ while True:
         ccd.savefig("/data/wdocs/jzuhone/current_ccd.png")
 
         roll = lr.plot("off_nominal_roll", field2="grating", tbegin=tbegin, tend=tend, ymin=-20.0, ymax=20.0,
-                       annotations=["belts","sim_trans","comms", "perigee","start_cti", "end_cti"],
+                       annotations=["belts", "sim_trans", "comms", "perigee", "cti_runs"],
                        fig=plt.figure(figsize=(10,8)))
         roll.add_vline(tnow, lw=3)
         title_str = "%s\nCurrent Off-nominal roll: %4.3f degree\nGrating: %s" % (tnow, 
