@@ -206,6 +206,10 @@ class ACISLoadReview(object):
             line.set_zorder(100-i)
         plot_comms = False
         plot_belts = False
+        if "cti_runs" in annotations:
+            annotations.append("start_cti")
+            annotations.append("end_cti")
+            annotations.remove("cti_runs")
         for key in annotations:
             if key == "comms":
                 plot_comms = True
@@ -287,6 +291,6 @@ class ACISLoadReview(object):
         tbegin = get_time(tbegin).secs
         tend = get_time(tend).secs
         if annotations is not None:
-            self._add_annotations(dp, annotations, tbegin, tend)
+            self._add_annotations(dp, annotations.copy(), tbegin, tend)
         dp.set_xlim(secs2date(tbegin), secs2date(tend))
         return dp
