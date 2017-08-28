@@ -45,8 +45,9 @@ def find_the_load(now_time_utc, year_string, last_year_string):
         day = "%02d" % time_utc.day
         month = time_utc.strftime("%b").upper()
         load_dir = "".join([month, day, load_year[-2:]])
+        load_path = os.path.join(load_root, load_year, load_dir)
         # Now assemble the full filename and check to see if it exists
-        oflsdir = os.path.join(load_root, load_year, load_dir, "ofls")
+        oflsdir = os.path.join(load_path, "ofls")
         fn = os.path.join(oflsdir, review_file)
         if os.path.exists(fn):
             # Open the file and search for the first time
@@ -68,7 +69,7 @@ def find_the_load(now_time_utc, year_string, last_year_string):
     if not found_load:
         raise RuntimeError("The current load could not be found!")
 
-    load_name = load_dir+sorted(os.listdir(load_dir))[-1][-1].upper()
+    load_name = load_dir+sorted(os.listdir(load_path))[-1][-1].upper()
 
     return load_year, load_dir, load_name
  
