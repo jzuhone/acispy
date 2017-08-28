@@ -1,4 +1,4 @@
-__version__ = "0.9.0-dev"
+__version__ = "1.0.0"
 
 from acispy.dataset import ArchiveData, \
     TracelogData, ModelDataFromLoad, ModelDataFromFiles
