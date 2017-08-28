@@ -138,7 +138,7 @@ def parse_index(idx, times):
             idx = DateTime(idx).secs
         if idx < times[0] or idx > times[-1]:
             raise RuntimeError("The time %s is outside the bounds of this dataset!" % orig_idx)
-        idx = np.searchsorted(times, idx)
+        idx = np.searchsorted(times, idx)-1
     return idx
 
 def find_indices(item, times):
