@@ -11,8 +11,13 @@ Activating ACISpy
     load reviews, etc.
 
 On the HEAD LAN, ACISpy is installed into the ACIS Ops Ska3 Python stack at
-``/data/acis/ska3``. To activate this stack and ACISpy, add the following alias
-to your ``.bashrc`` if you are using the Bash shell (or a variant):
+``/data/acis/ska3``. If you are logged on as ``acisdude``, all you need to
+do is issue the command ``setska3`` and this Python stack and ACISpy will be
+loaded into your environment. 
+
+However, if you would like activate this stack and ACISpy from your own user
+account, add the following alias to your ``.bashrc`` if you are using the Bash
+shell (or a variant):
 
 .. code-block:: bash
 
