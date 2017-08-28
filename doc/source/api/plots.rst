@@ -12,7 +12,10 @@ Plotting API
 .. autoclass:: acispy.plots.MultiDatePlot
     :members:
 
-.. autoclass:: acispy.plots.PhasePlot
+.. autoclass:: acispy.plots.PhaseScatterPlot
     :members:
     :inherited-members:
-    
+
+.. autoclass:: acispy.plots.PhaseHistogramPlot
+    :members:
+    :inherited-members:
