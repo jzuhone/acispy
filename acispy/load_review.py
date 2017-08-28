@@ -66,6 +66,25 @@ class LoadReviewEvent(object):
         return self.event[item]
 
 class ACISLoadReview(object):
+    """
+    Parse data from a particular load review for 
+    access and plotting of data.
+
+    Parameters
+    ----------
+    load_name : string
+        The name of the load to examine. Can be the full
+        load specification, e.g. "AUG2717A", or the last
+        letter can be omitted for the latest iteration,
+        e.g. "MAY0216".
+    get_msids : boolean, optional
+        Whether or not to load MSID data as well as model
+        data for temperatures. Default: False
+    tl_file : string, optional
+        If MSID data is to be loaded, load from this 
+        tracelog file rather than the engineering archive.
+        Default: None
+    """
     def __init__(self, load_name, get_msids=True,
                  tl_file=None):
         self.load_name = load_name
@@ -268,6 +287,54 @@ class ACISLoadReview(object):
              colors=None, color2='magenta', fig=None, ax=None,
              tbegin=None, tend=None, annotations=None, ymin=None,
              ymax=None, ymin2=None, ymax2=None):
+        """
+        Plot temperature and state data from a load review.
+
+        Parameters
+        ----------
+        fields : tuple of strings or list of tuples of strings
+            A single field or list of fields to plot on the left y-axis.
+        field2 : tuple of strings, optional
+            A single field to plot on the right y-axis. Default: None
+        lw : float, optional
+            The width of the lines in the plots. Default: 1.5 px.
+        fontsize : integer, optional
+            The font size for the labels in the plot. Default: 18 pt.
+        colors : list of strings, optional
+            The colors for the lines plotted on the left y-axis.
+            Default: ["blue", "red", "green", "black"]
+        color2 : string, optional
+            The color for the line plotted on the right y-axis.
+            Default: "magenta"
+        fig : :class:`~matplotlib.figure.Figure`, optional
+            A Figure instance to plot in. Default: None, one will be
+            created if not provided.
+        ax : :class:`~matplotlib.axes.Axes`, optional
+            An Axes instance to plot in. Default: None, one will be
+            created if not provided.
+        tbegin : string, optional
+            The start time of the plot. Default is to plot from the
+            beginning of the load. 
+        tend : string, optional
+            The end time of the plot. Default is to plot to the
+            ending of the load.
+        annotations : list of strings, optional
+            Additional annotations to add to the plot. Available options
+            are "cti_runs", "comms", "belts", "perigee", "sim_trans",
+            and "apogee". Default: None
+        ymin : float, optional
+            Set the minimum value of the y-axis on the left side of the 
+            plot.
+        ymax : float, optional
+            Set the maximum value of the y-axis on the left side of the 
+            plot.
+        ymin2 : float, optional
+            Set the minimum value of the y-axis on the right side of the 
+            plot.
+        ymax2 : float, optional
+            Set the maximum value of the y-axis on the right side of the 
+            plot.
+        """
         dp = DatePlot(self.ds, fields, field2=field2, lw=lw,
                       fontsize=fontsize, colors=colors, color2=color2,
                       fig=fig, ax=ax)
