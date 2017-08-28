@@ -1,0 +1,50 @@
+#!/usr/bin/env python
+
+import matplotlib
+matplotlib.use("Qt5Agg")
+import matplotlib.pyplot as plt
+import argparse
+import acispy
+from acispy.utils import state_labels
+
+parser = argparse.ArgumentParser(description='Make a phase plot of one MSID or state versus another within a certain time frame.')
+parser.add_argument("tstart", type=str, help='The start time in YYYY:DOY:HH:MM:SS format')
+parser.add_argument("tstop", type=str, help='The stop time in YYYY:DOY:HH:MM:SS format')
+parser.add_argument("x_field", type=str, help='The MSID or state to plot on the x-axis')
+parser.add_argument("y_field", type=str, help='The MSID or state to plot on the y-axis')
+parser.add_argument("x_bins", type=int, help='The number of bins on the x-axis')
+parser.add_argument("y_bins", type=int, help='The number of bins on the y-axis')
+parser.add_argument("--scale", type=str, default="linear", help="Use linear or log scaling for the histogram, default 'linear'")
+parser.add_argument("--cmap", type=str, default="hot", help="The colormap for the histogram, default 'hot'")
+args = parser.parse_args()
+
+msids = []
+states = []
+
+if args.x_field in state_labels:
+    x_field = ("states", args.x_field)
+    states.append(args.x_field)
+else:
+    msids.append(args.x_field)
+    x_field = ("msids", args.x_field)
+
+if args.y_field in state_labels:
+    y_field = ("states", args.y_field)
+    states.append(args.y_field)
+else:
+    msids.append(args.y_field)
+    y_field = ("msids", args.y_field)
+
+ds = acispy.ArchiveData(args.tstart, args.tstop,
+                        msid_keys=msids, state_keys=states,
+                        interpolate_msids=True, filter_bad=True)
+
+if x_field[0] == "states" and y_field[0] != "states":
+    ds.map_state_to_msid(x_field[1], y_field[1])
+    x_field = ("msids", x_field[1])
+elif x_field[0] != "states" and y_field[0] == "states":
+    ds.map_state_to_msid(y_field[1], x_field[1])
+    y_field = ("msids", y_field[1])
+
+pp = acispy.PhaseHistogramPlot(ds, x_field, y_field, x_bins, y_bins, scale=args.scale, cmap=args.cmap)
+plt.show()
