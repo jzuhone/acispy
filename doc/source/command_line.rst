@@ -327,3 +327,81 @@ Returns:
 
 .. image:: _images/cti_run2.png
 
+``phase_scatter_plot``
+----------------------
+
+.. code-block:: text
+
+    usage: phase_scatter_plot [-h] [--c_field C_FIELD] [--cmap CMAP]
+                              tstart tstop x_field y_field
+
+    Make a phase scatter plot of one MSID or state versus another within a certain
+    time frame.
+
+    positional arguments:
+      tstart             The start time in YYYY:DOY:HH:MM:SS format
+      tstop              The stop time in YYYY:DOY:HH:MM:SS format
+      x_field            The MSID or state to plot on the x-axis
+      y_field            The MSID or state to plot on the y-axis
+
+    optional arguments:
+      -h, --help         show this help message and exit
+      --c_field C_FIELD  The MSID or state to plot using colors
+      --cmap CMAP        The colormap to use if plotting colors
+
+Example 1
++++++++++
+
+.. code-block:: bash
+
+    [~]$ phase_scatter_plot 2017:100 2017:200 1deamzt 1dpamzt
+
+Returns:
+
+.. image:: _images/phase_scatter_plot1.png
+
+Example 2
++++++++++
+
+.. code-block:: bash
+
+    [~]$ phase_scatter_plot 2017:100 2017:200 1deamzt 1dpamzt --c_field ccd_count --cmap=jet
+
+Returns:
+
+.. image:: _images/phase_scatter_plot2.png
+
+``phase_histogram_plot``
+------------------------
+
+.. code-block:: text
+
+    usage: phase_histogram_plot [-h] [--scale SCALE] [--cmap CMAP]
+                                tstart tstop x_field y_field x_bins y_bins
+
+    Make a phase plot of one MSID or state versus another within a certain time
+    frame.
+
+    positional arguments:
+      tstart         The start time in YYYY:DOY:HH:MM:SS format
+      tstop          The stop time in YYYY:DOY:HH:MM:SS format
+      x_field        The MSID or state to plot on the x-axis
+      y_field        The MSID or state to plot on the y-axis
+      x_bins         The number of bins on the x-axis
+      y_bins         The number of bins on the y-axis
+
+    optional arguments:
+      -h, --help     show this help message and exit
+      --scale SCALE  Use linear or log scaling for the histogram, default 'linear'
+      --cmap CMAP    The colormap for the histogram, default 'hot'
+
+Example
++++++++
+
+.. code-block:: bash
+
+    [~]$ phase_histogram_plot 2017:100 2017:200 1deamzt 1dpamzt 40 40 --scale=log --cmap=hsv
+
+Returns:
+
+.. image:: _images/phase_histogram_plot.png
