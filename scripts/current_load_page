@@ -8,10 +8,10 @@ matplotlib.use("agg")
 import acispy
 import matplotlib.pyplot as plt
 from Chandra.Time import date2secs, secs2date
+import argparse
 
 load_root = "/data/acis/LoadReviews"
 review_file = "ACIS-LoadReview.txt"
-outfile = "/data/wdocs/jzuhone/current_acis_load.html"
 
 plot_limits = {"fptemp_11": (-120.0, -110.0),
                "1deamzt": (5.0, 42.0),
@@ -153,9 +153,18 @@ def process_load(lr):
 
     return outlines
 
+parser = argparse.ArgumentParser(description='Run script for the "ACIS Current Load Real-Time" page.')
+parser.add_argument("--page_path", type=str, default="/data/wdocs/jzuhone",
+                    help='The file to write the page to.')
+args = parser.parse_args()
+
+outfile = os.path.join(args.page_path, "current_acis_load.html")
+
 find_load = True
 lr = None
+dea_tl_data = None
 last_tl_ts = 0.0
+last_dea_tl_ts = 0.0
 load_name = ""
 old_load_name = ""
 
@@ -223,14 +232,18 @@ while True:
         # Need to determine the load again because we ran out
         find_load = True
         lr = None
+        dea_tl_data = None
     else:
         tl_ts = os.path.getmtime("/data/acis/eng_plots/acis_eng_10day.tl")
-
+        dea_tl_ts = os.path.getmtime("/data/acis/eng_plots/acis_dea_10day.tl")
         if tl_ts != last_tl_ts:
-            lr = acispy.ACISLoadReview(load_dir, get_msids=True, 
+            lr = acispy.ACISLoadReview(load_dir, get_msids=True,
                                        tl_file="/data/acis/eng_plots/acis_eng_10day.tl")
             lr.get_updated_dsn_comms()
             last_tl_ts = tl_ts
+        if dea_tl_data is None or dea_tl_ts != last_dea_tl_ts:
+            dea_tl_data = acispy.TracelogData("/data/acis/eng_plots/acis_dea_10day.tl")
+            last_dea_tl_ts = dea_tl_ts
 
         tnow = now_time_utc.strftime("%Y:%j:%H:%M:%S")
 
@@ -251,8 +264,11 @@ while True:
                 dp.add_hline(planning_limits[temp], color='g')
                 dp.add_hline(yellow_limits[temp], color='gold')
                 dp.add_hline(red_limits[temp], color='r')
+            else:
+                dp_fp = acispy.DatePlot(dea_tl_data, "fptemp_11", colors='red', fig=dp.fig, ax=dp.ax)
+                dp_fp.set_ylim(*plot_limits[temp])
             dp.fig.subplots_adjust(right=0.8)
-            dp.savefig("/data/wdocs/jzuhone/current_%s.png" % temp)
+            dp.savefig(os.path.join(args.page_path, "current_%s.png" % temp))
 
         w1, h1 = dp.fig.get_size_inches()
 
@@ -268,7 +284,7 @@ while True:
         lm = dp.fig.subplotpars.left*w1/w2
         rm = dp.fig.subplotpars.right*w1/w2
         ccd.fig.subplots_adjust(left=lm, right=rm)
-        ccd.savefig("/data/wdocs/jzuhone/current_ccd.png")
+        ccd.savefig(os.path.join(args.page_path, "current_ccd.png"))
 
         roll = lr.plot("off_nominal_roll", field2="grating", tbegin=tbegin, tend=tend, ymin=-20.0, ymax=20.0,
                        annotations=["belts", "sim_trans", "comms", "perigee", "cti_runs"],
@@ -283,7 +299,7 @@ while True:
         lm = dp.fig.subplotpars.left*w1/w2
         rm = dp.fig.subplotpars.right*w1/w2
         roll.fig.subplots_adjust(left=lm, right=rm)
-        roll.savefig("/data/wdocs/jzuhone/current_roll.png")
+        roll.savefig(os.path.join(args.page_path, "current_roll.png"))
 
         plt.close("all")
 
