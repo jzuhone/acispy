@@ -62,7 +62,7 @@ class MSIDs(TimeSeriesData):
                 else:
                     key = k.lower()
                 table[key] = data[k].data
-                times[key] = get_time(time_arr)
+                times[key] = get_time(time_arr).secs
         return cls(table, times)
 
     @classmethod
