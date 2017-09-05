@@ -104,7 +104,7 @@ class ACISLoadReview(object):
         self.load_name = self.load_week + self.load_letter
         self.events = defaultdict(dict)
         self.start_status = self._get_start_status()
-        self._populate_event_times()
+        self.lines, self.line_times = self._populate_event_times()
         self.ds = ModelDataFromLoad(self.load_name, get_msids=get_msids,
                                     interpolate_msids=True, tl_file=tl_file,
                                     time_range=[self.first_time, self.last_time])
@@ -146,6 +146,9 @@ class ACISLoadReview(object):
         return status
 
     def _populate_event_times(self):
+        lines = []
+        line_times = []
+        time = self.first_time
         with open(self.load_file, "r") as f:
             for i, line in enumerate(f.readlines()):
                 words = line.strip().split()
@@ -197,6 +200,18 @@ class ACISLoadReview(object):
                             if "state" not in self.events[event]:
                                 self.events[event]["state"] = []
                             self.events[event]["state"].append(state)
+                    if line.startswith(self.load_year) or \
+                        line.startswith(self.next_year) or \
+                        "WSPOW COMMAND LOADS" in line or \
+                        "CHANDRA STATUS ARRAY" in line or \
+                        "ACIS integration time" in line or \
+                        "requested time" in line or \
+                        "ObsID change" in line or \
+                        "THERE IS A Z-SIM" in line or \
+                        "==> DITHER" in line:
+                        lines.append(line)
+                        line_times.append(time)
+        return lines, line_times
 
     def _find_cti_runs(self):
         self.events["start_cti"] = {"times": [], "state": []}

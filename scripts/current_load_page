@@ -74,29 +74,9 @@ def find_the_load(now_time_utc, year_string, last_year_string):
 
     return load_year, load_dir, load_name
 
-def find_first_time(load_year, load_dir, year_string, next_year_string):
-    infile = os.path.join(load_root, load_year, load_dir, "ofls", review_file)
-    with open(infile, "r") as f:
-        for line in f.readlines():
-            words = line.strip().split()
-            if len(words) > 0:
-                if (line.startswith(year_string) or
-                    line.startswith(next_year_string)):
-                    time = words[0]
-                    break
-    return time
-
-def process_load(load_year, load_dir, year_string, next_year_string):
+def process_load(lr):
 
     obsid_link = "https://icxc.harvard.edu/cgi-bin/mp/target_param.cgi?"
-
-    next_year = str(int(load_year)+1)
-
-    infile = os.path.join(load_root, load_year, load_dir, "ofls", review_file)
-
-    f = open(infile, 'r')
-    inlines = f.readlines()
-    f.close()
 
     outlines = []
     times = []
@@ -105,18 +85,12 @@ def process_load(load_year, load_dir, year_string, next_year_string):
     radzone = 0  # not in radzone
     find_first_status = True
 
-    the_time = find_first_time(load_year, load_dir, year_string, next_year_string)
-
-    for i, line in enumerate(inlines):
+    for i, line in enumerate(lr.lines):
 
         a_line = line.strip()
         words = a_line.split()
 
-        if a_line.startswith(load_year) or \
-            a_line.startswith(next_year):
-            the_time = words[0]
-
-        the_line = None
+        the_time = lr.line_times[i]
 
         # Pad lines so highlighting happens across the page
         if len(a_line) < 74:
@@ -126,22 +100,20 @@ def process_load(load_year, load_dir, year_string, next_year_string):
         # Parse the first status
         if a_line.startswith("CHANDRA STATUS ARRAY AT START") and find_first_status:
             find_first_status = False
-            stat_words = inlines[i+2].strip().split(",")
+            stat_words = lr.lines[i+2].strip().split(",")
             if stat_words[4] == "OORMPDS":
                 radzone = 1
 
         # Color obsid changes pink
         if "MP_OBSID" in a_line:
-            if int(words[-1]) > 40000:
-                the_line = a_line
-            else:
+            if int(words[-1]) < 40000:
                 obsid = "<a href=\"%s%s\"><font color=\"blue\">%s</font></a>" % (obsid_link, words[-1], words[-1])
-                the_line = "%s    %s  MP_OBSID    %s                       " % (words[0], words[1], obsid)
-            the_line = "<obsidline>%s</obsidline>" % the_line
+                a_line = "%s    %s  MP_OBSID    %s                       " % (words[0], words[1], obsid)
+            a_line = "<obsidline>%s</obsidline>" % a_line
 
         # Highlight radmon entry/exit, triplet, first ascending ACIS stop science
         if "COMMAND_SW" in a_line and "OORMP" in a_line:
-            the_line = "<padtime>%s</padtime>" % a_line
+            a_line = "<padtime>%s</padtime>" % a_line
             if "OORMPDS" in a_line:
                 radzone += 1
             else:
@@ -154,7 +126,7 @@ def process_load(load_year, load_dir, year_string, next_year_string):
             elif radzone == 2 and ("AA00000000" in a_line or
                                    "WSVIDALLDN" in a_line or 
                                    "RS_0000001" in a_line):
-                the_line = "<padtime>%s</padtime>" % a_line
+                a_line = "<padtime>%s</padtime>" % a_line
                 if "RS_0000001" in a_line:
                     # radzone state 3 - look for ascend ACIS cmd
                     radzone += 1
@@ -163,7 +135,7 @@ def process_load(load_year, load_dir, year_string, next_year_string):
                 radzone += 1
             elif radzone == 3 and "ACISPKT" in a_line:
                 # first asc CTI ACIS cmd?
-                the_line = "<padtime>%s</padtime>" % a_line
+                a_line = "<padtime>%s</padtime>" % a_line
                 radzone += 1
 
         # Start science
@@ -175,41 +147,26 @@ def process_load(load_year, load_dir, year_string, next_year_string):
             inScience = False
 
         # Highlight comms in blue
-        """
         if "REAL-TIME COMM" in a_line:
             if "ENDS" in a_line:
                 time1 = secs2date(date2secs(words[0])-1800.0)
                 time2 = secs2date(date2secs(words[-2])-1800.0)
-                the_line = "%s   REAL-TIME COMM ENDS     %s  EDT" % (time1, time2)
+                a_line = "%s   REAL-TIME COMM ENDS     %s  EDT" % (time1, time2)
             elif "BEGINS" in a_line:
-                the_line = a_line[:71]
-            the_line = "<commline>%s</commline>" % the_line
+                a_line = a_line[:71]
+            a_line = "<commline>%s</commline>" % a_line
 
         if "COMM DURATION" in a_line:
             duration = float(words[-2]) - 30.0
-            the_line = "==> COMM DURATION:  %4.2f mins." % duration
-        """
+            a_line = "==> COMM DURATION:  %4.2f mins." % duration
 
         # Mechanical motions
         if "COMMAND_SW" in a_line and "ETG" in a_line or "SIMTRANS" in a_line:
-            the_line = "<mechline>%s</mechline>" % a_line
+            a_line = "<mechline>%s</mechline>" % a_line
 
-        if the_line is None:
-            if a_line.startswith(load_year) or \
-               a_line.startswith(next_year) or \
-               "WSPOW COMMAND LOADS" in a_line or \
-               "CHANDRA STATUS ARRAY" in a_line or \
-               "ACIS integration time" in a_line or \
-               "requested time" in a_line or \
-               "ObsID change" in a_line or \
-               "THERE IS A Z-SIM" in a_line or \
-               "==> DITHER" in a_line:
-                the_line = a_line
-
-        if the_line is not None:
-            outlines.append(the_line)
-            outlines.append(" ")
-            times.append(the_time)
+        outlines.append(a_line)
+        outlines.append(" ")
+        times.append(the_time)
 
     outlines += ["</pre>", "</body>"]
 
@@ -233,7 +190,10 @@ while True:
     load_year, load_dir, load_name = find_the_load(now_time_utc, year_string, last_year_string)
 
     if load_name != old_load_name or find_load:
-        outlines, times = process_load(load_year, load_dir, year_string, next_year_string)
+        lr = acispy.ACISLoadReview(load_dir, get_msids=True,
+                                    tl_file="/data/acis/eng_plots/acis_eng_10day.tl")
+        lr.get_updated_dsn_comms()
+        outlines, times = process_load(lr)
         assert len(outlines) == len(times)
         find_load = False
         old_load_name = load_name
@@ -286,12 +246,11 @@ while True:
         lr = None
     else:
         tl_ts = os.path.getmtime("/data/acis/eng_plots/acis_eng_10day.tl")
-        if lr is None or tl_ts != last_tl_ts:
+
+        if tl_ts != last_tl_ts:
             lr = acispy.ACISLoadReview(load_dir, get_msids=True, 
                                        tl_file="/data/acis/eng_plots/acis_eng_10day.tl")
             last_tl_ts = tl_ts
-
-        lr.get_updated_dsn_comms()
 
         tnow = now_time_utc.strftime("%Y:%j:%H:%M:%S")
 
