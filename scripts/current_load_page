@@ -154,11 +154,11 @@ def process_load(lr):
     return outlines
 
 parser = argparse.ArgumentParser(description='Run script for the "ACIS Current Load Real-Time" page.')
-parser.add_argument("--page_path", type=str, default="/data/wdocs/jzuhone",
+parser.add_argument("--page_path", type=str, default="/data/wdocs/jzuhone/current_acis_load.html",
                     help='The file to write the page to.')
 args = parser.parse_args()
 
-outfile = os.path.join(args.page_path, "current_acis_load.html")
+outfile = os.path.join(args.page_path)
 
 find_load = True
 lr = None
