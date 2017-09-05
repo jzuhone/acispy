@@ -191,7 +191,7 @@ while True:
 
     if load_name != old_load_name or find_load:
         lr = acispy.ACISLoadReview(load_dir, get_msids=True,
-                                    tl_file="/data/acis/eng_plots/acis_eng_10day.tl")
+                                   tl_file="/data/acis/eng_plots/acis_eng_10day.tl")
         lr.get_updated_dsn_comms()
         outlines, times = process_load(lr)
         assert len(outlines) == len(times)
@@ -314,30 +314,8 @@ while True:
             footer.append("<img src=\"current_%s.png\" />" % fig)
             footer.append("<p />")
 
-        begin_comm_secs = date2secs(lr.comm_begins.times)
-        end_comm_secs = date2secs(lr.comm_ends.times)
-        newsecs = date2secs(newtimes)
-
-        all_secs = np.concatenate(newsecs, begin_comm_secs, end_comm_secs)
-
-        begin_comm_lines = []
-        end_comm_lines = []
-
-        for tbegin in lr.comm_begins.times:
-            tbegin_edt = datetime.strptime(tbegin, "%Y:%j:%H:%M:%S.%f").replace(tzinfo=timezone.utc).astimezone(tz=None)
-            the_line = "%s   REAL-TIME COMM BEGINS   %s  EDT" % (tbegin, tbegin_edt.strftime("%Y:%j:%H:%M:%S.%f"))
-            begin_comm_lines.append("<commline>%s</commline>" % the_line)
-
-        for tend in lr.comm_ends.times:
-            tend_edt = datetime.strptime(tend, "%Y:%j:%H:%M:%S.%f").replace(tzinfo=timezone.utc).astimezone(tz=None)
-            the_line = "%s   REAL-TIME COMM ENDS     %s  EDT" % (tend, tend_edt.strftime("%Y:%j:%H:%M:%S.%f"))
-            end_comm_lines.append("<commline>%s</commline>" % the_line)
-
-        all_lines = newlines+begin_comm_lines+end_comm_lines
-        writelines = [l for (t, l) in sorted(zip(all_secs, all_lines))]
-
         f = open(outfile, "w")
-        f.write("\n".join(header+writelines+footer))
+        f.write("\n".join(header+newlines+footer))
         f.close()
 
         time.sleep(30)
