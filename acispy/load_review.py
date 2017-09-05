@@ -7,7 +7,7 @@ from collections import defaultdict
 from Chandra.Time import date2secs, secs2date
 from Ska.Matplotlib import cxctime2plotdate
 import numpy as np
-from datetime import datetime
+from datetime import datetime, timezone
 
 lr_root = "/data/acis/LoadReviews"
 lr_file = "ACIS-LoadReview.txt"
@@ -104,6 +104,7 @@ class ACISLoadReview(object):
         self.load_name = self.load_week + self.load_letter
         self.events = defaultdict(dict)
         self.start_status = self._get_start_status()
+        self.begin_radzone = int(self.start_status['radmon_status'] == "OORMPDS")
         self.lines, self.line_times = self._populate_event_times()
         self.ds = ModelDataFromLoad(self.load_name, get_msids=get_msids,
                                     interpolate_msids=True, tl_file=tl_file,
@@ -208,9 +209,13 @@ class ACISLoadReview(object):
                         "requested time" in line or \
                         "ObsID change" in line or \
                         "THERE IS A Z-SIM" in line or \
-                        "==> DITHER" in line:
+                        "==> DITHER" in line or \
+                        "COMM DURATION" in line:
                         lines.append(line)
                         line_times.append(time)
+        secs = date2secs(line_times)
+        lines = [l for (t, l) in sorted(zip(secs, lines))]
+        line_times = [l for (t, l) in sorted(zip(secs, line_times))]
         return lines, line_times
 
     def _find_cti_runs(self):
@@ -252,6 +257,24 @@ class ACISLoadReview(object):
                     eots.append(time_eot)
         self.events["comm_begins"]["times"] = secs2date(bots)
         self.events["comm_ends"]["times"] = secs2date(eots)
+        for i, line in self.lines:
+            if "REAL-TIME COMM" in line:
+                self.lines.pop(i)
+        new_comm_lines = []
+        new_comm_times = []
+        for time in self.events["comm_begins"]["times"]:
+            local_time = datetime.strptime(time, "%Y:%j:%H:%M:%S.%f").replace(tzinfo=timezone.utc).astimezone(tz=None)
+            new_comm_times.append(time)
+            new_comm_lines.append("%s   REAL-TIME COMM BEGINS   %s  EDT" % (time, local_time.strftime("%Y:%j:%H:%M:%S.%f")))
+        for time in self.events["comm_ends"]["times"]:
+            local_time = datetime.strptime(time, "%Y:%j:%H:%M:%S.%f").replace(tzinfo=timezone.utc).astimezone(tz=None)
+            new_comm_times.append(time)
+            new_comm_lines.append("%s   REAL-TIME COMM ENDS     %s  EDT" % (time, local_time.strftime("%Y:%j:%H:%M:%S.%f")))
+        line_times = self.line_times + new_comm_times
+        lines = self.lines + new_comm_lines
+        secs = date2secs(line_times)
+        self.lines = [l for (t, l) in sorted(zip(secs, lines))]
+        self.line_times = [l for (t, l) in sorted(zip(secs, line_times))]
 
     def __getattr__(self, item):
         if item in self.events:

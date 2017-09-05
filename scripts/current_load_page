@@ -8,7 +8,6 @@ matplotlib.use("agg")
 import acispy
 import matplotlib.pyplot as plt
 from Chandra.Time import date2secs, secs2date
-import numpy as np
 
 load_root = "/data/acis/LoadReviews"
 review_file = "ACIS-LoadReview.txt"
@@ -79,30 +78,19 @@ def process_load(lr):
     obsid_link = "https://icxc.harvard.edu/cgi-bin/mp/target_param.cgi?"
 
     outlines = []
-    times = []
 
     inScience = False
-    radzone = 0  # not in radzone
-    find_first_status = True
+    radzone = lr.begin_radzone
 
     for i, line in enumerate(lr.lines):
 
         a_line = line.strip()
         words = a_line.split()
 
-        the_time = lr.line_times[i]
-
         # Pad lines so highlighting happens across the page
         if len(a_line) < 74:
             the_pad = ' '*(74 - len(a_line))
             a_line = a_line + the_pad
-
-        # Parse the first status
-        if a_line.startswith("CHANDRA STATUS ARRAY AT START") and find_first_status:
-            find_first_status = False
-            stat_words = lr.lines[i+2].strip().split(",")
-            if stat_words[4] == "OORMPDS":
-                radzone = 1
 
         # Color obsid changes pink
         if "MP_OBSID" in a_line:
@@ -148,12 +136,6 @@ def process_load(lr):
 
         # Highlight comms in blue
         if "REAL-TIME COMM" in a_line:
-            if "ENDS" in a_line:
-                time1 = secs2date(date2secs(words[0])-1800.0)
-                time2 = secs2date(date2secs(words[-2])-1800.0)
-                a_line = "%s   REAL-TIME COMM ENDS     %s  EDT" % (time1, time2)
-            elif "BEGINS" in a_line:
-                a_line = a_line[:71]
             a_line = "<commline>%s</commline>" % a_line
 
         if "COMM DURATION" in a_line:
@@ -166,7 +148,6 @@ def process_load(lr):
 
         outlines.append(a_line)
         outlines.append(" ")
-        times.append(the_time)
 
     outlines += ["</pre>", "</body>"]
 
@@ -193,8 +174,7 @@ while True:
         lr = acispy.ACISLoadReview(load_dir, get_msids=True,
                                    tl_file="/data/acis/eng_plots/acis_eng_10day.tl")
         lr.get_updated_dsn_comms()
-        outlines, times = process_load(lr)
-        assert len(outlines) == len(times)
+        outlines = process_load(lr)
         find_load = False
         old_load_name = load_name
 
@@ -218,7 +198,6 @@ while True:
     begin_time = now_time_utc - timedelta(days=1)
     end_time = now_time_utc + timedelta(days=1)
 
-    newtimes = []
     newlines = []
 
     find_time = True
@@ -250,6 +229,7 @@ while True:
         if tl_ts != last_tl_ts:
             lr = acispy.ACISLoadReview(load_dir, get_msids=True, 
                                        tl_file="/data/acis/eng_plots/acis_eng_10day.tl")
+            lr.get_updated_dsn_comms()
             last_tl_ts = tl_ts
 
         tnow = now_time_utc.strftime("%Y:%j:%H:%M:%S")
