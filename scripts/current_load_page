@@ -2,7 +2,6 @@
 
 from datetime import datetime, timedelta, timezone
 import os
-import time
 import matplotlib
 matplotlib.use("agg")
 import acispy
@@ -336,5 +335,3 @@ while True:
             f = open(cssfile, "w")
             f.write("\n".join(lr_web_css))
             f.close()
-
-        time.sleep(20)
