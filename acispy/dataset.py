@@ -350,7 +350,7 @@ class ArchiveData(Dataset):
         super(ArchiveData, self).__init__(msids, states, model)
 
 class TracelogData(Dataset):
-    def __init__(self, filename, state_keys=None):
+    def __init__(self, filename, state_keys=None, tbegin=None, tend=None):
         """
         Fetch MSIDs from a tracelog file and states from the commanded
         states database.
@@ -374,9 +374,9 @@ class TracelogData(Dataset):
         line = f.readline()
         f.close()
         if line.startswith("TIME"):
-            msids = MSIDs.from_tracelog(filename)
+            msids = MSIDs.from_tracelog(filename, tbegin=tbegin, tend=tend)
         elif line.startswith("#YEAR") or line.startswith("YEAR"):
-            msids = MSIDs.from_mit_file(filename)
+            msids = MSIDs.from_mit_file(filename, tbegin=tbegin, tend=tend)
         else:
             raise RuntimeError("I cannot parse this file!")
         tmin = 1.0e55
@@ -424,7 +424,12 @@ class ModelDataFromLoad(Dataset):
         states = States.from_load_page(load)
         if get_msids:
             if tl_file is not None:
-                msids = MSIDs.from_tracelog(tl_file)
+                if time_range is None:
+                    tbegin = None
+                    tend = None
+                else:
+                    tbegin, tend = time_range
+                msids = MSIDs.from_tracelog(tl_file, tbegin=tbegin, tend=tend)
             else:
                 times = model[comps[0]].times.value
                 tstart = secs2date(times[0]-700.0)

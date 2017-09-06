@@ -35,7 +35,17 @@ class MSIDs(TimeSeriesData):
         self.state_codes = state_codes
 
     @classmethod
-    def from_mit_file(cls, filename):
+    def from_mit_file(cls, filename, tbegin=None, tend=None):
+        if tbegin is None:
+            tbegin = -1.0e22
+        else:
+            if isinstance(tbegin, six.string_types):
+                tbegin = date2secs(tbegin)
+        if tend is None:
+            tend = 1.0e22
+        else:
+            if isinstance(tend, six.string_types):
+                tend = date2secs(tend)
         f = open(filename, 'r')
         line = f.readline()
         f.close()
@@ -59,6 +69,7 @@ class MSIDs(TimeSeriesData):
                                              data["DOY"].data,
                                              hours, mins, secs)]
         tsecs = date2secs(time_arr)
+        idxs = np.logical_and(tsecs >= tbegin, tsecs <= tend)
         table = {}
         times = {}
         for k in data.keys():
@@ -67,12 +78,22 @@ class MSIDs(TimeSeriesData):
                     key = mit_trans_table[k]
                 else:
                     key = k.lower()
-                table[key] = data[k].data
-                times[key] = tsecs
+                table[key] = data[k].data[idxs]
+                times[key] = tsecs[idxs]
         return cls(table, times)
 
     @classmethod
-    def from_tracelog(cls, filename):
+    def from_tracelog(cls, filename, tbegin=None, tend=None):
+        if tbegin is None:
+            tbegin = -1.0e22
+        else:
+            if isinstance(tbegin, six.string_types):
+                tbegin = date2secs(tbegin)
+        if tend is None:
+            tend = 1.0e22
+        else:
+            if isinstance(tend, six.string_types):
+                tend = date2secs(tend)
         f = open(filename, "r")
         header = f.readline().split()
         dtype = []
@@ -90,8 +111,9 @@ class MSIDs(TimeSeriesData):
         data = np.array(data, dtype=dtype)
         # Convert times in the TIME column to Chandra 1998 time
         data['time'] -= 410227200.
-        table = dict((k.lower(), data[k]) for k in data.dtype.names if k != "time")
-        times = dict((k.lower(), data["time"]) for k in header if k != "time")
+        idxs = np.logical_and(data['time'] >= tbegin, data['time'] <= tend)
+        table = dict((k.lower(), data[k][idxs]) for k in data.dtype.names if k != "time")
+        times = dict((k.lower(), data["time"][idxs]) for k in header if k != "time")
         return cls(table, times)
 
     @classmethod
