@@ -8,6 +8,7 @@ from Chandra.Time import date2secs, secs2date
 from Ska.Matplotlib import cxctime2plotdate
 import numpy as np
 from datetime import datetime, timezone
+import bisect
 
 lr_root = "/data/acis/LoadReviews"
 lr_file = "ACIS-LoadReview.txt"
@@ -150,12 +151,16 @@ class ACISLoadReview(object):
         lines = []
         line_times = []
         time = self.first_time
+        comm_durations = []
         with open(self.load_file, "r") as f:
             for i, line in enumerate(f.readlines()):
                 words = line.strip().split()
                 if len(words) > 0:
                     event = None
                     state = None
+                    if line.startswith(self.load_year) or \
+                        line.startswith(self.next_year):
+                        time = words[0]
                     if "MP_OBSID" in line:
                         event = "obsid_change"
                         state = words[-1]
@@ -194,13 +199,16 @@ class ACISLoadReview(object):
                             self.events[event] = {"times": []}
                         if event == "comm_ends":
                             time = secs2date(date2secs(words[0])-1800.0)
-                        else:
-                            time = words[0]
                         self.events[event]["times"].append(time)
                         if state is not None:
                             if "state" not in self.events[event]:
                                 self.events[event]["state"] = []
                             self.events[event]["state"].append(state)
+                    if "REAL-TIME COMM" in line:
+                        continue
+                    if "COMM DURATION" in line:
+                        comm_durations.append(float(words[-2])-30.0)
+                        continue
                     if line.startswith(self.load_year) or \
                         line.startswith(self.next_year) or \
                         "WSPOW COMMAND LOADS" in line or \
@@ -209,13 +217,11 @@ class ACISLoadReview(object):
                         "requested time" in line or \
                         "ObsID change" in line or \
                         "THERE IS A Z-SIM" in line or \
-                        "==> DITHER" in line or \
-                        "COMM DURATION" in line:
+                        "==> DITHER" in line:
                         lines.append(line)
                         line_times.append(time)
-        secs = date2secs(line_times)
-        lines = [l for (t, l) in sorted(zip(secs, lines))]
-        line_times = [l for (t, l) in sorted(zip(secs, line_times))]
+        line_times = date2secs(line_times)
+        lines, line_times = self._fix_comm_times(lines, line_times, comm_durations)
         return lines, line_times
 
     def _find_cti_runs(self):
@@ -244,6 +250,7 @@ class ACISLoadReview(object):
         tstop = date2secs(self.last_time)
         bots = []
         eots = []
+        new_durations = []
         with open(dsnfile) as f:
             for line in f.readlines()[2:]:
                 words = line.strip().split()
@@ -251,30 +258,37 @@ class ACISLoadReview(object):
                 eot = datetime.strptime("%s:%s:00:00:00" % (words[-2], words[-1][:3]), "%Y:%j:%H:%M:%S")
                 time_bot = date2secs(bot.strftime("%Y:%j:%H:%M:%S"))+86400.0*(float(words[-3]) % 1)
                 time_eot = date2secs(eot.strftime("%Y:%j:%H:%M:%S"))+86400.0*(float(words[-1]) % 1)
+                new_durations.append((time_eot-time_bot)/60.0)
                 if tstart <= time_bot <= tstop:
                     bots.append(time_bot)
                 if tstart <= time_eot <= tstop:
                     eots.append(time_eot)
         self.events["comm_begins"]["times"] = secs2date(bots)
         self.events["comm_ends"]["times"] = secs2date(eots)
-        for i, line in self.lines:
-            if "REAL-TIME COMM" in line:
-                self.lines.pop(i)
-        new_comm_lines = []
-        new_comm_times = []
+        self.lines, self.line_times = self._fix_comm_times(self.lines, self.line_times, new_durations)
+
+    def _fix_comm_times(self, lines, line_times, comm_durations):
+        new_lines = []
+        new_times = []
+        for i, line in enumerate(lines):
+            if not "REAL-TIME COMM" in line and not "COMM DURATION" in line:
+                new_lines.append(line)
+                new_times.append(line_times[i])
         for time in self.events["comm_begins"]["times"]:
             local_time = datetime.strptime(time, "%Y:%j:%H:%M:%S.%f").replace(tzinfo=timezone.utc).astimezone(tz=None)
-            new_comm_times.append(time)
-            new_comm_lines.append("%s   REAL-TIME COMM BEGINS   %s  EDT" % (time, local_time.strftime("%Y:%j:%H:%M:%S.%f")))
-        for time in self.events["comm_ends"]["times"]:
+            t = date2secs(time)
+            idx = bisect.bisect_right(new_times, t)
+            new_times.insert(idx, t)
+            new_lines.insert(idx, "%s   REAL-TIME COMM BEGINS   %s  EDT" % (time, local_time.strftime("%Y:%j:%H:%M:%S")))
+        for i, time in enumerate(self.events["comm_ends"]["times"]):
             local_time = datetime.strptime(time, "%Y:%j:%H:%M:%S.%f").replace(tzinfo=timezone.utc).astimezone(tz=None)
-            new_comm_times.append(time)
-            new_comm_lines.append("%s   REAL-TIME COMM ENDS     %s  EDT" % (time, local_time.strftime("%Y:%j:%H:%M:%S.%f")))
-        line_times = self.line_times + new_comm_times
-        lines = self.lines + new_comm_lines
-        secs = date2secs(line_times)
-        self.lines = [l for (t, l) in sorted(zip(secs, lines))]
-        self.line_times = [l for (t, l) in sorted(zip(secs, line_times))]
+            t = date2secs(time)
+            idx = bisect.bisect_right(new_times, t)
+            new_times.insert(idx, t)
+            new_lines.insert(idx, "%s   REAL-TIME COMM ENDS     %s  EDT" % (time, local_time.strftime("%Y:%j:%H:%M:%S")))
+            new_times.insert(idx+1, t)
+            new_lines.insert(idx+1, "==> COMM DURATION:  %g mins." % comm_durations[i])
+        return new_lines, new_times
 
     def __getattr__(self, item):
         if item in self.events:

@@ -10,6 +10,25 @@ import matplotlib.pyplot as plt
 from Chandra.Time import date2secs, secs2date
 import argparse
 
+lr_web_css = [
+    "commline {",
+    "    background-color: #26DDCC;",
+    "}\n",
+    "obsidline {",
+    "    background-color: pink;",
+    "}\n",
+    "padtime {",
+    "    background-color: yellow;",
+    "}\n",
+    "errline {",
+    "    background-color: #E0E0E0;",
+    "    color: firebrick;",
+    "}\n",
+    "mechline {",
+    "    background-color: orange;",
+    "}"
+]
+
 load_root = "/data/acis/LoadReviews"
 review_file = "ACIS-LoadReview.txt"
 
@@ -138,10 +157,6 @@ def process_load(lr):
         if "REAL-TIME COMM" in a_line:
             a_line = "<commline>%s</commline>" % a_line
 
-        if "COMM DURATION" in a_line:
-            duration = float(words[-2]) - 30.0
-            a_line = "==> COMM DURATION:  %4.2f mins." % duration
-
         # Mechanical motions
         if "COMMAND_SW" in a_line and "ETG" in a_line or "SIMTRANS" in a_line:
             a_line = "<mechline>%s</mechline>" % a_line
@@ -158,7 +173,9 @@ parser.add_argument("--page_path", type=str, default="/data/wdocs/jzuhone/curren
                     help='The file to write the page to.')
 args = parser.parse_args()
 
-outfile = os.path.join(args.page_path)
+outfile = os.path.abspath(args.page_path)
+outdir = os.path.dirname(outfile)
+cssfile = os.path.join(outdir, "lr_web.css")
 
 find_load = True
 lr = None
@@ -268,7 +285,7 @@ while True:
                 dp_fp = acispy.DatePlot(dea_tl_data, "fptemp_11", colors='red', fig=dp.fig, ax=dp.ax)
                 dp_fp.set_ylim(*plot_limits[temp])
             dp.fig.subplots_adjust(right=0.8)
-            dp.savefig(os.path.join(args.page_path, "current_%s.png" % temp))
+            dp.savefig(os.path.join(outdir, "current_%s.png" % temp))
 
         w1, h1 = dp.fig.get_size_inches()
 
@@ -284,7 +301,7 @@ while True:
         lm = dp.fig.subplotpars.left*w1/w2
         rm = dp.fig.subplotpars.right*w1/w2
         ccd.fig.subplots_adjust(left=lm, right=rm)
-        ccd.savefig(os.path.join(args.page_path, "current_ccd.png"))
+        ccd.savefig(os.path.join(outdir, "current_ccd.png"))
 
         roll = lr.plot("off_nominal_roll", field2="grating", tbegin=tbegin, tend=tend, ymin=-20.0, ymax=20.0,
                        annotations=["belts", "sim_trans", "comms", "perigee", "cti_runs"],
@@ -299,7 +316,7 @@ while True:
         lm = dp.fig.subplotpars.left*w1/w2
         rm = dp.fig.subplotpars.right*w1/w2
         roll.fig.subplots_adjust(left=lm, right=rm)
-        roll.savefig(os.path.join(args.page_path, "current_roll.png"))
+        roll.savefig(os.path.join(outdir, "current_roll.png"))
 
         plt.close("all")
 
@@ -314,4 +331,9 @@ while True:
         f.write("\n".join(header+newlines+footer))
         f.close()
 
-        time.sleep(30)
+        if not os.path.exists(cssfile):
+            f = open(cssfile, "w")
+            f.write("\n".join(lr_web_css))
+            f.close()
+
+        time.sleep(20)
