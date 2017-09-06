@@ -6,6 +6,7 @@ import numpy as np
 from acispy.units import APQuantity, APStringArray, Quantity
 from acispy.time_series import TimeSeriesData
 import six
+from Chandra.Time import date2secs
 
 if six.PY2:
     str_type = "|S4"
@@ -57,6 +58,7 @@ class MSIDs(TimeSeriesData):
                     for y, d, h, m, s in zip(data[year].data,
                                              data["DOY"].data,
                                              hours, mins, secs)]
+        tsecs = date2secs(time_arr)
         table = {}
         times = {}
         for k in data.keys():
@@ -66,7 +68,7 @@ class MSIDs(TimeSeriesData):
                 else:
                     key = k.lower()
                 table[key] = data[k].data
-                times[key] = get_time(time_arr).secs
+                times[key] = tsecs
         return cls(table, times)
 
     @classmethod
