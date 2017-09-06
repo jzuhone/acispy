@@ -44,19 +44,23 @@ class MSIDs(TimeSeriesData):
             delimiter = "\t"
         else:
             delimiter = " "
+        if line.startswith("#"):
+            year = "#YEAR"
+        else:
+            year = "YEAR"
         data = ascii.read(filename, guess=False, format='csv',
                           delimiter=delimiter)
         mins, hours = np.modf(data["SEC"].data/3600.)
         secs, mins = np.modf(mins*60.)
         secs *= 60.0
         time_arr = ["%04d:%03d:%02d:%02d:%06.3f" % (y, d, h, m, s)
-                    for y, d, h, m, s in zip(data["YEAR"].data,
+                    for y, d, h, m, s in zip(data[year].data,
                                              data["DOY"].data,
                                              hours, mins, secs)]
         table = {}
         times = {}
         for k in data.keys():
-            if k not in ["YEAR", "DOY", "SEC"]:
+            if k not in [year, "DOY", "SEC"]:
                 if k in mit_trans_table:
                     key = mit_trans_table[k]
                 else:

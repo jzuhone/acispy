@@ -375,7 +375,7 @@ class TracelogData(Dataset):
         f.close()
         if line.startswith("TIME"):
             msids = MSIDs.from_tracelog(filename)
-        elif line.startswith("YEAR"):
+        elif line.startswith("#YEAR") or line.startswith("YEAR"):
             msids = MSIDs.from_mit_file(filename)
         else:
             raise RuntimeError("I cannot parse this file!")
