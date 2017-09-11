@@ -156,17 +156,21 @@ class CustomDatePlot(ACISPlot):
         The width of the lines in the plots. Default: 1.5 px.
     fontsize : integer, optional
         The font size for the labels in the plot. Default: 18 pt.
-    fig : :class:`~matplotlib.figure.Figure`, optional
-        A Figure instance to plot in. Default: None, one will be
-        created if not provided.
-    ax : :class:`~matplotlib.axes.Axes`, optional
-        An Axes instance to plot in. Default: None, one will be
-        created if not provided.
+    figsize : tuple of integers, optional
+        The size of the plot in (width, height) in inches. Default: (10, 8)
+    plot : :class:`~acispy.plots.DatePlot` or :class:`~acispy.plots.CustomDatePlot`, optional
+        An existing DatePlot to add this plot to. Default: None, one 
+        will be created if not provided.
 
     """
-    def __init__(self, dates, values, lw=1.5, fontsize=18, fig=None, ax=None, **kwargs):
-        if fig is None:
-            fig = plt.figure(figsize=(10, 8))
+    def __init__(self, dates, values, lw=1.5, fontsize=18, figsize=(10, 8),
+                 plot=None, **kwargs):
+        if plot is None:
+            fig = plt.figure(figsize=figsize)
+            ax = None
+        else:
+            fig = plot.fig
+            ax = plot.ax
         dates = DateTime(dates).secs
         ticklocs, fig, ax = plot_cxctime(dates, np.array(values), fig=fig, ax=ax, lw=lw, **kwargs)
         super(CustomDatePlot, self).__init__(fig, ax)
@@ -329,6 +333,11 @@ class DatePlot(CustomDatePlot):
     ax : :class:`~matplotlib.axes.Axes`, optional
         An Axes instance to plot in. Default: None, one will be
         created if not provided.
+    figsize : tuple of integers, optional
+        The size of the plot in (width, height) in inches. Default: (10, 8)
+    plot : :class:`~acispy.plots.DatePlot` or :class:`~acispy.plots.CustomDatePlot`, optional
+        An existing DatePlot to add this plot to. Default: None, one 
+        will be created if not provided.
 
     Examples
     --------
@@ -341,9 +350,14 @@ class DatePlot(CustomDatePlot):
     >>> p2 = DatePlot(ds, fields, fontsize=12, colors=["brown","black","orange"])
     """
     def __init__(self, ds, fields, field2=None, lw=1.5, fontsize=18,
-                 colors=None, color2='magenta', fig=None, ax=None):
-        if fig is None:
-            fig = plt.figure(figsize=(10, 8))
+                 colors=None, color2='magenta', figsize=(10, 8),
+                 plot=None):
+        if plot is None:
+            fig = plt.figure(figsize=figsize)
+            ax = None
+        else:
+            fig = plot.fig
+            ax = plot.ax
         if colors is None:
             colors = default_colors
         fields = ensure_list(fields)
@@ -569,9 +583,8 @@ class MultiDatePlot(object):
         The font size for the labels in the plot. Default: 15 pt.
     lw : float, optional
         The width of the lines in the plots. Default: 1.5 px.
-    fig : :class:`~matplotlib.figure.Figure`, optional
-        A Figure instance to plot in. Default: None, one will be
-        created if not provided.
+    figsize : tuple of integers, optional
+        The size of the plot in (width, height) in inches. Default: (12, 12)
 
     Examples
     --------
@@ -584,9 +597,8 @@ class MultiDatePlot(object):
     >>> mp = MultiDatePlot(ds, fields, lw=2)
     """
     def __init__(self, ds, fields, subplots=None,
-                 fontsize=15, lw=1.5, fig=None):
-        if fig is None:
-            fig = plt.figure(figsize=(12, 12))
+                 fontsize=15, lw=1.5, figsize=(12, 12)):
+        fig = plt.figure(figsize=figsize)
         if subplots is None:
             subplots = len(fields), 1
         self.plots = OrderedDict()
@@ -696,11 +708,13 @@ class MultiDatePlot(object):
         self.fig.canvas.draw()
 
 class PhasePlot(ACISPlot):
-    def __init__(self, ds, x_field, y_field, fig=None, ax=None):
-        if fig is None:
-            fig = plt.figure(figsize=(12, 12))
-        if ax is None:
+    def __init__(self, ds, x_field, y_field, figsize=(12, 12), plot=None):
+        if plot is None:
+            fig = plt.figure(figsize=figsize)
             ax = fig.add_subplot(111)
+        else:
+            fig = plot.fig
+            ax = plot.ax
         self.x_field = ds._determine_field(x_field)
         self.y_field = ds._determine_field(y_field)
         self.xlabel = ds.fields[self.x_field].display_name
@@ -830,12 +844,11 @@ class PhaseScatterPlot(PhasePlot):
     cmap : string, optional
         The colormap for the dots if a color field has been provided.
         Default: 'heat'
-    fig : :class:`~matplotlib.figure.Figure`, optional
-        A Figure instance to plot in. Default: None, one will be
-        created if not provided.
-    ax : :class:`~matplotlib.axes.Axes`, optional
-        An Axes instance to plot in. Default: None, one will be
-        created if not provided.
+    figsize : tuple of integers, optional
+        The size of the plot in (width, height) in inches. Default: (12, 12)
+    plot : :class:`~acispy.plots.PhasePlot`, optional
+        An existing PhasePlot to add this plot to. Default: None, one 
+        will be created if not provided.
 
     Examples
     --------
@@ -844,9 +857,10 @@ class PhaseScatterPlot(PhasePlot):
     """
     def __init__(self, ds, x_field, y_field, c_field=None,
                  fontsize=18, color='blue', cmap='hot',
-                 fig=None, ax=None, **kwargs):
+                 figsize=(12, 12), plot=None, **kwargs):
 
-        super(PhaseScatterPlot, self).__init__(ds, x_field, y_field, fig=fig, ax=ax)
+        super(PhaseScatterPlot, self).__init__(ds, x_field, y_field, 
+                                               figsize=figsize, plot=plot)
 
         if c_field is None:
             self.cc = color
@@ -906,12 +920,11 @@ class PhaseHistogramPlot(PhasePlot):
         The colormap for the histogram. Default: 'heat'
     fontsize : integer, optional
         The font size for the labels in the plot. Default: 18 pt.
-    fig : :class:`~matplotlib.figure.Figure`, optional
-        A Figure instance to plot in. Default: None, one will be
-        created if not provided.
-    ax : :class:`~matplotlib.axes.Axes`, optional
-        An Axes instance to plot in. Default: None, one will be
-        created if not provided.
+    figsize : tuple of integers, optional
+        The size of the plot in (width, height) in inches. Default: (12, 12)
+    plot : :class:`~acispy.plots.PhasePlot`, optional
+        An existing PhasePlot to add this plot to. Default: None, one 
+        will be created if not provided.
 
     Examples
     --------
@@ -919,9 +932,10 @@ class PhaseHistogramPlot(PhasePlot):
     >>> pp = PhaseHistogramPlot(ds, "1deamzt", "1dpamzt", 100, 100)
     """
     def __init__(self, ds, x_field, y_field, x_bins, y_bins, scale='linear',
-                 cmap='hot', fontsize=18, fig=None, ax=None, **kwargs):
+                 cmap='hot', fontsize=18, figsize=(12, 12), plot=None, **kwargs):
         from matplotlib.colors import LogNorm, Normalize
-        super(PhaseHistogramPlot, self).__init__(ds, x_field, y_field, fig=fig, ax=ax)
+        super(PhaseHistogramPlot, self).__init__(ds, x_field, y_field, 
+                                                 figsize=figsize, plot=plot)
 
         cm = plt.cm.get_cmap(cmap)
         if scale == "log":

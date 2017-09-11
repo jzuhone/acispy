@@ -360,9 +360,9 @@ class ACISLoadReview(object):
                                  alpha=alpha)
 
     def plot(self, fields, field2=None, lw=1.5, fontsize=18,
-             colors=None, color2='magenta', fig=None, ax=None,
-             tbegin=None, tend=None, annotations=None, ymin=None,
-             ymax=None, ymin2=None, ymax2=None):
+             colors=None, color2='magenta', figsize=(10, 8), 
+             plot=None, tbegin=None, tend=None, annotations=None, 
+             ymin=None, ymax=None, ymin2=None, ymax2=None):
         """
         Plot temperature and state data from a load review.
 
@@ -382,12 +382,11 @@ class ACISLoadReview(object):
         color2 : string, optional
             The color for the line plotted on the right y-axis.
             Default: "magenta"
-        fig : :class:`~matplotlib.figure.Figure`, optional
-            A Figure instance to plot in. Default: None, one will be
-            created if not provided.
-        ax : :class:`~matplotlib.axes.Axes`, optional
-            An Axes instance to plot in. Default: None, one will be
-            created if not provided.
+        figsize : tuple of integers, optional
+            The size of the plot in (width, height) in inches. Default: (10, 8)
+        plot : :class:`~acispy.plots.DatePlot` or :class:`~acispy.plots.CustomDatePlot`, optional
+            An existing DatePlot to add this plot to. Default: None, one 
+            will be created if not provided.
         tbegin : string, optional
             The start time of the plot. Default is to plot from the
             beginning of the load. 
@@ -413,7 +412,7 @@ class ACISLoadReview(object):
         """
         dp = DatePlot(self.ds, fields, field2=field2, lw=lw,
                       fontsize=fontsize, colors=colors, color2=color2,
-                      fig=fig, ax=ax)
+                      figsize=figsize, plot=plot)
         ylimits = dp.ax.get_ylim()
         if ymin is None:
             ymin = ylimits[0]
