@@ -194,8 +194,8 @@ while True:
               "<font face=\"times\">This is the <a href=\"http://cxc.cfa.harvard.edu/acis/lr_texts/2017/%s_lr.html\"><font style=\"color:blue\">%s</font></a> load.</font>" % (load_name, load_name),
               " ", " "]
 
-    load_start = datetime.strptime(lr.first_time, "%Y:%j:%H:%M:%S")
-    load_end = datetime.strptime(lr.last_time, "%Y:%j:%H:%M:%S")
+    load_start = datetime.strptime(lr.first_time[:-4], "%Y:%j:%H:%M:%S")
+    load_end = datetime.strptime(lr.last_time[-4], "%Y:%j:%H:%M:%S")
     the_time = now_time_utc - timedelta(days=2)
     begin_time = max(now_time_utc - timedelta(days=1), load_start)
     end_time = min(begin_time + timedelta(days=2), load_end)
