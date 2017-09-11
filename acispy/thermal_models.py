@@ -12,6 +12,7 @@ from acispy.msids import MSIDs
 from acispy.time_series import EmptyTimeSeries
 from acispy.utils import mylog, calc_off_nom_rolls
 import Ska.Numpy
+import Ska.engarchive.fetch_sci as fetch
 
 limits = {'dea': 35.5,
           'dpa': 35.5,
@@ -244,8 +245,6 @@ class ThermalModelFromData(ThermalModelRunner):
         msid = msid_dict[name]
         tstart_secs = DateTime(tstart).secs
         start = secs2date(tstart_secs-700.0)
-        msids_obj = MSIDs.from_database([msid], start, tstop=tstop)
-        msid_times = msids_obj[msid].times.value
 
         self.model_spec = find_json(name, model_spec)
 
@@ -254,13 +253,13 @@ class ThermalModelFromData(ThermalModelRunner):
         states["off_nominal_roll"] = calc_off_nom_rolls(states)
 
         if T_init is None:
-            ok = ((msid_times >= tstart_secs - 700.) &
-                  (msid_times <= tstart_secs + 700.))
-            T_init = msids_obj[msid].value[ok].mean()
+            T_init = fetch.MSID(msid, tstart_secs-700., tstart_secs+700.).vals.mean()
 
         self.xija_model = self._compute_model(name, tstart, tstop, states,
                                               states_obj["ccd_count"].times.value,
                                               T_init)
+
+        model_times = self.xija_model.times
 
         components = [msid]
         if 'dpa_power' in self.xija_model.comp:
@@ -272,18 +271,19 @@ class ThermalModelFromData(ThermalModelRunner):
         self.bad_times_indices = []
         for t0, t1 in self.bad_times:
             t0, t1 = DateTime([t0, t1]).secs
-            i0, i1 = np.searchsorted(msid_times, [t0, t1])
+            i0, i1 = np.searchsorted(model_times, [t0, t1])
             if i1 > i0:
                 self.bad_times_indices.append((i0, i1))
 
         masks = {}
         if include_bad_times:
-            masks[msid] = np.ones(msid_times.shape, dtype='bool')
+            masks[msid] = np.ones(model_times.shape, dtype='bool')
             for (left, right) in self.bad_times_indices:
                 masks[msid][left:right] = False
 
-        model_obj = Model.from_xija(self.xija_model, components,
-                                    interp_times=msid_times, masks=masks)
+        model_obj = Model.from_xija(self.xija_model, components, masks=masks)
+        msids_obj = MSIDs.from_database([msid], tstart, tstop=tstop,
+                                        interpolate=True, interpolate_times=model_times)
 
         super(ThermalModelRunner, self).__init__(msids_obj, states_obj, model_obj)
 
