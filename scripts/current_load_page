@@ -195,7 +195,7 @@ while True:
               " ", " "]
 
     load_start = datetime.strptime(lr.first_time[:-4], "%Y:%j:%H:%M:%S")
-    load_end = datetime.strptime(lr.last_time[-4], "%Y:%j:%H:%M:%S")
+    load_end = datetime.strptime(lr.last_time[:-4], "%Y:%j:%H:%M:%S")
     the_time = now_time_utc - timedelta(days=2)
     begin_time = max(now_time_utc - timedelta(days=1), load_start)
     end_time = min(begin_time + timedelta(days=2), load_end)
