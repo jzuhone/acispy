@@ -268,6 +268,7 @@ class APQuantity(Quantity):
 
 units_trans = {"DEGC": "deg_C",
                "STEP": "",
+               "0": "",
                "DEGF": "deg_F",
                "RADPS": "rad/s"}
 
