@@ -13,6 +13,7 @@ from acispy.time_series import EmptyTimeSeries
 from acispy.utils import mylog, calc_off_nom_rolls
 import Ska.Numpy
 import Ska.engarchive.fetch_sci as fetch
+from copy import deepcopy
 
 limits = {'dea': 35.5,
           'dpa': 35.5,
@@ -135,9 +136,9 @@ class ThermalModelRunner(Dataset):
         if 'eclipse' in model.comp:
             model.comp['eclipse'].set_data(False)
         model.comp[msid_dict[name]].set_data(T_init)
-        model.comp['sim_z'].set_data(states['simpos'], state_times)
+        model.comp['sim_z'].set_data(np.array(states['simpos']), state_times)
         if 'roll' in model.comp:
-            model.comp['roll'].set_data(states["off_nominal_roll"], state_times)
+            model.comp['roll'].set_data(np.array(states["off_nominal_roll"]), state_times)
         if 'dpa_power' in model.comp:
             model.comp['dpa_power'].set_data(0.0) # This is just a hack, we're not
             # really setting the power to zero.
@@ -146,7 +147,7 @@ class ThermalModelRunner(Dataset):
         if 'dh_heater' in model.comp:
             model.comp['dh_heater'].set_data(states.get("dh_heater", 0), state_times)
         for st in ('ccd_count', 'fep_count', 'vid_board', 'clocking', 'pitch'):
-            model.comp[st].set_data(states[st], state_times)
+            model.comp[st].set_data(np.array(states[st]), state_times)
         model.make()
         model.calc()
         return model
@@ -363,15 +364,20 @@ class SimulateCTIRun(ThermalModelRunner):
     name : string
         The name of the model to simulate. Can be "dea", "dpa", "psmc", or "fep1mong".
     tstart : string
-        The start time in YYYY:DOY:HH:MM:SS format.
+        The start time of the CTI run in YYYY:DOY:HH:MM:SS format.
+    tstop : string
+        The stop time of the CTI run in YYYY:DOY:HH:MM:SS format.
     T_init : float
         The starting temperature for the model in degrees C.
     pitch : float
         The pitch at which to run the model in degrees. 
     ccd_count : integer
         The number of CCDs to clock.
-    days : float, optional
-        The number of days to run the model. Default: 3.0
+    vehicle_load : string, optional
+        If a vehicle load is running, specify it here, e.g. "SEP0917C".
+        Default: None, meaning no vehicle load. If this parameter is set,
+        the input values of pitch and off-nominal roll will be ignored
+        and the values from the vehicle load will be used.
     simpos : float, optional
         The SIM position at which to run the model. Default: -99616.0
     off_nominal_roll : float, optional
@@ -385,47 +391,69 @@ class SimulateCTIRun(ThermalModelRunner):
 
     Examples
     --------
-    >>> dea_run = SimulateCTIRun("dea", "2016:201:05:12:03", 14.0, 150.,
-    ...                          ccd_count=5, off_nominal_roll=-6.0, dh_heater=1)
+    >>> dea_run = SimulateCTIRun("dea", "2016:201:05:12:03", "2016:201:05:12:03",
+    ...                          14.0, 150., ccd_count=5, off_nominal_roll=-6.0, 
+    ...                          dh_heater=1)
     """
-    def __init__(self, name, tstart, T_init, pitch, ccd_count, days=3.0,
-                 simpos=-99616.0, off_nominal_roll=0.0, dh_heater=0, model_spec=None):
-        states = {"ccd_count": np.array([ccd_count], dtype='int'),
-                  "fep_count": np.array([ccd_count], dtype='int'),
-                  "clocking": np.array([1], dtype='int'),
-                  'vid_board': np.array([1], dtype='int'),
-                  "pitch": np.array([pitch]),
-                  "simpos": np.array([simpos]),
-                  "off_nominal_roll": np.array([off_nominal_roll]),
-                  "dh_heater": np.array([dh_heater], dtype='int')}
+    def __init__(self, name, tstart, tstop, T_init, pitch, ccd_count,
+                 vehicle_load=None, simpos=-99616.0, off_nominal_roll=0.0, 
+                 dh_heater=0, model_spec=None):
         datestart = tstart
         tstart = DateTime(tstart).secs
-        tstop = tstart + days*86400.
+        tstop = DateTime(tstop).secs
         datestop = secs2date(tstop)
-        state_times = [[datestart], [datestop]]
-        super(SimulateCTIRun, self).__init__(name, datestart, datestop, states,
+        tend = tstop+43200.0
+        dateend = secs2date(tend)
+        if vehicle_load is None:
+            states = {"ccd_count": np.array([ccd_count], dtype='int'),
+                      "fep_count": np.array([ccd_count], dtype='int'),
+                      "clocking": np.array([1], dtype='int'),
+                      'vid_board': np.array([1], dtype='int'),
+                      "pitch": np.array([pitch]),
+                      "simpos": np.array([simpos]),
+                      "off_nominal_roll": np.array([off_nominal_roll]),
+                      "dh_heater": np.array([dh_heater], dtype='int')}
+            state_times = [[datestart], [datestop]]
+        else:
+            mylog.info("Modeling a %d-chip CTI run concurrent with " % ccd_count +
+                       "vehicle loads.")
+            states = deepcopy(States.from_load_page(vehicle_load).table)
+            states["off_nominal_roll"] = calc_off_nom_rolls(states)
+            state_times = [states['datestart'], states['datestop']]
+            cti_run_idxs = states["tstart"].value < tstop
+            states["ccd_count"][cti_run_idxs] = ccd_count
+            states["fep_count"][cti_run_idxs] = ccd_count
+            states["clocking"][cti_run_idxs] = 1
+            states["vid_board"][cti_run_idxs] = 1
+        super(SimulateCTIRun, self).__init__(name, datestart, dateend, states,
                                              state_times, T_init, model_spec=model_spec)
 
         mylog.info("Run Parameters")
         mylog.info("--------------")
         mylog.info("Start Datestring: %s" % datestart)
         mylog.info("Start Time: %g s" % tstart)
+        mylog.info("Stop Datestring: %s" % datestop)
+        mylog.info("Stop Time: %g s" % tstop)
         mylog.info("Initial Temperature: %g degrees C" % T_init)
         mylog.info("CCD Count: %d" % ccd_count)
-        mylog.info("Pitch: %g" % pitch)
+        if vehicle_load is None:
+            disp_pitch = pitch
+            disp_roll = off_nominal_roll
+        else:
+            pitches = states["pitch"][cti_run_idxs]
+            rolls = states["off_nominal_roll"][cti_run_idxs]
+            disp_pitch = "Min: %g, Max: %g" % (pitches.min(), pitches.max())
+            disp_roll = "Min: %g, Max: %g" % (rolls.min(), rolls.max())
+        mylog.info("Pitch: %s" % disp_pitch)
         mylog.info("SIM Position: %g" % simpos)
-        mylog.info("Off-nominal Roll: %g" % off_nominal_roll)
+        mylog.info("Off-nominal Roll: %s" % disp_roll)
         mylog.info("Detector Housing Heater: %s" % {0: "OFF", 1: "ON"}[dh_heater])
 
         mylog.info("Model Result")
         mylog.info("------------")
 
-        err = np.abs(self.asymptotic_temperature-self.mvals[-10])/self.asymptotic_temperature
-        if err.value > 1.0e-3:
-            mylog.warning("You may not have reached the asymptotic temperature! Suggest"
-                          " increasing the 'days' parameter past its current value of %g!" % days)
         self.limit = Quantity(limits[self.name], "deg_C")
-        if self.asymptotic_temperature.value > self.limit.value:
+        if np.any(self.mvals.value > self.limit.value):
             idx = np.searchsorted(self.mvals.value, self.limit.value)-1
             self.limit_time = self.times('model', msid_dict[self.name])[idx]
             self.limit_date = secs2date(self.limit_time)
@@ -438,13 +466,12 @@ class SimulateCTIRun(ThermalModelRunner):
             self.duration = None
             msg = "The limit of %g degrees C is never reached!" % self.limit.value
         mylog.info(msg)
-        mylog.info("The asymptotic temperature is %g degrees C." % self.asymptotic_temperature.value)
 
     def plot_model(self):
         """
         Plot the simulated model run.
         """
-        dp = DatePlot(self, [("model", msid_dict[self.name])])
+        dp = DatePlot(self, [("model", msid_dict[self.name])], field2="pitch")
         dp.add_hline(self.limit.value, ls='--', lw=2, color='g')
         if self.limit_date is not None:
             dp.add_vline(self.limit_date, ls='--', lw=2, color='r')
@@ -453,10 +480,6 @@ class SimulateCTIRun(ThermalModelRunner):
     @property
     def mvals(self):
         return self['model', msid_dict[self.name]]
-
-    @property
-    def asymptotic_temperature(self):
-        return self.mvals[-1]
 
     def write_states(self, states_file):
         raise NotImplementedError
