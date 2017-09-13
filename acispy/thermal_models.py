@@ -404,6 +404,8 @@ class SimulateCTIRun(ThermalModelRunner):
         datestop = secs2date(tstop)
         tend = tstop+43200.0
         dateend = secs2date(tend)
+        self.datestart = datestart
+        self.datestop = datestop
         if vehicle_load is None:
             states = {"ccd_count": np.array([ccd_count], dtype='int'),
                       "fep_count": np.array([ccd_count], dtype='int'),
@@ -473,6 +475,8 @@ class SimulateCTIRun(ThermalModelRunner):
         """
         dp = DatePlot(self, [("model", msid_dict[self.name])], field2="pitch")
         dp.add_hline(self.limit.value, ls='--', lw=2, color='g')
+        dp.add_vline(self.datestart, ls='--', lw=2, color='b')
+        dp.add_vline(self.datestop, ls='--', lw=2, color='b')
         if self.limit_date is not None:
             dp.add_vline(self.limit_date, ls='--', lw=2, color='r')
         return dp
