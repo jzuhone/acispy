@@ -223,8 +223,12 @@ class ThermalModelFromData(ThermalModelRunner):
     tstop : string
         The stop time in YYYY:DOY:HH:MM:SS format.
     T_init : float, optional
-        Whether or not to set an initial temperature. If None, an initial 
-        temperature will be determined from telemetry. Default: None
+        The initial temperature for the thermal moden run. If None, 
+        an initial temperature will be determined from telemetry. 
+        Default: None
+    use_msids : boolean, optional
+        If True, telemetry can be used to determine the initial temperature
+        and will be loaded for comparison to the model run. Default: True
     model_spec : string, optional
         Path to the model spec JSON file for the model. Default: None, the
         standard model path will be used.
@@ -239,8 +243,8 @@ class ThermalModelFromData(ThermalModelRunner):
     >>> tstop = "2016:100:13:07:45.234"
     >>> dpa_model = ThermalModelFromData("dpa", tstart, tstop)
     """
-    def __init__(self, name, tstart, tstop, T_init=None, model_spec=None, 
-                 include_bad_times=False):
+    def __init__(self, name, tstart, tstop, T_init=None, use_msids=True,
+                 model_spec=None, include_bad_times=False):
 
         msid = msid_dict[name]
         tstart_secs = DateTime(tstart).secs
@@ -253,6 +257,9 @@ class ThermalModelFromData(ThermalModelRunner):
         states["off_nominal_roll"] = calc_off_nom_rolls(states)
 
         if T_init is None:
+            if not use_msids:
+                raise RuntimeError("Set 'use_msids=True' if you want to use telemetry "
+                                   "for setting the initial state!")
             T_init = fetch.MSID(msid, tstart_secs-700., tstart_secs+700.).vals.mean()
 
         self.xija_model = self._compute_model(name, tstart, tstop, states,
@@ -282,9 +289,11 @@ class ThermalModelFromData(ThermalModelRunner):
                 masks[msid][left:right] = False
 
         model_obj = Model.from_xija(self.xija_model, components, masks=masks)
-        msids_obj = MSIDs.from_database([msid], tstart, tstop=tstop,
-                                        interpolate=True, interpolate_times=model_times)
-
+        if use_msids:
+            msids_obj = MSIDs.from_database([msid], tstart, tstop=tstop,
+                                            interpolate=True, interpolate_times=model_times)
+        else:
+            msids_obj = EmptyTimeSeries()
         super(ThermalModelRunner, self).__init__(msids_obj, states_obj, model_obj)
 
     def write_model_and_data(self, filename, overwrite=False):
