@@ -5,7 +5,7 @@ from astropy.io import ascii
 from acispy.dataset import Dataset
 from acispy.plots import DatePlot
 import numpy as np
-from Chandra.Time import secs2date, DateTime
+from Chandra.Time import secs2date, DateTime, date2secs
 from acispy.states import States
 from acispy.model import Model
 from acispy.msids import MSIDs
@@ -13,7 +13,6 @@ from acispy.time_series import EmptyTimeSeries
 from acispy.utils import mylog, calc_off_nom_rolls
 import Ska.Numpy
 import Ska.engarchive.fetch_sci as fetch
-from copy import deepcopy
 
 limits = {'dea': 35.5,
           'dpa': 35.5,
@@ -358,6 +357,9 @@ class ThermalModelFromData(ThermalModelRunner):
                        errorplotlimits=errorplotlimits, yplotlimits=yplotlimits,
                        fig=fig)
 
+def find_text_time(time, hours=1.0):
+    return secs2date(date2secs(time)+hours*3600.0)
+
 class SimulateCTIRun(ThermalModelRunner):
     """
     Class for simulating thermal models during CTI runs under constant conditions.
@@ -401,14 +403,19 @@ class SimulateCTIRun(ThermalModelRunner):
     def __init__(self, name, tstart, tstop, T_init, pitch, ccd_count,
                  vehicle_load=None, simpos=-99616.0, off_nominal_roll=0.0, 
                  dh_heater=0, model_spec=None):
+        self.vehicle_load = vehicle_load
         datestart = tstart
         tstart = DateTime(tstart).secs
         tstop = DateTime(tstop).secs
         datestop = secs2date(tstop)
-        tend = tstop+43200.0
+        tend = tstop+0.5*(tstop-tstart)
         dateend = secs2date(tend)
         self.datestart = datestart
         self.datestop = datestop
+        self.tstart = Quantity(tstart, "s")
+        self.tstop = Quantity(tstop, "s")
+        self.dateend = dateend
+        self.T_init = Quantity(T_init, "deg_C")
         if vehicle_load is None:
             states = {"ccd_count": np.array([ccd_count], dtype='int'),
                       "fep_count": np.array([ccd_count], dtype='int'),
@@ -418,14 +425,15 @@ class SimulateCTIRun(ThermalModelRunner):
                       "simpos": np.array([simpos]),
                       "off_nominal_roll": np.array([off_nominal_roll]),
                       "dh_heater": np.array([dh_heater], dtype='int')}
-            state_times = [[datestart], [datestop]]
+            state_times = [[datestart], [dateend]]
         else:
             mylog.info("Modeling a %d-chip CTI run concurrent with " % ccd_count +
                        "vehicle loads.")
-            states = deepcopy(States.from_load_page(vehicle_load).table)
+            states = dict((k, state.value) for (k, state) in
+                          States.from_load_page(vehicle_load).table.items())
             states["off_nominal_roll"] = calc_off_nom_rolls(states)
-            state_times = [states['datestart'], states['datestop']]
-            cti_run_idxs = states["tstart"].value < tstop
+            state_times = [list(states['datestart']), list(states['datestop'])]
+            cti_run_idxs = states["tstart"] < tstop
             states["ccd_count"][cti_run_idxs] = ccd_count
             states["fep_count"][cti_run_idxs] = ccd_count
             states["clocking"][cti_run_idxs] = 1
@@ -458,30 +466,60 @@ class SimulateCTIRun(ThermalModelRunner):
         mylog.info("------------")
 
         self.limit = Quantity(limits[self.name], "deg_C")
-        if np.any(self.mvals.value > self.limit.value):
-            idx = np.searchsorted(self.mvals.value, self.limit.value)-1
+        viols = self.mvals.value > self.limit.value
+        if np.any(viols):
+            idx = np.where(viols)[0][0]
             self.limit_time = self.times('model', msid_dict[self.name])[idx]
             self.limit_date = secs2date(self.limit_time)
             self.duration = Quantity((self.limit_time.value-tstart)*0.001, "ks")
             msg = "The limit of %g degrees C will be reached at %s, " % (self.limit.value, self.limit_date)
             msg += "after %g ksec." % self.duration.value
+            mylog.info(msg)
+            if self.limit_time < self.tstop:
+                self.violate = True
+                viol_time = "before"
+            else:
+                self.violate = False
+                viol_time = "after"
+            mylog.info("The limit is reached %s the end of the CTI run." % viol_time)
         else:
             self.limit_time = None
             self.limit_date = None
             self.duration = None
-            msg = "The limit of %g degrees C is never reached!" % self.limit.value
-        mylog.info(msg)
+            self.violate = False
+            mylog.info("The limit of %g degrees C is never reached." % self.limit.value)
+
+        if self.violate:
+            mylog.warning("This CTI run is NOT safe from a thermal perspective.")
+        else:
+            mylog.info("This CTI run is safe from a thermal perspective.")
 
     def plot_model(self):
         """
         Plot the simulated model run.
         """
-        dp = DatePlot(self, [("model", msid_dict[self.name])], field2="pitch")
+        if self.vehicle_load is None:
+            field2 = None
+        else:
+            field2 = "pitch"
+        viol_text = "NOT SAFE" if self.violate else "SAFE"
+        dp = DatePlot(self, [("model", msid_dict[self.name])], field2=field2)
         dp.add_hline(self.limit.value, ls='--', lw=2, color='g')
         dp.add_vline(self.datestart, ls='--', lw=2, color='b')
+        dp.add_text(find_text_time(self.datestart), self.limit.value - 2.0,
+                    "START CTI RUN", color='blue', rotation="vertical")
         dp.add_vline(self.datestop, ls='--', lw=2, color='b')
+        dp.add_text(find_text_time(self.datestop), self.limit.value - 12.0,
+                    "END CTI RUN", color='blue', rotation="vertical")
+        dp.add_text(find_text_time(self.datestop, hours=4.0), self.T_init.value+2.0,
+                    viol_text, fontsize=22, color='black')
         if self.limit_date is not None:
             dp.add_vline(self.limit_date, ls='--', lw=2, color='r')
+            dp.add_text(find_text_time(self.limit_date), self.limit.value-2.0,
+                        "VIOLATION", color='red', rotation="vertical")
+        dp.set_xlim(find_text_time(self.datestart, hours=-1.0), self.dateend)
+        dp.set_ylim(self.T_init.value-2.0, 
+                    max(self.limit.value, self.mvals.value.max())+3.0)
         return dp
 
     @property
