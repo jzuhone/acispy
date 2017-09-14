@@ -181,7 +181,10 @@ class ThermalModelRunner(Dataset):
         state_keys = ["ccd_count", "pitch", "fep_count", "clocking", "vid_board", "simpos"]
         states = ascii.read(states_file)
         states_dict = dict((k, states[k]) for k in state_keys)
-        states_dict["off_nominal_roll"] = calc_off_nom_rolls(states)
+        if "off_nominal_roll" in states.colnames:
+            states_dict["off_nominal_roll"] = states["off_nominal_roll"]
+        else:
+            states_dict["off_nominal_roll"] = calc_off_nom_rolls(states)
         state_times = np.array([states["datestart"], states["datestop"]])
         return cls(name, tstart, tstop, states_dict, state_times, T_init,
                    model_spec=model_spec, include_bad_times=include_bad_times)
