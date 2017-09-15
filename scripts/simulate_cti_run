@@ -28,6 +28,6 @@ cti_run = acispy.SimulateCTIRun(args.component, args.tstart, args.tstop, args.T_
                                 dh_heater=args.dh_heater)
 
 dp = cti_run.plot_model()
-filename = "cti_run_%s_%s.png" % (args.component, args.tstart)
+filename = "cti_run_%s_%dchip_%s.png" % (args.component, args.ccd_count, args.tstart)
 dp.savefig(filename)
 mylog.info("Image of the model run has been written to %s." % filename)

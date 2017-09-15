@@ -259,6 +259,7 @@ Example 1
 To run the 1DPAMZT model with the following conditions:
 
 * Start time: 2015:100:12:45:30
+* Stop time: 2015:101:12:45:30
 * Initial temperature: 10.0 degrees C
 * Pitch: 150 degrees
 * CCD count: 6
@@ -266,27 +267,30 @@ To run the 1DPAMZT model with the following conditions:
 
 .. code-block:: bash
 
-    [~]$ simulate_cti_run dpa 2015:100:12:45:30 10.0 150. 6 --off_nominal_roll 12.0
+    [~]$ simulate_cti_run dpa 2015:100:12:45:30 2015:101:12:45:30 10.0 150. 6 --off_nominal_roll 12.0
 
 Returns:
 
 .. code-block:: text
 
-    acispy: [INFO     ] 2017-04-06 16:09:39,597 Run Parameters
-    acispy: [INFO     ] 2017-04-06 16:09:39,597 --------------
-    acispy: [INFO     ] 2017-04-06 16:09:39,597 Start Datestring: 2015:100:12:45:30
-    acispy: [INFO     ] 2017-04-06 16:09:39,597 Start Time: 5.45057e+08 s
-    acispy: [INFO     ] 2017-04-06 16:09:39,597 Initial Temperature: 10 degrees C
-    acispy: [INFO     ] 2017-04-06 16:09:39,597 CCD Count: 6
-    acispy: [INFO     ] 2017-04-06 16:09:39,597 Pitch: 150
-    acispy: [INFO     ] 2017-04-06 16:09:39,598 SIM Position: -99616
-    acispy: [INFO     ] 2017-04-06 16:09:39,598 Off-nominal Roll: 12
-    acispy: [INFO     ] 2017-04-06 16:09:39,598 Detector Housing Heater: OFF
-    acispy: [INFO     ] 2017-04-06 16:09:39,598 Model Result
-    acispy: [INFO     ] 2017-04-06 16:09:39,598 ------------
-    acispy: [INFO     ] 2017-04-06 16:09:39,599 The limit of 35.5 degrees C will be reached at 2015:100:21:07:04.816, after 30.0948 ksec.
-    acispy: [INFO     ] 2017-04-06 16:09:39,599 The asymptotic temperature is 40.0741 degrees C.
-    acispy: [INFO     ] 2017-04-06 16:09:43,576 Image of the model run has been written to cti_run_dpa_2015:100:12:45:30.png.
+    acispy: [INFO     ] 2017-09-14 14:23:36,930 Run Parameters
+    acispy: [INFO     ] 2017-09-14 14:23:36,930 --------------
+    acispy: [INFO     ] 2017-09-14 14:23:36,930 Start Datestring: 2015:100:12:45:30
+    acispy: [INFO     ] 2017-09-14 14:23:36,930 Start Time: 5.45057e+08 s
+    acispy: [INFO     ] 2017-09-14 14:23:36,930 Stop Datestring: 2015:101:12:45:30.000
+    acispy: [INFO     ] 2017-09-14 14:23:36,930 Stop Time: 5.45144e+08 s
+    acispy: [INFO     ] 2017-09-14 14:23:36,931 Initial Temperature: 10 degrees C
+    acispy: [INFO     ] 2017-09-14 14:23:36,931 CCD Count: 6
+    acispy: [INFO     ] 2017-09-14 14:23:36,931 Pitch: 150.0
+    acispy: [INFO     ] 2017-09-14 14:23:36,931 SIM Position: -99616
+    acispy: [INFO     ] 2017-09-14 14:23:36,931 Off-nominal Roll: 12.0
+    acispy: [INFO     ] 2017-09-14 14:23:36,931 Detector Housing Heater: OFF
+    acispy: [INFO     ] 2017-09-14 14:23:36,931 Model Result
+    acispy: [INFO     ] 2017-09-14 14:23:36,931 ------------
+    acispy: [INFO     ] 2017-09-14 14:23:36,932 The limit of 35.5 degrees C will be reached at 2015:100:21:12:32.816, after 30.4228 ksec.
+    acispy: [INFO     ] 2017-09-14 14:23:36,932 The limit is reached before the end of the CTI run.
+    acispy: [WARNING  ] 2017-09-14 14:23:36,932 This CTI run is NOT safe from a thermal perspective.
+    acispy: [INFO     ] 2017-09-14 14:23:37,499 Image of the model run has been written to cti_run_dpa_6chip_2015:100:12:45:30.png.
 
 .. image:: _images/cti_run.png
 
@@ -296,6 +300,7 @@ Example 2
 To run the 1DEAMZT model with the following conditions:
 
 * Start time: 2017:069:15:40:00
+* Stop time: 2017:070:10:00:00
 * Initial temperature: 7.5 degrees C
 * Pitch: 150 degrees
 * CCD count: 4
@@ -303,29 +308,77 @@ To run the 1DEAMZT model with the following conditions:
 
 .. code-block:: bash
 
-    [~]$ simulate_cti_run dea 2017:069:15:40:00 7.5 150. 4 --off_nominal_roll 0.0
+    [~]$ simulate_cti_run dea 2017:069:15:40:00 2017:070:10:00:00 7.5 150. 4 --off_nominal_roll 0.0
 
 Returns:
 
 .. code-block:: text
 
-    acispy: [INFO     ] 2017-04-06 16:10:36,312 Run Parameters
-    acispy: [INFO     ] 2017-04-06 16:10:36,312 --------------
-    acispy: [INFO     ] 2017-04-06 16:10:36,312 Start Datestring: 2017:069:15:40:00
-    acispy: [INFO     ] 2017-04-06 16:10:36,312 Start Time: 6.05548e+08 s
-    acispy: [INFO     ] 2017-04-06 16:10:36,312 Initial Temperature: 7.5 degrees C
-    acispy: [INFO     ] 2017-04-06 16:10:36,312 CCD Count: 4
-    acispy: [INFO     ] 2017-04-06 16:10:36,312 Pitch: 150
-    acispy: [INFO     ] 2017-04-06 16:10:36,313 SIM Position: -99616
-    acispy: [INFO     ] 2017-04-06 16:10:36,313 Off-nominal Roll: 0
-    acispy: [INFO     ] 2017-04-06 16:10:36,313 Detector Housing Heater: OFF
-    acispy: [INFO     ] 2017-04-06 16:10:36,313 Model Result
-    acispy: [INFO     ] 2017-04-06 16:10:36,313 ------------
-    acispy: [INFO     ] 2017-04-06 16:10:36,313 The limit of 35.5 degrees C is never reached!
-    acispy: [INFO     ] 2017-04-06 16:10:36,314 The asymptotic temperature is 32.3293 degrees C.
-    acispy: [INFO     ] 2017-04-06 16:10:39,215 Image of the model run has been written to cti_run_dea_2017:069:15:40:00.png.
+    acispy: [INFO     ] 2017-09-14 14:26:16,008 Run Parameters
+    acispy: [INFO     ] 2017-09-14 14:26:16,008 --------------
+    acispy: [INFO     ] 2017-09-14 14:26:16,008 Start Datestring: 2017:069:15:40:00
+    acispy: [INFO     ] 2017-09-14 14:26:16,008 Start Time: 6.05548e+08 s
+    acispy: [INFO     ] 2017-09-14 14:26:16,008 Stop Datestring: 2017:070:10:00:00.000
+    acispy: [INFO     ] 2017-09-14 14:26:16,008 Stop Time: 6.05614e+08 s
+    acispy: [INFO     ] 2017-09-14 14:26:16,008 Initial Temperature: 7.5 degrees C
+    acispy: [INFO     ] 2017-09-14 14:26:16,008 CCD Count: 4
+    acispy: [INFO     ] 2017-09-14 14:26:16,008 Pitch: 150.0
+    acispy: [INFO     ] 2017-09-14 14:26:16,009 SIM Position: -99616
+    acispy: [INFO     ] 2017-09-14 14:26:16,009 Off-nominal Roll: 0.0
+    acispy: [INFO     ] 2017-09-14 14:26:16,009 Detector Housing Heater: OFF
+    acispy: [INFO     ] 2017-09-14 14:26:16,009 Model Result
+    acispy: [INFO     ] 2017-09-14 14:26:16,009 ------------
+    acispy: [INFO     ] 2017-09-14 14:26:16,009 The limit of 35.5 degrees C is never reached.
+    acispy: [INFO     ] 2017-09-14 14:26:16,009 This CTI run is safe from a thermal perspective.
+    acispy: [INFO     ] 2017-09-14 14:26:16,546 Image of the model run has been written to cti_run_dea_4chip_2017:069:15:40:00.png.
 
 .. image:: _images/cti_run2.png
+
+Example 3
++++++++++
+
+This example assumes that the vehicle loads are still running, which means
+that the input values of the pitch and the off-nominal roll are ignored in 
+favor of 
+
+To run the 1DPAMZT model with the following conditions:
+
+* Start time: 2017:256:03:20:00 
+* Stop time: 2017:257:15:20:00
+* Initial temperature: 10.0 degrees C
+* Pitch: 0 degrees (the value doesn't matter)
+* CCD count: 6
+* Vehicle load: SEP0917C
+
+.. code-block:: bash
+
+    [~]$ simulate_cti_run dpa 2017:256:03:20:00 2017:257:15:20:00 10.0 0.0 6 --vehicle_load SEP0917C
+
+Returns:
+
+.. code-block:: text
+
+    acispy: [INFO     ] 2017-09-14 15:40:30,008 Modeling a 6-chip CTI run concurrent with the SEP0917C vehicle loads.
+    acispy: [INFO     ] 2017-09-14 15:40:30,684 Run Parameters
+    acispy: [INFO     ] 2017-09-14 15:40:30,685 --------------
+    acispy: [INFO     ] 2017-09-14 15:40:30,685 Start Datestring: 2017:256:03:20:00
+    acispy: [INFO     ] 2017-09-14 15:40:30,685 Start Time: 6.2166e+08 s
+    acispy: [INFO     ] 2017-09-14 15:40:30,685 Stop Datestring: 2017:257:15:20:00.000
+    acispy: [INFO     ] 2017-09-14 15:40:30,685 Stop Time: 6.2179e+08 s
+    acispy: [INFO     ] 2017-09-14 15:40:30,685 Initial Temperature: 10 degrees C
+    acispy: [INFO     ] 2017-09-14 15:40:30,685 CCD Count: 6
+    acispy: [INFO     ] 2017-09-14 15:40:30,685 Pitch: Min: 46.56, Max: 156
+    acispy: [INFO     ] 2017-09-14 15:40:30,686 SIM Position: -99616
+    acispy: [INFO     ] 2017-09-14 15:40:30,686 Off-nominal Roll: Min: -12.5116, Max: 13.7689
+    acispy: [INFO     ] 2017-09-14 15:40:30,686 Detector Housing Heater: OFF
+    acispy: [INFO     ] 2017-09-14 15:40:30,686 Model Result
+    acispy: [INFO     ] 2017-09-14 15:40:30,686 ------------
+    acispy: [INFO     ] 2017-09-14 15:40:30,686 The limit of 35.5 degrees C will be reached at 2017:256:09:17:34.816, after 21.4548 ksec.
+    acispy: [INFO     ] 2017-09-14 15:40:30,686 The limit is reached before the end of the CTI run.
+    acispy: [WARNING  ] 2017-09-14 15:40:30,686 This CTI run is NOT safe from a thermal perspective.
+    acispy: [INFO     ] 2017-09-14 15:40:31,526 Image of the model run has been written to cti_run_dpa_6chip_2017:256:03:20:00.png.
+
+.. image:: _images/cti_run3.png
 
 ``phase_scatter_plot``
 ----------------------
