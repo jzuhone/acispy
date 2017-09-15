@@ -428,7 +428,7 @@ class SimulateCTIRun(ThermalModelRunner):
             state_times = [[datestart], [dateend]]
         else:
             mylog.info("Modeling a %d-chip CTI run concurrent with " % ccd_count +
-                       "vehicle loads.")
+                       "the %s vehicle loads." % vehicle_load)
             states = dict((k, state.value) for (k, state) in
                           States.from_load_page(vehicle_load).table.items())
             states["off_nominal_roll"] = calc_off_nom_rolls(states)
