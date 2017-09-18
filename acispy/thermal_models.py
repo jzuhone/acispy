@@ -444,9 +444,7 @@ class SimulateCTIRun(ThermalModelRunner):
         mylog.info("Run Parameters")
         mylog.info("--------------")
         mylog.info("Start Datestring: %s" % datestart)
-        mylog.info("Start Time: %g s" % tstart)
         mylog.info("Stop Datestring: %s" % datestop)
-        mylog.info("Stop Time: %g s" % tstop)
         mylog.info("Initial Temperature: %g degrees C" % T_init)
         mylog.info("CCD Count: %d" % ccd_count)
         if vehicle_load is None:

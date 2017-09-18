@@ -276,9 +276,7 @@ Returns:
     acispy: [INFO     ] 2017-09-14 14:23:36,930 Run Parameters
     acispy: [INFO     ] 2017-09-14 14:23:36,930 --------------
     acispy: [INFO     ] 2017-09-14 14:23:36,930 Start Datestring: 2015:100:12:45:30
-    acispy: [INFO     ] 2017-09-14 14:23:36,930 Start Time: 5.45057e+08 s
     acispy: [INFO     ] 2017-09-14 14:23:36,930 Stop Datestring: 2015:101:12:45:30.000
-    acispy: [INFO     ] 2017-09-14 14:23:36,930 Stop Time: 5.45144e+08 s
     acispy: [INFO     ] 2017-09-14 14:23:36,931 Initial Temperature: 10 degrees C
     acispy: [INFO     ] 2017-09-14 14:23:36,931 CCD Count: 6
     acispy: [INFO     ] 2017-09-14 14:23:36,931 Pitch: 150.0
@@ -317,9 +315,7 @@ Returns:
     acispy: [INFO     ] 2017-09-14 14:26:16,008 Run Parameters
     acispy: [INFO     ] 2017-09-14 14:26:16,008 --------------
     acispy: [INFO     ] 2017-09-14 14:26:16,008 Start Datestring: 2017:069:15:40:00
-    acispy: [INFO     ] 2017-09-14 14:26:16,008 Start Time: 6.05548e+08 s
     acispy: [INFO     ] 2017-09-14 14:26:16,008 Stop Datestring: 2017:070:10:00:00.000
-    acispy: [INFO     ] 2017-09-14 14:26:16,008 Stop Time: 6.05614e+08 s
     acispy: [INFO     ] 2017-09-14 14:26:16,008 Initial Temperature: 7.5 degrees C
     acispy: [INFO     ] 2017-09-14 14:26:16,008 CCD Count: 4
     acispy: [INFO     ] 2017-09-14 14:26:16,008 Pitch: 150.0
@@ -362,9 +358,7 @@ Returns:
     acispy: [INFO     ] 2017-09-14 15:40:30,684 Run Parameters
     acispy: [INFO     ] 2017-09-14 15:40:30,685 --------------
     acispy: [INFO     ] 2017-09-14 15:40:30,685 Start Datestring: 2017:256:03:20:00
-    acispy: [INFO     ] 2017-09-14 15:40:30,685 Start Time: 6.2166e+08 s
     acispy: [INFO     ] 2017-09-14 15:40:30,685 Stop Datestring: 2017:257:15:20:00.000
-    acispy: [INFO     ] 2017-09-14 15:40:30,685 Stop Time: 6.2179e+08 s
     acispy: [INFO     ] 2017-09-14 15:40:30,685 Initial Temperature: 10 degrees C
     acispy: [INFO     ] 2017-09-14 15:40:30,685 CCD Count: 6
     acispy: [INFO     ] 2017-09-14 15:40:30,685 Pitch: Min: 46.56, Max: 156
