@@ -567,6 +567,11 @@ class DatePlot(CustomDatePlot):
         idx = self.fields.index(fd)
         self.set_line_label(idx, label)
 
+class DummyDatePlot(object):
+    def __init__(self, fig, ax):
+        self.fig = fig
+        self.ax = ax
+
 class MultiDatePlot(object):
     r""" Make a multi-panel plot of multiple quantities vs. date and time.
 
@@ -604,6 +609,7 @@ class MultiDatePlot(object):
         self.plots = OrderedDict()
         for i, field in enumerate(fields):
             ax = fig.add_subplot(subplots[0], subplots[1], i+1)
+            ddp = DummyDatePlot(fig, ax)
             if isinstance(field, list):
                 fd = field[0]
             else:
@@ -611,7 +617,7 @@ class MultiDatePlot(object):
             # This next line is to raise an error if we have
             # multiple field types with the same name
             ds._determine_field(fd)
-            self.plots[fd] = DatePlot(ds, field, fig=fig, ax=ax, lw=lw)
+            self.plots[fd] = DatePlot(ds, field, plot=ddp, lw=lw)
             ax.xaxis.label.set_size(fontsize)
             ax.yaxis.label.set_size(fontsize)
             ax.xaxis.set_tick_params(labelsize=fontsize)
