@@ -1,7 +1,7 @@
 import requests
 from astropy.io import ascii
 import Ska.Numpy
-from acispy.utils import get_time
+from acispy.utils import get_time, mylog
 from acispy.units import APQuantity, Quantity, get_units
 from acispy.utils import ensure_list
 from acispy.time_series import TimeSeriesData
@@ -10,7 +10,10 @@ import numpy as np
 comp_map = {"1deamzt": "dea",
             "1dpamzt": "dpa",
             "1pdeaat": "psmc",
-            "fptemp_11": "fp"}
+            "fptemp_11": "fp",
+            "tmp_bep_pcb": "bep_pcb",
+            "tmp_fep1_mong": "fep1_mong",
+            "tmp_fep1_actel": "fep1_actel"}
 
 class Model(TimeSeriesData):
 
@@ -49,6 +52,9 @@ class Model(TimeSeriesData):
             url = "http://cxc.cfa.harvard.edu/acis/%s_thermPredic/" % c
             url += "%s/ofls%s/temperatures.dat" % (load[:-1].upper(), load[-1].lower())
             u = requests.get(url)
+            if not u.ok:
+                mylog.warning("Could not find the model page for '%s'. Skipping." % comp)
+                continue
             table = ascii.read(u.text)
             if time_range is None:
                 idxs = np.ones(table["time"].size, dtype='bool')
