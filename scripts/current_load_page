@@ -311,28 +311,33 @@ while True:
         roll.fig.subplots_adjust(left=lm, right=rm)
         roll.savefig(os.path.join(outdir, "current_roll.png"))
 
-        for temp in ["tmp_fep1_mong", "tmp_fep1_actel", "tmp_bep_pcb"]:
-            dp = lr.plot(("model", temp), field2="pitch", annotations=["belts", "sim_trans", "comms", "perigee", "cti_runs"],
-                         tbegin=tbegin, tend=tend, figsize=(10,8), ymin=plot_limits[temp][0],
-                         ymax=plot_limits[temp][1])
-            dp.add_vline(tnow, lw=3)
-            title_str = "%s\nCurrent %s prediction: %g $\mathrm{^\circ{C}}$\nCurrent pitch: %g degrees"
-            dp.set_title(title_str % (tnow, temp.upper(), lr.ds["model", temp][tnow].value, lr.ds["pitch"][tnow].value))
-            dp.add_hline(planning_limits[temp], color='g')
-            dp.add_hline(yellow_limits[temp], color='gold')
-            dp.add_hline(red_limits[temp], color='r')
-            dpt = acispy.DatePlot(dea_tl_data, ("msids", temp), colors='red', plot=dp)
-            dpt.set_ylim(*plot_limits[temp])
-            dp.fig.subplots_adjust(right=0.8)
-            dp.savefig(os.path.join(outdir, "current_%s.png" % temp))
+        plots = ["fptemp_11", "1dpamzt", "1deamzt", "1pdeaat", "ccd", "roll"]
+
+        if ('model', 'tmp_fep1_mong') in lr.ds.field_list:
+
+            plots += ["tmp_fep1_mong", "tmp_fep1_actel", "tmp_bep_pcb"]
+
+            for temp in ["tmp_fep1_mong", "tmp_fep1_actel", "tmp_bep_pcb"]:
+                dp = lr.plot(("model", temp), field2="pitch", annotations=["belts", "sim_trans", "comms", "perigee", "cti_runs"],
+                             tbegin=tbegin, tend=tend, figsize=(10,8), ymin=plot_limits[temp][0],
+                             ymax=plot_limits[temp][1])
+                dp.add_vline(tnow, lw=3)
+                title_str = "%s\nCurrent %s prediction: %g $\mathrm{^\circ{C}}$\nCurrent pitch: %g degrees"
+                dp.set_title(title_str % (tnow, temp.upper(), lr.ds["model", temp][tnow].value, lr.ds["pitch"][tnow].value))
+                dp.add_hline(planning_limits[temp], color='g')
+                dp.add_hline(yellow_limits[temp], color='gold')
+                dp.add_hline(red_limits[temp], color='r')
+                dpt = acispy.DatePlot(dea_tl_data, ("msids", temp), colors='red', plot=dp)
+                dpt.set_ylim(*plot_limits[temp])
+                dp.fig.subplots_adjust(right=0.8)
+                dp.savefig(os.path.join(outdir, "current_%s.png" % temp))
 
         plt.close("all")
 
         footer = ["<a name=\"plots\"><h2><font face=\"times\">Temperature Models</font></h2></a>",
                   "<a href=\"http://cxc.cfa.harvard.edu/acis/Thermal/%s/%s.html\"><font face=\"times\" color=\"blue\">Full thermal models for %s</font></a>" % (load_year, load_dir, load_name)]
 
-        for fig in ["fptemp_11", "1dpamzt", "1deamzt", "1pdeaat",
-                    "ccd", "roll", "tmp_fep1_mong", "tmp_fep1_actel", "tmp_bep_pcb"]:
+        for fig in plots:
             footer.append("<img src=\"current_%s.png\" />" % fig)
             footer.append("<p />")
 
