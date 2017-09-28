@@ -82,12 +82,15 @@ class ACISLoadReview(object):
     get_msids : boolean, optional
         Whether or not to load MSID data as well as model
         data for temperatures. Default: False
+    interpolate_msids : boolean, optional
+        If True, MSIDs are interpolated to a time sequence that is common
+        with the model data. Default: False
     tl_file : string, optional
         If MSID data is to be loaded, load from this 
         tracelog file rather than the engineering archive.
         Default: None
     """
-    def __init__(self, load_name, get_msids=True,
+    def __init__(self, load_name, get_msids=True, interpolate_msids=False,
                  tl_file=None):
         self.load_name = load_name
         if len(load_name) == 7:
@@ -112,8 +115,8 @@ class ACISLoadReview(object):
         tl_tbegin = secs2date(date2secs(self.first_time) - 86400.0)
         tl_tend = secs2date(date2secs(self.last_time) + 86400.0)
         self.ds = ModelDataFromLoad(self.load_name, get_msids=get_msids,
-                                    interpolate_msids=True, tl_file=tl_file,
-                                    time_range=[tl_tbegin, tl_tend])
+                                    interpolate_msids=interpolate_msids,
+                                    tl_file=tl_file, time_range=[tl_tbegin, tl_tend])
         self._find_cti_runs()
 
     def __repr__(self):
