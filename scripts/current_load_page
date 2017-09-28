@@ -248,8 +248,11 @@ while True:
             lr.get_updated_dsn_comms()
             last_tl_ts = tl_ts
         if dea_tl_data is None or dea_tl_ts != last_dea_tl_ts:
+            # We subtract a day off to make sure we actually get some telemetry
+            tl_tbegin = secs2date(date2secs(lr.first_time)-86400.0)
+            tl_tend = lr.last_time
             dea_tl_data = acispy.TracelogData("/data/acis/eng_plots/acis_dea_10day.tl",
-                                              tbegin=lr.first_time, tend=lr.last_time)
+                                              tbegin=tl_tbegin, tend=tl_tend)
             last_dea_tl_ts = dea_tl_ts
 
         tnow = now_time_utc.strftime("%Y:%j:%H:%M:%S")

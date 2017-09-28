@@ -107,9 +107,13 @@ class ACISLoadReview(object):
         self.start_status = self._get_start_status()
         self.begin_radzone = int(self.start_status['radmon_status'] == "OORMPDS")
         self.lines, self.line_times = self._populate_event_times()
+        # We're going to buffer the grabbing of MSIDs from the tracelog
+        # file to make sure we actually have data
+        tl_tbegin = secs2date(date2secs(self.first_time) - 86400.0)
+        tl_tend = secs2date(date2secs(self.last_time) + 86400.0)
         self.ds = ModelDataFromLoad(self.load_name, get_msids=get_msids,
                                     interpolate_msids=True, tl_file=tl_file,
-                                    time_range=[self.first_time, self.last_time])
+                                    time_range=[tl_tbegin, tl_tend])
         self._find_cti_runs()
 
     def __repr__(self):
