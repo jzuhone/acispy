@@ -2,7 +2,7 @@ from __future__ import print_function
 import os
 from acispy.dataset import ModelDataFromLoad
 from acispy.plots import DatePlot
-from acispy.utils import get_time
+from acispy.utils import get_time, mylog
 from collections import defaultdict
 from Chandra.Time import date2secs, secs2date
 from Ska.Matplotlib import cxctime2plotdate
@@ -246,6 +246,9 @@ class ACISLoadReview(object):
 
     def get_updated_dsn_comms(self):
         dsnfile = "/data/acis/dsn_summary.dat"
+        if os.path.getsize(dsnfile) == 0:
+            mylog.warning("DSN summary file is empty. Ignoring.")
+            return
         tstart = date2secs(self.first_time)
         tstop = date2secs(self.last_time)
         bots = []
