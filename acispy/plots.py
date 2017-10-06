@@ -338,6 +338,10 @@ class DatePlot(CustomDatePlot):
     plot : :class:`~acispy.plots.DatePlot` or :class:`~acispy.plots.CustomDatePlot`, optional
         An existing DatePlot to add this plot to. Default: None, one 
         will be created if not provided.
+    plot_bad : boolean, optional
+        If True, "bad" values will be plotted but the ranges of bad values
+        will be marked with translucent blue rectangles. If False, bad
+        values will be removed from the plot. Default: True
 
     Examples
     --------
@@ -351,7 +355,7 @@ class DatePlot(CustomDatePlot):
     """
     def __init__(self, ds, fields, field2=None, lw=1.5, fontsize=18,
                  colors=None, color2='magenta', figsize=(10, 8),
-                 plot=None):
+                 plot=None, plot_bad=True):
         if plot is None:
             fig = plt.figure(figsize=figsize)
             ax = None
@@ -384,14 +388,19 @@ class DatePlot(CustomDatePlot):
             else:
                 x = ds[field].times.value
             label = ds.fields[field].display_name
+            if not plot_bad:
+                mask = ds[field].mask
+                x = x[mask]
+                y = y[mask]
+            else:
+                mask = np.ones(x.size, dtype='bool')
             ticklocs, fig, ax = plot_cxctime(x, y, fig=fig, lw=lw, ax=ax,
                                              color=colors[i],
                                              state_codes=state_codes,
                                              drawstyle=drawstyle, 
                                              label=label)
-            self.y[field] = ds[field]
-            self.times[field] = ds[field].times
-
+            self.y[field] = ds[field][mask]
+            self.times[field] = ds[field].times[mask]
         self.fig = fig
         self.ax = ax
         self.ds = ds
@@ -443,11 +452,17 @@ class DatePlot(CustomDatePlot):
                 y2 = pointpair(y2)
             else:
                 x = ds[field2].times.value
+            if not plot_bad:
+                mask = ds[field].mask
+                x = x[mask]
+                y2 = y2[mask]
+            else:
+                mask = np.ones(x.size, dtype='bool')
             plot_cxctime(x, y2, fig=fig, ax=self.ax2, lw=lw,
                          drawstyle=drawstyle, color=color2,
                          state_codes=state_codes)
-            self.times[field2] = ds[field2].times
-            self.y[field2] = ds[field2]
+            self.times[field2] = ds[field2].times[mask]
+            self.y[field2] = ds[field2][mask]
             for label in self.ax2.get_xticklabels():
                 label.set_fontproperties(fontProperties)
             for label in self.ax2.get_yticklabels():
@@ -469,7 +484,8 @@ class DatePlot(CustomDatePlot):
             self.set_ylabel2(ylabel2)
         else:
             self.field2 = None
-        self._fill_bad_times()
+        if plot_bad:
+            self._fill_bad_times()
 
     def _fill_bad_times(self):
         masks = []
@@ -590,6 +606,10 @@ class MultiDatePlot(object):
         The width of the lines in the plots. Default: 1.5 px.
     figsize : tuple of integers, optional
         The size of the plot in (width, height) in inches. Default: (12, 12)
+    plot_bad : boolean, optional
+        If True, "bad" values will be plotted but the ranges of bad values
+        will be marked with translucent blue rectangles. If False, bad
+        values will be removed from the plot. Default: True
 
     Examples
     --------
@@ -602,7 +622,8 @@ class MultiDatePlot(object):
     >>> mp = MultiDatePlot(ds, fields, lw=2)
     """
     def __init__(self, ds, fields, subplots=None,
-                 fontsize=15, lw=1.5, figsize=(12, 12)):
+                 fontsize=15, lw=1.5, figsize=(12, 12),
+                 plot_bad=True):
         fig = plt.figure(figsize=figsize)
         if subplots is None:
             subplots = len(fields), 1
@@ -617,7 +638,7 @@ class MultiDatePlot(object):
             # This next line is to raise an error if we have
             # multiple field types with the same name
             ds._determine_field(fd)
-            self.plots[fd] = DatePlot(ds, field, plot=ddp, lw=lw)
+            self.plots[fd] = DatePlot(ds, field, plot=ddp, lw=lw, plot_bad=plot_bad)
             ax.xaxis.label.set_size(fontsize)
             ax.yaxis.label.set_size(fontsize)
             ax.xaxis.set_tick_params(labelsize=fontsize)
