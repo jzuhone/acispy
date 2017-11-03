@@ -228,7 +228,8 @@ class ACISLoadReview(object):
                         lines.append(line)
                         line_times.append(time)
         line_times = date2secs(line_times)
-        lines, line_times = self._fix_comm_times(lines, line_times, comm_durations)
+        if len(self.events["comm_begins"]) > 0:
+            lines, line_times = self._fix_comm_times(lines, line_times, comm_durations)
         return lines, line_times
 
     def _find_cti_runs(self):
