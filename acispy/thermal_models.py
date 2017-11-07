@@ -238,6 +238,8 @@ class ThermalModelFromData(ThermalModelRunner):
     include_bad_times : boolean, optional
         If set, bad times from the data are included in the array masks
         and plots. Default: False
+    server : string
+         DBI server or HDF5 file. Default: None
 
     Examples
     --------
@@ -247,7 +249,7 @@ class ThermalModelFromData(ThermalModelRunner):
     >>> dpa_model = ThermalModelFromData("dpa", tstart, tstop)
     """
     def __init__(self, name, tstart, tstop, T_init=None, use_msids=True,
-                 model_spec=None, include_bad_times=False):
+                 model_spec=None, include_bad_times=False, server=None):
 
         msid = msid_dict[name]
         tstart_secs = DateTime(tstart).secs
@@ -255,7 +257,7 @@ class ThermalModelFromData(ThermalModelRunner):
 
         self.model_spec = find_json(name, model_spec)
 
-        states_obj = States.from_database(start, tstop)
+        states_obj = States.from_database(start, tstop, server=server)
         states = dict((k, np.array(v)) for k, v in states_obj.items())
         states["off_nominal_roll"] = calc_off_nom_rolls(states)
 

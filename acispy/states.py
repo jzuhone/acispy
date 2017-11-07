@@ -35,10 +35,10 @@ class States(TimeSeriesData):
         super(States, self).__init__(new_table)
 
     @classmethod
-    def from_database(cls, tstart, tstop, states=None):
+    def from_database(cls, tstart, tstop, states=None, server=None):
         if states is not None:
             states = ensure_list(states)
-        t = fetch_states(tstart, tstop, vals=states)
+        t = fetch_states(tstart, tstop, vals=states, server=server)
         table = dict((k, t[k]) for k in t.dtype.names)
         return cls(table)
 

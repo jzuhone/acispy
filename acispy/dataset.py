@@ -305,7 +305,8 @@ class Dataset(object):
 
 class ArchiveData(Dataset):
     def __init__(self, tstart, tstop, msid_keys=None, state_keys=None,
-                 filter_bad=False, stat=None, interpolate_msids=False):
+                 filter_bad=False, stat=None, interpolate_msids=False,
+                 server=None):
         """
         Fetch MSIDs from the engineering archive and states from the commanded
         states database.
@@ -329,6 +330,8 @@ class ArchiveData(Dataset):
         interpolate_msids : boolean, optional
             If True, MSIDs are interpolated to a common time sequence with uniform
             timesteps of 328 seconds. Default: False
+        server : string
+             DBI server or HDF5 file. Default: None
 
         Examples
         --------
@@ -345,12 +348,14 @@ class ArchiveData(Dataset):
                                         interpolate=interpolate_msids)
         else:
             msids = EmptyTimeSeries()
-        states = States.from_database(tstart, tstop, states=state_keys)
+        states = States.from_database(tstart, tstop, states=state_keys, 
+                                      server=server)
         model = EmptyTimeSeries()
         super(ArchiveData, self).__init__(msids, states, model)
 
 class TracelogData(Dataset):
-    def __init__(self, filename, state_keys=None, tbegin=None, tend=None):
+    def __init__(self, filename, state_keys=None, tbegin=None, tend=None,
+                 server=None):
         """
         Fetch MSIDs from a tracelog file and states from the commanded
         states database.
@@ -362,6 +367,8 @@ class TracelogData(Dataset):
         state_keys : list of strings, optional
             List of commanded states to pull from the commanded states database.
             If not supplied, a default list of states will be loaded.
+        server : string
+             DBI server or HDF5 file. Default: None
 
         Examples
         --------
@@ -384,7 +391,8 @@ class TracelogData(Dataset):
         for v in msids.values():
             tmin = min(v.times[0].value, tmin)
             tmax = max(v.times[-1].value, tmax)
-        states = States.from_database(secs2date(tmin), secs2date(tmax), states=state_keys)
+        states = States.from_database(secs2date(tmin), secs2date(tmax), 
+                                      states=state_keys, server=server)
         model = EmptyTimeSeries()
         super(TracelogData, self).__init__(msids, states, model)
 
