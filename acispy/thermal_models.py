@@ -391,6 +391,10 @@ class SimulateCTIRun(ThermalModelRunner):
     dh_heater: integer, optional
         Flag to set whether (1) or not (0) the detector housing heater is on. 
         Default: 0
+    clocking : integer, optional
+        Set to 0 if you want to simulate a CTI run which doesn't clock, which
+        you probably don't want to do if you're going to simulate an actual
+        CTI run. Default: 1
     model_spec : string, optional
         Path to the model spec JSON file for the model. Default: None, the 
         standard model path will be used. 
@@ -403,7 +407,7 @@ class SimulateCTIRun(ThermalModelRunner):
     """
     def __init__(self, name, tstart, tstop, T_init, pitch, ccd_count,
                  vehicle_load=None, simpos=-99616.0, off_nominal_roll=0.0, 
-                 dh_heater=0, model_spec=None):
+                 dh_heater=0, clocking=1, model_spec=None):
         self.vehicle_load = vehicle_load
         datestart = tstart
         tstart = DateTime(tstart).secs
@@ -420,8 +424,8 @@ class SimulateCTIRun(ThermalModelRunner):
         if vehicle_load is None:
             states = {"ccd_count": np.array([ccd_count], dtype='int'),
                       "fep_count": np.array([ccd_count], dtype='int'),
-                      "clocking": np.array([1], dtype='int'),
-                      'vid_board': np.array([1], dtype='int'),
+                      "clocking": np.array([clocking], dtype='int'),
+                      'vid_board': np.array([clocking], dtype='int'),
                       "pitch": np.array([pitch]),
                       "simpos": np.array([simpos]),
                       "datestart": np.array([self.datestart]),
