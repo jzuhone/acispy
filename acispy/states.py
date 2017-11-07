@@ -5,6 +5,7 @@ from acispy.utils import get_time, ensure_list
 from Chandra.cmd_states import fetch_states
 from acispy.units import APQuantity, APStringArray, Quantity
 from acispy.time_series import TimeSeriesData
+import numpy as np
 
 cmd_state_codes = {("states", "hetg"): {"RETR": 0, "INSR": 1},
                    ("states", "letg"): {"RETR": 0, "INSR": 1},
@@ -26,7 +27,12 @@ class States(TimeSeriesData):
     def __init__(self, table):
         new_table = {}
         times = Quantity([table["tstart"], table["tstop"]], "s")
-        for k, v in table.items():
+        if isinstance(table, np.ndarray):
+            state_names = table.dtype.names
+        else:
+            state_names = list(table.keys())
+        for k in state_names:
+            v = table[k]
             if v.dtype.char in ['S', 'U']:
                 new_table[k] = APStringArray(v, times)
             else:
