@@ -97,7 +97,8 @@ class ThermalModelRunner(Dataset):
         self.xija_model = self._compute_model(name, tstart, tstop, states, 
                                               state_times, T_init)
 
-        states.pop("dh_heater", None)
+        if isinstance(states, dict):
+            states.pop("dh_heater", None)
 
         self.name = name
 
@@ -121,13 +122,21 @@ class ThermalModelRunner(Dataset):
         super(ThermalModelRunner, self).__init__(msids_obj, states_obj, model_obj)
 
     def _compute_model(self, name, tstart, tstop, states, state_times, T_init):
+        if isinstance(states, np.ndarray):
+            state_names = states.dtype.names
+        else:
+            state_names = list(states.keys())
+        if "off_nominal_roll" in state_names:
+            roll = np.array(states["off_nominal_roll"])
+        else:
+            roll = calc_off_nom_rolls(states)
         model = xija.XijaModel(name, start=tstart, stop=tstop, model_spec=self.model_spec)
         if 'eclipse' in model.comp:
             model.comp['eclipse'].set_data(False)
         model.comp[msid_dict[name]].set_data(T_init)
         model.comp['sim_z'].set_data(np.array(states['simpos']), state_times)
         if 'roll' in model.comp:
-            model.comp['roll'].set_data(np.array(states["off_nominal_roll"]), state_times)
+            model.comp['roll'].set_data(roll, state_times)
         if 'dpa_power' in model.comp:
             model.comp['dpa_power'].set_data(0.0) # This is just a hack, we're not
             # really setting the power to zero.
