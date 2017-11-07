@@ -499,9 +499,16 @@ class SimulateCTIRun(ThermalModelRunner):
         else:
             mylog.info("This CTI run is safe from a thermal perspective.")
 
-    def plot_model(self):
+    def plot_model(self, no_annotations=False):
         """
         Plot the simulated model run.
+
+        Parameters
+        ----------
+        no_annotations : boolean, optional
+            If True, don't put lines or text on the plot. Shouldn't be
+            used if you're actually trying to determine if a CTI run is
+            safe. Default: False
         """
         if self.vehicle_load is None:
             field2 = None
@@ -509,19 +516,20 @@ class SimulateCTIRun(ThermalModelRunner):
             field2 = "pitch"
         viol_text = "NOT SAFE" if self.violate else "SAFE"
         dp = DatePlot(self, [("model", msid_dict[self.name])], field2=field2)
-        dp.add_hline(self.limit.value, ls='--', lw=2, color='g')
-        dp.add_vline(self.datestart, ls='--', lw=2, color='b')
-        dp.add_text(find_text_time(self.datestart), self.limit.value - 2.0,
-                    "START CTI RUN", color='blue', rotation="vertical")
-        dp.add_vline(self.datestop, ls='--', lw=2, color='b')
-        dp.add_text(find_text_time(self.datestop), self.limit.value - 12.0,
-                    "END CTI RUN", color='blue', rotation="vertical")
-        dp.add_text(find_text_time(self.datestop, hours=4.0), self.T_init.value+2.0,
-                    viol_text, fontsize=22, color='black')
-        if self.limit_date is not None:
-            dp.add_vline(self.limit_date, ls='--', lw=2, color='r')
-            dp.add_text(find_text_time(self.limit_date), self.limit.value-2.0,
-                        "VIOLATION", color='red', rotation="vertical")
+        if not no_annotations:
+            dp.add_hline(self.limit.value, ls='--', lw=2, color='g')
+            dp.add_vline(self.datestart, ls='--', lw=2, color='b')
+            dp.add_text(find_text_time(self.datestart), self.limit.value - 2.0,
+                        "START CTI RUN", color='blue', rotation="vertical")
+            dp.add_vline(self.datestop, ls='--', lw=2, color='b')
+            dp.add_text(find_text_time(self.datestop), self.limit.value - 12.0,
+                        "END CTI RUN", color='blue', rotation="vertical")
+            dp.add_text(find_text_time(self.datestop, hours=4.0), self.T_init.value+2.0,
+                        viol_text, fontsize=22, color='black')
+            if self.limit_date is not None:
+                dp.add_vline(self.limit_date, ls='--', lw=2, color='r')
+                dp.add_text(find_text_time(self.limit_date), self.limit.value-2.0,
+                            "VIOLATION", color='red', rotation="vertical")
         dp.set_xlim(find_text_time(self.datestart, hours=-1.0), self.dateend)
         dp.set_ylim(self.T_init.value-2.0, 
                     max(self.limit.value, self.mvals.value.max())+3.0)
