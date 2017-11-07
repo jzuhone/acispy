@@ -65,9 +65,6 @@ class ThermalModelRunner(Dataset):
     states : dict
         A dictionary of modeled commanded states required for the model. The
         states can either be a constant value or NumPy arrays. 
-    state_times : array of strings
-        A list containting two arrays of times in YYYY:DOY:HH:MM:SS format 
-        which correspond to the start and stop times of the states.
     T_init : float
         The starting temperature for the model in degrees C.
     model_spec : string, optional
@@ -86,28 +83,22 @@ class ThermalModelRunner(Dataset):
     ...           "vid_board": np.array([1]*3),
     ...           "off_nominal_roll": np.array([0.0]*3),
     ...           "simpos": np.array([-99616.0]*3)}
-    >>> state_times = [["2015:002:00:00:00","2015:002:12:00:00","2015:003:12:00:00"],
-    ...                ["2015:002:12:00:00","2015:003:12:00:00","2015:005:00:00:00"]]
-    >>> dpa_model = ThermalModelRunner("dpa", "2015:002:00:00:00", 
+    >>> dpa_model = ThermalModelRunner("dpa", "2015:002:00:00:00",
     ...                                "2016:005:00:00:00", states,
-    ...                                state_times, 10.1)
+    ...                                10.1)
     """
-    def __init__(self, name, tstart, tstop, states, state_times, 
-                 T_init, model_spec=None, include_bad_times=False):
-        state_times = np.array([DateTime(state_times[0]).secs,
-                                DateTime(state_times[1]).secs])
+    def __init__(self, name, tstart, tstop, states, T_init,
+                 model_spec=None, include_bad_times=False):
+
+        state_times = np.array([states["tstart"], states["tstop"]])
 
         self.model_spec = find_json(name, model_spec)
-
-        states["tstart"] = state_times[0,:]
-        states["tstop"] = state_times[1,:]
-        states["datestart"] = secs2date(state_times[0,:])
-        states["datestop"] = secs2date(state_times[1,:])
 
         self.xija_model = self._compute_model(name, tstart, tstop, states, 
                                               state_times, T_init)
 
-        states.pop("dh_heater", None)
+        if isinstance(states, dict):
+            states.pop("dh_heater", None)
 
         self.name = name
 
@@ -131,13 +122,21 @@ class ThermalModelRunner(Dataset):
         super(ThermalModelRunner, self).__init__(msids_obj, states_obj, model_obj)
 
     def _compute_model(self, name, tstart, tstop, states, state_times, T_init):
+        if isinstance(states, np.ndarray):
+            state_names = states.dtype.names
+        else:
+            state_names = list(states.keys())
+        if "off_nominal_roll" in state_names:
+            roll = np.array(states["off_nominal_roll"])
+        else:
+            roll = calc_off_nom_rolls(states)
         model = xija.XijaModel(name, start=tstart, stop=tstop, model_spec=self.model_spec)
         if 'eclipse' in model.comp:
             model.comp['eclipse'].set_data(False)
         model.comp[msid_dict[name]].set_data(T_init)
         model.comp['sim_z'].set_data(np.array(states['simpos']), state_times)
         if 'roll' in model.comp:
-            model.comp['roll'].set_data(np.array(states["off_nominal_roll"]), state_times)
+            model.comp['roll'].set_data(roll, state_times)
         if 'dpa_power' in model.comp:
             model.comp['dpa_power'].set_data(0.0) # This is just a hack, we're not
             # really setting the power to zero.
@@ -425,23 +424,25 @@ class SimulateCTIRun(ThermalModelRunner):
                       'vid_board': np.array([1], dtype='int'),
                       "pitch": np.array([pitch]),
                       "simpos": np.array([simpos]),
+                      "datestart": np.array([self.datestart]),
+                      "datestop": np.array([self.dateend]),
+                      "tstart": np.array([self.tstart.value]),
+                      "tstop": np.array([tend]),
                       "off_nominal_roll": np.array([off_nominal_roll]),
                       "dh_heater": np.array([dh_heater], dtype='int')}
-            state_times = [[datestart], [dateend]]
         else:
             mylog.info("Modeling a %d-chip CTI run concurrent with " % ccd_count +
                        "the %s vehicle loads." % vehicle_load)
             states = dict((k, state.value) for (k, state) in
                           States.from_load_page(vehicle_load).table.items())
             states["off_nominal_roll"] = calc_off_nom_rolls(states)
-            state_times = [list(states['datestart']), list(states['datestop'])]
             cti_run_idxs = states["tstart"] < tstop
             states["ccd_count"][cti_run_idxs] = ccd_count
             states["fep_count"][cti_run_idxs] = ccd_count
             states["clocking"][cti_run_idxs] = 1
             states["vid_board"][cti_run_idxs] = 1
         super(SimulateCTIRun, self).__init__(name, datestart, dateend, states,
-                                             state_times, T_init, model_spec=model_spec)
+                                             T_init, model_spec=model_spec)
 
         mylog.info("Run Parameters")
         mylog.info("--------------")

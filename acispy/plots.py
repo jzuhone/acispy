@@ -393,7 +393,7 @@ class DatePlot(CustomDatePlot):
                 x = x[mask]
                 y = y[mask]
             else:
-                mask = np.ones(x.size, dtype='bool')
+                mask = slice(None, None, None)
             ticklocs, fig, ax = plot_cxctime(x, y, fig=fig, lw=lw, ax=ax,
                                              color=colors[i],
                                              state_codes=state_codes,
@@ -457,7 +457,7 @@ class DatePlot(CustomDatePlot):
                 x = x[mask]
                 y2 = y2[mask]
             else:
-                mask = np.ones(x.size, dtype='bool')
+                mask = slice(None, None, None)
             plot_cxctime(x, y2, fig=fig, ax=self.ax2, lw=lw,
                          drawstyle=drawstyle, color=color2,
                          state_codes=state_codes)
