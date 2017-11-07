@@ -13,6 +13,7 @@ from acispy.time_series import EmptyTimeSeries
 from acispy.utils import mylog, calc_off_nom_rolls
 import Ska.Numpy
 import Ska.engarchive.fetch_sci as fetch
+from Chandra.cmd_states import get_state0, get_states
 
 limits = {'dea': 35.5,
           'dpa': 35.5,
@@ -357,6 +358,18 @@ class ThermalModelFromData(ThermalModelRunner):
                        msid=msid_dict[self.name], modelname=full_name[self.name],
                        errorplotlimits=errorplotlimits, yplotlimits=yplotlimits,
                        fig=fig)
+
+class ThermalModelFromCommands(ThermalModelRunner):
+    def __init__(self, name, tstart, tstop, cmds, T_init,
+                 model_spec=None, include_bad_times=False):
+        import Ska.DBI
+        server = os.path.join(os.environ['SKA'], 'data', 'cmd_states', 'cmd_states.db3')
+        db = Ska.DBI.DBI(dbi='sqlite', server=server, user='aca_read', database='aca')
+        state0 = get_state0(tstart, db, datepar='datestart', date_margin=None)
+        states = get_states(state0, cmds)
+        super(ThermalModelFromCommands, self).__init__(name, tstart, tstop, states,
+                                                       T_init, model_spec=model_spec,
+                                                       include_bad_times=include_bad_times)
 
 def find_text_time(time, hours=1.0):
     return secs2date(date2secs(time)+hours*3600.0)
