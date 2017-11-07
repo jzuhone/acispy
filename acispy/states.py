@@ -2,9 +2,11 @@ from astropy.io import ascii
 import requests
 from acispy.units import get_units
 from acispy.utils import get_time, ensure_list
-from Chandra.cmd_states import fetch_states
+from Chandra.cmd_states import fetch_states, get_states, \
+    get_state0, get_cmds
 from acispy.units import APQuantity, APStringArray, Quantity
 from acispy.time_series import TimeSeriesData
+import os
 import numpy as np
 
 cmd_state_codes = {("states", "hetg"): {"RETR": 0, "INSR": 1},
@@ -67,6 +69,17 @@ class States(TimeSeriesData):
         # hack
         if 'T_pin1at' in table:
             table.pop("T_pin1at")
+        return cls(table)
+
+    @classmethod
+    def from_commands(cls, tstart, tstop):
+        import Ska.DBI
+        server = os.path.join(os.environ['SKA'], 'data', 'cmd_states', 'cmd_states.db3')
+        db = Ska.DBI.DBI(dbi='sqlite', server=server, user='aca_read', database='aca')
+        cmds = get_cmds(tstart, tstop, db)
+        state0 = get_state0(tstart, db, datepar='datestart', date_margin=None)
+        t = get_states(state0, cmds)
+        table = dict((k, t[k]) for k in t.dtype.names)
         return cls(table)
 
     def get_states(self, time):
