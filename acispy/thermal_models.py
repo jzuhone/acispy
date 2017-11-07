@@ -362,11 +362,8 @@ class ThermalModelFromData(ThermalModelRunner):
 class ThermalModelFromCommands(ThermalModelRunner):
     def __init__(self, name, tstart, tstop, cmds, T_init,
                  model_spec=None, include_bad_times=False):
-        import Ska.DBI
-        server = os.path.join(os.environ['SKA'], 'data', 'cmd_states', 'cmd_states.db3')
-        db = Ska.DBI.DBI(dbi='sqlite', server=server, user='aca_read', database='aca')
-        state0 = get_state0(tstart, db, datepar='datestart', date_margin=None)
-        states = get_states(state0, cmds)
+        t = States.from_commands(tstart, tstop, cmds)
+        states = {k: t[k].value for k in t.keys()}
         super(ThermalModelFromCommands, self).__init__(name, tstart, tstop, states,
                                                        T_init, model_spec=model_spec,
                                                        include_bad_times=include_bad_times)

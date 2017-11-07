@@ -72,11 +72,12 @@ class States(TimeSeriesData):
         return cls(table)
 
     @classmethod
-    def from_commands(cls, tstart, tstop):
+    def from_commands(cls, tstart, tstop, cmds=None):
         import Ska.DBI
         server = os.path.join(os.environ['SKA'], 'data', 'cmd_states', 'cmd_states.db3')
         db = Ska.DBI.DBI(dbi='sqlite', server=server, user='aca_read', database='aca')
-        cmds = get_cmds(tstart, tstop, db)
+        if cmds is None:
+            cmds = get_cmds(tstart, tstop, db)
         state0 = get_state0(tstart, db, datepar='datestart', date_margin=None)
         t = get_states(state0, cmds)
         table = dict((k, t[k]) for k in t.dtype.names)
