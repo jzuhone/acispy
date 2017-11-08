@@ -14,7 +14,13 @@ from acispy.utils import mylog, calc_off_nom_rolls, \
     get_time
 import Ska.Numpy
 import Ska.engarchive.fetch_sci as fetch
-from Chandra.cmd_states import get_state0, get_states
+
+short_name = {"1deamzt": "dea",
+              "1dpamzt": "dpa",
+              "1pdeaat": "psmc",
+              "tmp_fep1_mong": "fep1_mong",
+              "tmp_fep1_actel": "fep1_actel",
+              "tmp_bep_pcb": "bep_pcb"}
 
 full_name = {"1deamzt": "DEA",
              "1dpamzt": "DPA",
@@ -31,6 +37,7 @@ limits = {'1deamzt': 35.5,
           'tmp_bep_pcb': 43.0}
 
 def find_json(name, model_spec):
+    name = short_name[name]
     if model_spec is None:
         if name == "psmc":
             path = "psmc_check"
