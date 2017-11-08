@@ -15,26 +15,19 @@ import Ska.Numpy
 import Ska.engarchive.fetch_sci as fetch
 from Chandra.cmd_states import get_state0, get_states
 
-limits = {'dea': 35.5,
-          'dpa': 35.5,
-          'psmc': 52.5,
-          'fep1_mong': 43.0,
-          'fep1_actel': 43.0,
-          'bep_pcb': 43.0}
+full_name = {"1deamzt": "DEA",
+             "1dpamzt": "DPA",
+             "1pdeaat": "PSMC",
+             "tmp_fep1_mong": "FEP1 Mongoose",
+             "tmp_fep1_actel": "FEP1 Actel",
+             "tmp_bep_pcb": "BEP PCB"}
 
-msid_dict = {'dea': '1deamzt',
-             'dpa': '1dpamzt',
-             'psmc': '1pdeaat',
-             'fep1_mong': 'tmp_fep1_mong',
-             'fep1_actel': 'tmp_fep1_actel',
-             'bep_pcb': 'tmp_bep_pcb'}
-
-full_name = {"dea": "DEA",
-             "dpa": "DPA",
-             "psmc": "PSMC",
-             "fep1_mong": "FEP1 Mongoose",
-             "fep1_actel": "FEP1 Actel",
-             "bep_pcb": "BEP PCB"}
+limits = {'1deamzt': 35.5,
+          '1dpamzt': 35.5,
+          '1pdeaat': 52.5,
+          'tmp_fep1_mong': 43.0,
+          'tmp_fep1_actel': 43.0,
+          'tmp_bep_pcb': 43.0}
 
 def find_json(name, model_spec):
     if model_spec is None:
@@ -103,7 +96,7 @@ class ThermalModelRunner(Dataset):
 
         self.name = name
 
-        components = [msid_dict[name]]
+        components = [name]
         if 'dpa_power' in self.xija_model.comp:
             components.append('dpa_power')
 
@@ -112,9 +105,9 @@ class ThermalModelRunner(Dataset):
 
         masks = {}
         if include_bad_times:
-            masks[msid_dict[name]] = np.ones(self.xija_model.times.shape, dtype='bool')
+            masks[name] = np.ones(self.xija_model.times.shape, dtype='bool')
             for (left, right) in self.bad_times_indices:
-                masks[msid_dict[name]][left:right] = False
+                masks[name][left:right] = False
 
         model_obj = Model.from_xija(self.xija_model, components, masks=masks)
         msids_obj = EmptyTimeSeries()
@@ -134,7 +127,7 @@ class ThermalModelRunner(Dataset):
         model = xija.XijaModel(name, start=tstart, stop=tstop, model_spec=self.model_spec)
         if 'eclipse' in model.comp:
             model.comp['eclipse'].set_data(False)
-        model.comp[msid_dict[name]].set_data(T_init)
+        model.comp[name].set_data(T_init)
         model.comp['sim_z'].set_data(np.array(states['simpos']), state_times)
         if 'roll' in model.comp:
             model.comp['roll'].set_data(roll, state_times)
@@ -201,7 +194,7 @@ class ThermalModelRunner(Dataset):
         """
         if os.path.exists(filename) and not overwrite:
             raise IOError("File %s already exists, but overwrite=False!" % filename)
-        msid = msid_dict[self.name]
+        msid = self.name
         T = self["model", msid].value
         times = self.times("model", msid).value
         dates = self.dates("model", msid)
@@ -251,7 +244,7 @@ class ThermalModelFromData(ThermalModelRunner):
     def __init__(self, name, tstart, tstop, T_init=None, use_msids=True,
                  model_spec=None, include_bad_times=False, server=None):
 
-        msid = msid_dict[name]
+        msid = name
         tstart_secs = DateTime(tstart).secs
         start = secs2date(tstart_secs-700.0)
 
@@ -315,7 +308,7 @@ class ThermalModelFromData(ThermalModelRunner):
         overwrite : boolean, optional
             If True, an existing file with the same name will be overwritten.
         """
-        msid = msid_dict[self.name]
+        msid = self.name
         self.add_diff_data_model_field(msid)
         states_to_map = ["vid_board", "pcad_mode", "pitch", "clocking", "simpos",
                          "ccd_count", "fep_count", "off_nominal_roll", "power_cmd"]
@@ -341,7 +334,7 @@ class ThermalModelFromData(ThermalModelRunner):
             Default: [-15, 15]
         """
         from xijafit import dashboard as dash
-        msid = msid_dict[self.name]
+        msid = self.name
         telem = self["msids", msid]
         pred = self["model", msid]
         mask = np.logical_and(telem.mask, pred.mask)
@@ -355,7 +348,7 @@ class ThermalModelFromData(ThermalModelRunner):
         mylimits = {"units": "C", "caution_high": limits[self.name]+2,
                     "planning_limit": limits[self.name]}
         dash.dashboard(pred.value[mask], telem.value[mask], times, mylimits,
-                       msid=msid_dict[self.name], modelname=full_name[self.name],
+                       msid=self.name, modelname=full_name[self.name],
                        errorplotlimits=errorplotlimits, yplotlimits=yplotlimits,
                        fig=fig)
 
@@ -484,7 +477,7 @@ class SimulateCTIRun(ThermalModelRunner):
         viols = self.mvals.value > self.limit.value
         if np.any(viols):
             idx = np.where(viols)[0][0]
-            self.limit_time = self.times('model', msid_dict[self.name])[idx]
+            self.limit_time = self.times('model', self.name)[idx]
             self.limit_date = secs2date(self.limit_time)
             self.duration = Quantity((self.limit_time.value-tstart)*0.001, "ks")
             msg = "The limit of %g degrees C will be reached at %s, " % (self.limit.value, self.limit_date)
@@ -525,7 +518,7 @@ class SimulateCTIRun(ThermalModelRunner):
         else:
             field2 = "pitch"
         viol_text = "NOT SAFE" if self.violate else "SAFE"
-        dp = DatePlot(self, [("model", msid_dict[self.name])], field2=field2)
+        dp = DatePlot(self, [("model", self.name)], field2=field2)
         if not no_annotations:
             dp.add_hline(self.limit.value, ls='--', lw=2, color='g')
             dp.add_vline(self.datestart, ls='--', lw=2, color='b')
@@ -547,7 +540,7 @@ class SimulateCTIRun(ThermalModelRunner):
 
     @property
     def mvals(self):
-        return self['model', msid_dict[self.name]]
+        return self['model', self.name]
 
     def write_states(self, states_file):
         raise NotImplementedError
