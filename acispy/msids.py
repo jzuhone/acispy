@@ -133,6 +133,6 @@ class MSIDs(TimeSeriesData):
             table[k.lower()] = msid.vals
             if msid.bads is not None:
                 masks[k.lower()] = ~msid.bads
-        times = dict((k.lower(), get_time(data[k].times).secs) for k in data.keys())
+        times = dict((k.lower(), get_time(data[k].times, 'secs')) for k in data.keys())
         return cls(table, times, state_codes=state_codes, masks=masks)
 

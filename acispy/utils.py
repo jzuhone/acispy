@@ -23,12 +23,12 @@ acispyLogger.propagate = False
 
 mylog = acispyLogger
 
-def get_time(time):
+def get_time(time, fmt='date'):
     if time is "now":
         time = DateTime()
     else:
         time = DateTime(time)
-    return time
+    return getattr(time, fmt)
 
 def ensure_tuple(obj):
     """

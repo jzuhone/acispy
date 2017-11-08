@@ -398,10 +398,10 @@ class ACISLoadReview(object):
         plot : :class:`~acispy.plots.DatePlot` or :class:`~acispy.plots.CustomDatePlot`, optional
             An existing DatePlot to add this plot to. Default: None, one 
             will be created if not provided.
-        tbegin : string, optional
+        tbegin : string, float, or DateTime object, optional
             The start time of the plot. Default is to plot from the
             beginning of the load. 
-        tend : string, optional
+        tend : string, float, or DateTime object, optional
             The end time of the plot. Default is to plot to the
             ending of the load.
         annotations : list of strings, optional
@@ -441,8 +441,8 @@ class ACISLoadReview(object):
             tbegin = self.first_time
         if tend is None:
             tend = self.last_time
-        tbegin = get_time(tbegin).secs
-        tend = get_time(tend).secs
+        tbegin = get_time(tbegin, 'secs')
+        tend = get_time(tend, 'secs')
         if annotations is not None:
             self._add_annotations(dp, annotations.copy(), tbegin, tend)
         dp.set_xlim(secs2date(tbegin), secs2date(tend))

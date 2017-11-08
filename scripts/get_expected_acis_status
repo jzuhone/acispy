@@ -3,8 +3,9 @@
 from __future__ import print_function
 import argparse
 import acispy
-from acispy.utils import get_time, calc_off_nom_rolls
+from acispy.utils import calc_off_nom_rolls
 import numpy as np
+from Chandra.Time import DateTime
 
 dont_use = ["q1","q2","q3","q4","power_cmd","datestart","datestop",
             "tstart","tstop","trans_keys","vid_board","pcad_mode",
@@ -19,7 +20,7 @@ parser.add_argument("--time", type=str, default="now",
 args = parser.parse_args()
 
 ds = acispy.ModelDataFromLoad(args.load, comps)
-t = get_time(args.time)
+t = DateTime(args.time)
 states = ds.states.get_states(t.date)
 values = ds.model.get_values(t.date)
 

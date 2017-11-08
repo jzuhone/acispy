@@ -7,7 +7,7 @@ from acispy.fields import create_derived_fields, \
     DerivedField, FieldContainer, OutputFieldFunction
 from acispy.time_series import TimeSeriesData, EmptyTimeSeries
 from acispy.utils import get_display_name, moving_average, \
-    ensure_list
+    ensure_list, get_time
 from acispy.units import get_units
 import numpy as np
 import os
@@ -342,6 +342,8 @@ class ArchiveData(Dataset):
         >>> states = ["pitch", "ccd_count"]
         >>> ds = ArchiveData(tstart, tstop, msid_keys=msids, state_keys=states)
         """
+        tstart = get_time(tstart)
+        tstop = get_time(tstop)
         if msid_keys is not None:
             msids = MSIDs.from_database(msid_keys, tstart, tstop=tstop,
                                         filter_bad=filter_bad, stat=stat,
@@ -376,6 +378,10 @@ class TracelogData(Dataset):
         >>> states = ["ccd_count", "roll"]
         >>> ds = TracelogData("acisENG10d_00985114479.70.tl", state_keys=states)
         """
+        if tbegin is not None:
+            tbegin = get_time(tbegin)
+        if tend is not None:
+            tend = get_time(tend)
         # Figure out what kind of file this is
         f = open(filename, "r")
         line = f.readline()

@@ -84,7 +84,7 @@ class States(TimeSeriesData):
         return cls(table)
 
     def get_states(self, time):
-        time = get_time(time).secs
+        time = get_time(time, 'secs')
         state = {}
         for key in self.keys():
             state[key] = self[key][time]

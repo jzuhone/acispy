@@ -11,7 +11,7 @@ from matplotlib.backends.backend_agg import \
     FigureCanvasAgg
 from io import BytesIO
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from acispy.utils import convert_state_code
+from acispy.utils import convert_state_code, get_time
 import numpy as np
 
 drawstyles = {"simpos": "steps",
@@ -165,6 +165,7 @@ class CustomDatePlot(ACISPlot):
     """
     def __init__(self, dates, values, lw=1.5, fontsize=18, figsize=(10, 8),
                  plot=None, **kwargs):
+        dates = get_time(dates)
         if plot is None:
             fig = plt.figure(figsize=figsize)
             ax = None

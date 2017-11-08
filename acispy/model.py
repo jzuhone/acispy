@@ -80,7 +80,7 @@ class Model(TimeSeriesData):
         return cls(data)
 
     def get_values(self, time):
-        time = get_time(time).secs
+        time = get_time(time, fmt='secs')
         t = Quantity(time, "s")
         values = {}
         for key in self.keys():

@@ -10,7 +10,8 @@ from acispy.states import States
 from acispy.model import Model
 from acispy.msids import MSIDs
 from acispy.time_series import EmptyTimeSeries
-from acispy.utils import mylog, calc_off_nom_rolls
+from acispy.utils import mylog, calc_off_nom_rolls, \
+    get_time
 import Ska.Numpy
 import Ska.engarchive.fetch_sci as fetch
 from Chandra.cmd_states import get_state0, get_states
@@ -83,6 +84,9 @@ class ThermalModelRunner(Dataset):
     """
     def __init__(self, name, tstart, tstop, states, T_init,
                  model_spec=None, include_bad_times=False):
+
+        tstart = get_time(tstart)
+        tstop = get_time(tstop)
 
         state_times = np.array([states["tstart"], states["tstop"]])
 
@@ -170,6 +174,8 @@ class ThermalModelRunner(Dataset):
             If set, bad times from the data are included in the array masks
             and plots. Default: False
         """
+        tstart = get_time(tstart)
+        tstop = get_time(tstop)
         state_keys = ["ccd_count", "pitch", "fep_count", "clocking", "vid_board", "simpos"]
         states = ascii.read(states_file)
         states_dict = dict((k, states[k]) for k in state_keys)
@@ -243,7 +249,8 @@ class ThermalModelFromData(ThermalModelRunner):
     """
     def __init__(self, name, tstart, tstop, T_init=None, use_msids=True,
                  model_spec=None, include_bad_times=False, server=None):
-
+        tstart = get_time(tstart)
+        tstop = get_time(tstop)
         msid = name
         tstart_secs = DateTime(tstart).secs
         start = secs2date(tstart_secs-700.0)
@@ -355,6 +362,8 @@ class ThermalModelFromData(ThermalModelRunner):
 class ThermalModelFromCommands(ThermalModelRunner):
     def __init__(self, name, tstart, tstop, cmds, T_init,
                  model_spec=None, include_bad_times=False):
+        tstart = get_time(tstart)
+        tstop = get_time(tstop)
         t = States.from_commands(tstart, tstop, cmds)
         states = {k: t[k].value for k in t.keys()}
         super(ThermalModelFromCommands, self).__init__(name, tstart, tstop, states,
@@ -411,6 +420,8 @@ class SimulateCTIRun(ThermalModelRunner):
     def __init__(self, name, tstart, tstop, T_init, pitch, ccd_count,
                  vehicle_load=None, simpos=-99616.0, off_nominal_roll=0.0, 
                  dh_heater=0, clocking=1, model_spec=None):
+        tstart = get_time(tstart)
+        tstop = get_time(tstop)
         self.vehicle_load = vehicle_load
         datestart = tstart
         tstart = DateTime(tstart).secs
