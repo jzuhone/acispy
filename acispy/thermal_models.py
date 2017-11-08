@@ -556,6 +556,15 @@ class SimulateCTIRun(ThermalModelRunner):
                     max(self.limit.value, self.mvals.value.max())+3.0)
         return dp
 
+    def get_temp_at_time(self, t):
+        """
+        Get the model temperature at a time *t* seconds
+        past the beginning of the CTI run.
+        """
+        t += self.tstart.value
+        return Quantity(np.interp(t, self['model', self.name].times.value,
+                                  self['model', self.name].value), "deg_C")
+
     @property
     def mvals(self):
         return self['model', self.name]
