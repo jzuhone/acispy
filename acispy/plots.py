@@ -34,8 +34,6 @@ unit_labels = {"V": 'V',
                "s": "s",
                "deg": "deg"}
 
-default_colors = ["b","r","g","k"]
-
 class ACISPlot(object):
     def __init__(self, fig, ax):
         self.fig = fig
@@ -364,7 +362,7 @@ class DatePlot(CustomDatePlot):
             fig = plot.fig
             ax = plot.ax
         if colors is None:
-            colors = default_colors
+            colors = [None]*len(fields)
         fields = ensure_list(fields)
         self.num_fields = len(fields)
         colors = ensure_list(colors)
