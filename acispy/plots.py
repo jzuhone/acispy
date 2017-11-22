@@ -820,6 +820,34 @@ class PhasePlot(ACISPlot):
         fontdict = {"size": fontsize}
         self.ax.set_xlabel(xlabel, fontdict=fontdict, **kwargs)
 
+    def add_line(self, x, y, lw=2, ls='-', color=None, **kwargs):
+        """
+        Add an arbitrary line to the plot.
+
+        Parameters
+        ----------
+        x : float
+            The x-values of the line.
+        y : float
+            The y-values of the line.
+        lw : integer, optional
+            The width of the line. Default: 2
+        ls : string, optional
+            The style of the line. Can be one of:
+            'solid', 'dashed', 'dashdot', 'dotted'.
+            Default: 'solid'
+        color : string, optional
+            The color of the line. Default is to use
+            the default Matplotlib color.
+
+        Examples
+        --------
+        >>> x = np.linspace(0.0, 50.0, 100)
+        >>> y = x.copy()
+        >>> p.add_line(x, y, lw=3, ls='dashed', color='red')
+        """
+        self.ax.plot(x, y, lw=lw, ls=ls, color=color, **kwargs)
+
     def add_vline(self, x, lw=2, ls='-', color='green', **kwargs):
         """
         Add a vertical line on the x-axis of the plot.
