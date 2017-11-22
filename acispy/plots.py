@@ -151,7 +151,10 @@ class CustomDatePlot(ACISPlot):
     values : array
         The values to be plotted.
     lw : float, optional
-        The width of the lines in the plots. Default: 1.5 px.
+        The width of the lines in the plots. Default: 2 px.
+    ls : string, optional
+        The line style of the lines. Can be a single linestyle or
+        more than one for each line. Default: '-'
     fontsize : integer, optional
         The font size for the labels in the plot. Default: 18 pt.
     figsize : tuple of integers, optional
@@ -161,8 +164,8 @@ class CustomDatePlot(ACISPlot):
         will be created if not provided.
 
     """
-    def __init__(self, dates, values, lw=1.5, fontsize=18, figsize=(10, 8),
-                 plot=None, **kwargs):
+    def __init__(self, dates, values, lw=2, fontsize=18, ls='-',
+                 figsize=(10, 8), plot=None, **kwargs):
         dates = get_time(dates)
         if plot is None:
             fig = plt.figure(figsize=figsize)
@@ -171,7 +174,8 @@ class CustomDatePlot(ACISPlot):
             fig = plot.fig
             ax = plot.ax
         dates = DateTime(dates).secs
-        ticklocs, fig, ax = plot_cxctime(dates, np.array(values), fig=fig, ax=ax, lw=lw, **kwargs)
+        ticklocs, fig, ax = plot_cxctime(dates, np.array(values), fig=fig, 
+                                         ax=ax, lw=lw, ls=ls, **kwargs)
         super(CustomDatePlot, self).__init__(fig, ax)
         self.ax.set_xlabel("Date", fontdict={"size": fontsize})
         fontProperties = font_manager.FontProperties(size=fontsize)
@@ -317,12 +321,21 @@ class DatePlot(CustomDatePlot):
     field2 : tuple of strings, optional
         A single field to plot on the right y-axis. Default: None
     lw : float, optional
-        The width of the lines in the plots. Default: 1.5 px.
+        The width of the lines in the plots. Default: 2 px.
+    ls : string, optional
+        The line style of the lines plotted on the left y-axis. 
+        Can be a single linestyle or more than one for each line. 
+        Default: '-'
+    ls2 : string, optional
+        The line style of the line plotted on the right y-axis. 
+        Can be a single linestyle or more than one for each line. 
+        Default: '-'
     fontsize : integer, optional
         The font size for the labels in the plot. Default: 18 pt.
-    colors : list of strings, optional
-        The colors for the lines plotted on the left y-axis.
-        Default: ["blue", "red", "green", "black"]
+    color : list of strings, optional
+        The colors for the lines plotted on the left y-axis. Can
+        be a single color or more than one in a list. Default: 
+        Use the default Matplotlib order of colors. 
     color2 : string, optional
         The color for the line plotted on the right y-axis.
         Default: "magenta"
@@ -352,20 +365,26 @@ class DatePlot(CustomDatePlot):
     >>> fields = [("msids", "1dpamzt"), ("msids", "1deamzt"), ("msids", "1pdeaat")]
     >>> p2 = DatePlot(ds, fields, fontsize=12, colors=["brown","black","orange"])
     """
-    def __init__(self, ds, fields, field2=None, lw=1.5, fontsize=18,
-                 colors=None, color2='magenta', figsize=(10, 8),
-                 plot=None, plot_bad=True):
+    def __init__(self, ds, fields, field2=None, lw=2, ls='-', 
+                 ls2='-', fontsize=18, color=None, color2='magenta', 
+                 figsize=(10, 8), plot=None, plot_bad=True):
         if plot is None:
             fig = plt.figure(figsize=figsize)
             ax = None
         else:
             fig = plot.fig
             ax = plot.ax
-        if colors is None:
-            colors = [None]*len(fields)
+        if color is None:
+            color = [None]*len(fields)
         fields = ensure_list(fields)
         self.num_fields = len(fields)
-        colors = ensure_list(colors)
+        color = ensure_list(color)
+        ls = ensure_list(ls)
+        if len(ls) != len(fields) and len(ls) == 1:
+            ls = ls*len(fields)
+        else:
+            raise RuntimeError("The number of linestyles must equal the number "
+                               "of fields or must be only one style!")
         self.times = {}
         self.y = {}
         self.fields = []
@@ -394,7 +413,7 @@ class DatePlot(CustomDatePlot):
             else:
                 mask = slice(None, None, None)
             ticklocs, fig, ax = plot_cxctime(x, y, fig=fig, lw=lw, ax=ax,
-                                             color=colors[i],
+                                             color=color[i], ls=ls[i],
                                              state_codes=state_codes,
                                              drawstyle=drawstyle, 
                                              label=label)
@@ -457,8 +476,8 @@ class DatePlot(CustomDatePlot):
                 y2 = y2[mask]
             else:
                 mask = slice(None, None, None)
-            plot_cxctime(x, y2, fig=fig, ax=self.ax2, lw=lw,
-                         drawstyle=drawstyle, color=color2,
+            plot_cxctime(x, y2, fig=fig, ax=self.ax2, ls2=ls2,
+                         lw=lw, drawstyle=drawstyle, color=color2,
                          state_codes=state_codes)
             self.times[field2] = ds[field2].times[mask]
             self.y[field2] = ds[field2][mask]
@@ -602,7 +621,11 @@ class MultiDatePlot(object):
     fontsize : integer, optional
         The font size for the labels in the plot. Default: 15 pt.
     lw : float, optional
-        The width of the lines in the plots. Default: 1.5 px.
+        The width of the lines in the plots. Default: 2 px.
+    color : string, optional
+        The color of the lines in the plots. Can be a single color or
+        one color for each plot. Default is to use a single color, which
+        is the Matplotlib default.
     figsize : tuple of integers, optional
         The size of the plot in (width, height) in inches. Default: (12, 12)
     plot_bad : boolean, optional
@@ -621,12 +644,15 @@ class MultiDatePlot(object):
     >>> mp = MultiDatePlot(ds, fields, lw=2)
     """
     def __init__(self, ds, fields, subplots=None,
-                 fontsize=15, lw=1.5, figsize=(12, 12),
-                 plot_bad=True):
+                 fontsize=15, lw=2, figsize=(12, 12),
+                 color=None, plot_bad=True):
         fig = plt.figure(figsize=figsize)
         if subplots is None:
             subplots = len(fields), 1
         self.plots = OrderedDict()
+        if color is None:
+            color = [None]*len(fields)
+        color = ensure_list(color)
         for i, field in enumerate(fields):
             ax = fig.add_subplot(subplots[0], subplots[1], i+1)
             ddp = DummyDatePlot(fig, ax)
@@ -637,7 +663,8 @@ class MultiDatePlot(object):
             # This next line is to raise an error if we have
             # multiple field types with the same name
             ds._determine_field(fd)
-            self.plots[fd] = DatePlot(ds, field, plot=ddp, lw=lw, plot_bad=plot_bad)
+            self.plots[fd] = DatePlot(ds, field, plot=ddp, lw=lw, 
+                                      color=color[i], plot_bad=plot_bad)
             ax.xaxis.label.set_size(fontsize)
             ax.yaxis.label.set_size(fontsize)
             ax.xaxis.set_tick_params(labelsize=fontsize)
