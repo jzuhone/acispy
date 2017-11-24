@@ -380,11 +380,12 @@ class DatePlot(CustomDatePlot):
         self.num_fields = len(fields)
         color = ensure_list(color)
         ls = ensure_list(ls)
-        if len(ls) != len(fields) and len(ls) == 1:
-            ls = ls*len(fields)
-        else:
-            raise RuntimeError("The number of linestyles must equal the number "
-                               "of fields or must be only one style!")
+        if len(ls) != len(fields): 
+            if len(ls) == 1:
+                ls = ls*len(fields)
+            else:
+                raise RuntimeError("The number of linestyles must equal the number "
+                                   "of fields or must be only one style!")
         self.times = {}
         self.y = {}
         self.fields = []
