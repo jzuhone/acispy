@@ -140,6 +140,23 @@ class ACISPlot(object):
     def tight_layout(self, *args, **kwargs):
         self.fig.tight_layout(*args, **kwargs)
 
+def get_figure(plot, fig, subplot, figsize):
+    if plot is None:
+        if fig is None:
+            fig = plt.figure(figsize=figsize)
+        if subplot is None:
+            subplot = 111
+        if not isinstance(subplot, tuple):
+            subplot = (subplot,)
+        ax = fig.add_subplot(*subplot)
+    else:
+        fig = plot.fig
+        if subplot is None:
+            ax = plot.ax
+        else:
+            ax = fig.add_subplot(subplot)
+    return fig, ax
+
 class CustomDatePlot(ACISPlot):
     r"""
     Make a custom date vs. value plot.
@@ -165,14 +182,9 @@ class CustomDatePlot(ACISPlot):
 
     """
     def __init__(self, dates, values, lw=2, fontsize=18, ls='-',
-                 figsize=(10, 8), plot=None, **kwargs):
-        dates = get_time(dates)
-        if plot is None:
-            fig = plt.figure(figsize=figsize)
-            ax = None
-        else:
-            fig = plot.fig
-            ax = plot.ax
+                 figsize=(10, 8), plot=None, fig=None, subplot=None, 
+                 **kwargs):
+        fig, ax = get_figure(plot, fig, subplot, figsize)
         dates = DateTime(dates).secs
         ticklocs, fig, ax = plot_cxctime(dates, np.array(values), fig=fig, 
                                          ax=ax, lw=lw, ls=ls, **kwargs)
@@ -367,13 +379,8 @@ class DatePlot(CustomDatePlot):
     """
     def __init__(self, ds, fields, field2=None, lw=2, ls='-', 
                  ls2='-', fontsize=18, color=None, color2='magenta', 
-                 figsize=(10, 8), plot=None, plot_bad=True):
-        if plot is None:
-            fig = plt.figure(figsize=figsize)
-            ax = None
-        else:
-            fig = plot.fig
-            ax = plot.ax
+                 figsize=(10, 8), plot=None, fig=None, subplot=None, plot_bad=True):
+        fig, ax = get_figure(plot, fig, subplot, figsize)
         if color is None:
             color = [None]*len(fields)
         fields = ensure_list(fields)
