@@ -371,7 +371,7 @@ class ACISLoadReview(object):
                                  alpha=alpha)
 
     def plot(self, fields, field2=None, lw=1.5, fontsize=18,
-             colors=None, color2='magenta', figsize=(10, 8), 
+             color=None, color2='magenta', figsize=(10, 8), 
              plot=None, tbegin=None, tend=None, annotations=None, 
              ymin=None, ymax=None, ymin2=None, ymax2=None):
         """
@@ -387,8 +387,8 @@ class ACISLoadReview(object):
             The width of the lines in the plots. Default: 1.5 px.
         fontsize : integer, optional
             The font size for the labels in the plot. Default: 18 pt.
-        colors : list of strings, optional
-            The colors for the lines plotted on the left y-axis.
+        color : list of strings, optional
+            The color for the lines plotted on the left y-axis.
             Default: ["blue", "red", "green", "black"]
         color2 : string, optional
             The color for the line plotted on the right y-axis.
@@ -422,7 +422,7 @@ class ACISLoadReview(object):
             plot.
         """
         dp = DatePlot(self.ds, fields, field2=field2, lw=lw,
-                      fontsize=fontsize, colors=colors, color2=color2,
+                      fontsize=fontsize, color=color, color2=color2,
                       figsize=figsize, plot=plot)
         ylimits = dp.ax.get_ylim()
         if ymin is None:

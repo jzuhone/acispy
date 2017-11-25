@@ -371,11 +371,11 @@ class DatePlot(CustomDatePlot):
     --------
     >>> from acispy import DatePlot
     >>> p1 = DatePlot(ds, ("msids", "1dpamzt"), field2=("states", "pitch"),
-    ...               lw=2, colors="brown")
+    ...               lw=2, color="brown")
 
     >>> from acispy import DatePlot
     >>> fields = [("msids", "1dpamzt"), ("msids", "1deamzt"), ("msids", "1pdeaat")]
-    >>> p2 = DatePlot(ds, fields, fontsize=12, colors=["brown","black","orange"])
+    >>> p2 = DatePlot(ds, fields, fontsize=12, color=["brown","black","orange"])
     """
     def __init__(self, ds, fields, field2=None, lw=2, ls='-', 
                  ls2='-', fontsize=18, color=None, color2='magenta', 
