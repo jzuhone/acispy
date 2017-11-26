@@ -484,7 +484,7 @@ class DatePlot(CustomDatePlot):
                 y2 = y2[mask]
             else:
                 mask = slice(None, None, None)
-            plot_cxctime(x, y2, fig=fig, ax=self.ax2, ls2=ls2,
+            plot_cxctime(x, y2, fig=fig, ax=self.ax2, ls=ls2,
                          lw=lw, drawstyle=drawstyle, color=color2,
                          state_codes=state_codes)
             self.times[field2] = ds[field2].times[mask]
