@@ -1,6 +1,6 @@
 from __future__ import print_function
 import os
-from acispy.dataset import ModelDataFromLoad
+from acispy.thermal_models import ThermalModelFromLoad
 from acispy.plots import DatePlot
 from acispy.utils import get_time, mylog
 from collections import defaultdict
@@ -114,9 +114,9 @@ class ACISLoadReview(object):
         # file to make sure we actually have data
         tl_tbegin = secs2date(date2secs(self.first_time) - 86400.0)
         tl_tend = secs2date(date2secs(self.last_time) + 86400.0)
-        self.ds = ModelDataFromLoad(self.load_name, get_msids=get_msids,
-                                    interpolate_msids=interpolate_msids,
-                                    tl_file=tl_file, time_range=[tl_tbegin, tl_tend])
+        self.ds = ThermalModelFromLoad(self.load_name, get_msids=get_msids,
+                                       tl_file=tl_file,
+                                       time_range=[tl_tbegin, tl_tend])
         self._find_cti_runs()
 
     def __repr__(self):

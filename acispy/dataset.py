@@ -1,8 +1,7 @@
 from acispy.msids import MSIDs
 from acispy.states import States, cmd_state_codes
-from acispy.model import Model
 from acispy.units import APQuantity, APStringArray
-from Chandra.Time import secs2date, DateTime, date2secs
+from Chandra.Time import secs2date
 from acispy.fields import create_derived_fields, \
     DerivedField, FieldContainer, OutputFieldFunction
 from acispy.time_series import TimeSeriesData, EmptyTimeSeries
@@ -268,15 +267,17 @@ class Dataset(object):
         """
         from astropy.table import Table
         fields = ensure_list(fields)
-        base_times = self.times(*fields[0]).value
+        base_times = self.dates(*fields[0])
         if mask_field is not None:
             mask = self[mask_field].mask
         else:
             mask = np.ones(base_times.size, dtype="bool")
         if len(fields) > 1:
             for field in fields[1:]:
-                if not np.all(base_times == self.times(*field).value):
-                    raise RuntimeError("To write MSIDs, all of the times should be the same!!")
+                if not np.all(base_times == self.dates(*field)):
+                    raise RuntimeError("To write MSIDs, all of the times should be the same," +
+                                       "but '%s', '%s' does not have the same " % field +
+                                       "set of times as '%s', '%s'!" % (fields[0][0], fields[0][1]))
         if os.path.exists(filename) and not overwrite:
             raise IOError("File %s already exists, but overwrite=False!" % filename)
         data = dict(("_".join(k), self[k].value[mask]) for k in fields)
@@ -401,145 +402,6 @@ class TracelogData(Dataset):
                                       states=state_keys, server=server)
         model = EmptyTimeSeries()
         super(TracelogData, self).__init__(msids, states, model)
-
-class ModelDataFromLoad(Dataset):
-    def __init__(self, load, comps=None, get_msids=False, interpolate_msids=False,
-                 time_range=None, tl_file=None):
-        """
-        Fetch a temperature model and its associated commanded states
-        from a load review. Optionally get MSIDs for the same time period.
-
-        Parameters
-        ----------
-        load : string
-            The load review to get the model from, i.e. "JAN2516A".
-        comps : list of strings, optional
-            List of temperature components to get from the load models. If
-            not specified all four components will be loaded.
-        get_msids : boolean, optional
-            Whether or not to load the MSIDs corresponding to the 
-            temperature models for the same time period from the 
-            engineering archive. Default: False.
-        interpolate_msids : boolean, optional
-            If True, MSIDs are interpolated to a time sequence that is common
-            with the model data. Default: False
-
-        Examples
-        --------
-        >>> from acispy import ModelDataFromLoad
-        >>> comps = ["1deamzt", "1pdeaat", "fptemp_11"]
-        >>> ds = ModelDataFromLoad("APR0416C", comps, get_msids=True)
-        """
-        if comps is None:
-            comps = ["1deamzt","1dpamzt","1pdeaat","fptemp_11",
-                     "tmp_fep1_mong", "tmp_fep1_actel", "tmp_bep_pcb"]
-        if time_range is not None:
-            time_range = [date2secs(t) for t in time_range]
-        model = Model.from_load_page(load, comps, time_range=time_range)
-        states = States.from_load_page(load)
-        if get_msids:
-            if tl_file is not None:
-                if time_range is None:
-                    tbegin = None
-                    tend = None
-                else:
-                    tbegin, tend = time_range
-                msids = MSIDs.from_tracelog(tl_file, tbegin=tbegin, tend=tend)
-            else:
-                times = model[comps[0]].times.value
-                tstart = secs2date(times[0]-700.0)
-                tstop = secs2date(times[-1]+700.0)
-                if interpolate_msids:
-                    interpolate_times = times
-                else:
-                    interpolate_times = None
-                msids = MSIDs.from_database(comps, tstart, tstop=tstop,
-                                            interpolate=interpolate_msids,
-                                            interpolate_times=interpolate_times)
-                if interpolate_msids and msids[comps[0]].times.size != times.size:
-                    raise RuntimeError("Lengths of time arrays for model data and MSIDs "
-                                       "do not match. You probably ran a model past the "
-                                       "end date in the engineering archive!")
-        else:
-            msids = EmptyTimeSeries()
-        super(ModelDataFromLoad, self).__init__(msids, states, model)
-
-class ModelDataFromFiles(Dataset):
-    def __init__(self, temp_files, state_file, get_msids=False, 
-                 interpolate_msids=False, tl_file=None):
-        """
-        Fetch multiple temperature models and their associated commanded states
-        from ASCII table files generated by xija or model check tools.
-
-        Parameters
-        ----------
-        temp_files : string or list of strings
-            Path(s) of file(s) to get the temperature model(s) from, generated from a tool
-            like, i.e. dea_check. One or more files can be accepted. It is assumed
-            that the files have the same timing information and have the same states.
-        state_file : string
-            Path of the states.dat file corresponding to the temperature file(s).
-        get_msids : boolean, optional
-            Whether or not to load the MSIDs corresponding to the 
-            temperature models for the same time period from the 
-            engineering archive. Default: False.
-        interpolate_msids : boolean, optional
-            If True, MSIDs are interpolated to a time sequence that is common
-            with the model data. Default: False
-
-        Examples
-        --------
-        >>> from acispy import ModelDataFromFiles
-        >>> ds = ModelDataFromFiles(["old_model/temperatures.dat", "new_model/temperatures.dat"],
-        ...                         "old_model/states.dat", get_msids=True)
-
-        >>> from acispy import ModelDataFromFiles
-        >>> ds = ModelDataFromFiles(["temperatures_dea.dat", "temperatures_dpa.dat"],
-        ...                         "old_model/states.dat", get_msids=True)
-        """
-        temp_files = ensure_list(temp_files)
-        if len(temp_files) == 1:
-            models = Model.from_load_file(temp_files[0])
-            comps = list(models.keys())
-            times = models[comps[0]].times.value
-        else:
-            model_list = []
-            comps = []
-            for i, temp_file in enumerate(temp_files):
-                m = Model.from_load_file(temp_file)
-                model_list.append(m)
-                comps.append(m.keys()[0])
-                if i == 0:
-                    times = m[comps[0]].times.value 
-            comps = np.unique(comps)
-            if len(comps) == 1:
-                models = dict(("model%d" % i, m) for i, m in enumerate(model_list))
-            elif len(comps) == len(temp_files):
-                models = Model.join_models(model_list)
-            else:
-                raise RuntimeError("You can only import model files where all are the same MSID"
-                                   "or they are all different!")
-        states = States.from_load_file(state_file)
-        if get_msids:
-            if tl_file is not None:
-                msids = MSIDs.from_tracelog(tl_file)
-            else:
-                tstart = secs2date(times[0]-700.0)
-                tstop = secs2date(times[-1]+700.0)
-                if interpolate_msids:
-                    interpolate_times = times
-                else:
-                    interpolate_times = None
-                msids = MSIDs.from_database(comps, tstart, tstop=tstop, filter_bad=True,
-                                            interpolate=interpolate_msids, 
-                                            interpolate_times=interpolate_times)
-                if interpolate_msids and msids[comps[0]].times.size != times.size:
-                    raise RuntimeError("Lengths of time arrays for model data and MSIDs "
-                                       "do not match. You probably ran a model past the "
-                                       "end date in the engineering archive!")
-        else:
-            msids = EmptyTimeSeries()
-        super(ModelDataFromFiles, self).__init__(msids, states, models)
 
 class DataContainer(Dataset):
     pass

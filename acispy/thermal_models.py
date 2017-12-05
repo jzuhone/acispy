@@ -11,7 +11,7 @@ from acispy.model import Model
 from acispy.msids import MSIDs
 from acispy.time_series import EmptyTimeSeries
 from acispy.utils import mylog, calc_off_nom_rolls, \
-    get_time
+    get_time, ensure_list
 import Ska.Numpy
 import Ska.engarchive.fetch_sci as fetch
 
@@ -52,7 +52,191 @@ def find_json(name, model_spec):
         raise IOError("The JSON file %s does not exist!" % model_spec)
     return model_spec
 
-class ThermalModelRunner(Dataset):
+class ModelDataset(Dataset):
+    def write_model(self, filename, overwrite=False):
+        """
+        Write the model data vs. time to an ASCII text file.
+
+        Parameters
+        ----------
+        filename : string
+            The filename to write the data to.
+        overwrite : boolean, optional
+            If True, an existing file with the same name will be overwritten.
+        """
+        if os.path.exists(filename) and not overwrite:
+            raise IOError("File %s already exists, but overwrite=False!" % filename)
+        names = []
+        arrays = []
+        for i, msid in enumerate(self.model.keys()):
+            if i == 0:
+                times = self.times("model", msid).value
+                dates = self.dates("model", msid)
+                names += ['time', 'date']
+                arrays += [times, dates]
+            names.append(msid)
+            arrays.append(self["model", msid].value)
+        temp_array = np.rec.fromarrays(arrays, names=names)
+        fmt = {(name, '%.2f') for name in names if name != "date"}
+        out = open(filename, 'w')
+        Ska.Numpy.pprint(temp_array, fmt, out)
+        out.close()
+
+    def write_model_and_data(self, filename, overwrite=False):
+        """
+        Write the model, telemetry, and states data vs. time to
+        an ASCII text file. The state data is interpolated to the
+        times of the model so that everything is at a common set
+        of times.
+
+        Parameters
+        ----------
+        filename : string
+            The filename to write the data to.
+        overwrite : boolean, optional
+            If True, an existing file with the same name will be overwritten.
+        """
+        states_to_map = ["vid_board", "pcad_mode", "pitch", "clocking", "simpos",
+                         "ccd_count", "fep_count", "off_nominal_roll", "power_cmd"]
+        out = []
+        for i, msid in enumerate(self.model.keys()):
+            if i == 0:
+                for state in states_to_map:
+                    self.map_state_to_msid(state, msid)
+                    out.append(("msids", state))
+            out.append(("model", msid))
+            if ("msids", msid) in self.field_list:
+                self.add_diff_data_model_field(msid)
+                out += [("msids", msid), ("model", "diff_%s" % msid)]
+        self.write_msids(filename, out, overwrite=overwrite)
+
+class ThermalModelFromLoad(ModelDataset):
+    def __init__(self, load, comps=None, get_msids=False, time_range=None,
+                 tl_file=None):
+        """
+        Fetch a temperature model and its associated commanded states
+        from a load review. Optionally get MSIDs for the same time period.
+        If MSID data will be added, it will be interpolated to the times
+        of the model data.
+
+        Parameters
+        ----------
+        load : string
+            The load review to get the model from, i.e. "JAN2516A".
+        comps : list of strings, optional
+            List of temperature components to get from the load models. If
+            not specified all four components will be loaded.
+        get_msids : boolean, optional
+            Whether or not to load the MSIDs corresponding to the
+            temperature models for the same time period from the
+            engineering archive. Default: False.
+
+        Examples
+        --------
+        >>> from acispy import ThermalModelFromLoad
+        >>> comps = ["1deamzt", "1pdeaat", "fptemp_11"]
+        >>> ds = ThermalModelFromLoad("APR0416C", comps, get_msids=True)
+        """
+        if comps is None:
+            comps = ["1deamzt","1dpamzt","1pdeaat","fptemp_11",
+                     "tmp_fep1_mong", "tmp_fep1_actel", "tmp_bep_pcb"]
+        if time_range is not None:
+            time_range = [date2secs(t) for t in time_range]
+        model = Model.from_load_page(load, comps, time_range=time_range)
+        states = States.from_load_page(load)
+        if get_msids:
+            if tl_file is not None:
+                if time_range is None:
+                    tbegin = None
+                    tend = None
+                else:
+                    tbegin, tend = time_range
+                msids = MSIDs.from_tracelog(tl_file, tbegin=tbegin, tend=tend)
+            else:
+                times = model[comps[0]].times.value
+                tstart = secs2date(times[0]-700.0)
+                tstop = secs2date(times[-1]+700.0)
+                msids = MSIDs.from_database(comps, tstart, tstop=tstop,
+                                            interpolate=True, interpolate_times=times)
+                if msids[comps[0]].times.size != times.size:
+                    raise RuntimeError("Lengths of time arrays for model data and MSIDs "
+                                       "do not match. You probably ran a model past the "
+                                       "end date in the engineering archive!")
+        else:
+            msids = EmptyTimeSeries()
+        super(ThermalModelFromLoad, self).__init__(msids, states, model)
+
+class ThermalModelFromFiles(ModelDataset):
+    def __init__(self, temp_files, state_file, get_msids=False, tl_file=None):
+        """
+        Fetch multiple temperature models and their associated commanded states
+        from ASCII table files generated by xija or model check tools. If MSID
+        data will be added, it will be interpolated to the times of the model
+        data.
+
+        Parameters
+        ----------
+        temp_files : string or list of strings
+            Path(s) of file(s) to get the temperature model(s) from, generated from a tool
+            like, i.e. dea_check. One or more files can be accepted. It is assumed
+            that the files have the same timing information and have the same states.
+        state_file : string
+            Path of the states.dat file corresponding to the temperature file(s).
+        get_msids : boolean, optional
+            Whether or not to load the MSIDs corresponding to the
+            temperature models for the same time period from the
+            engineering archive. Default: False.
+
+        Examples
+        --------
+        >>> from acispy import ThermalModelFromFiles
+        >>> ds = ThermalModelFromFiles(["old_model/temperatures.dat", "new_model/temperatures.dat"],
+        ...                            "old_model/states.dat", get_msids=True)
+
+        >>> from acispy import ThermalModelFromFiles
+        >>> ds = ThermalModelFromFiles(["temperatures_dea.dat", "temperatures_dpa.dat"],
+        ...                            "old_model/states.dat", get_msids=True)
+        """
+        temp_files = ensure_list(temp_files)
+        if len(temp_files) == 1:
+            models = Model.from_load_file(temp_files[0])
+            comps = list(models.keys())
+            times = models[comps[0]].times.value
+        else:
+            model_list = []
+            comps = []
+            for i, temp_file in enumerate(temp_files):
+                m = Model.from_load_file(temp_file)
+                model_list.append(m)
+                comps.append(m.keys()[0])
+                if i == 0:
+                    times = m[comps[0]].times.value
+            comps = np.unique(comps)
+            if len(comps) == 1:
+                models = dict(("model%d" % i, m) for i, m in enumerate(model_list))
+            elif len(comps) == len(temp_files):
+                models = Model.join_models(model_list)
+            else:
+                raise RuntimeError("You can only import model files where all are "
+                                   "the same MSID or they are all different!")
+        states = States.from_load_file(state_file)
+        if get_msids:
+            if tl_file is not None:
+                msids = MSIDs.from_tracelog(tl_file)
+            else:
+                tstart = secs2date(times[0]-700.0)
+                tstop = secs2date(times[-1]+700.0)
+                msids = MSIDs.from_database(comps, tstart, tstop=tstop, filter_bad=True,
+                                            interpolate=True, interpolate_times=times)
+                if msids[comps[0]].times.size != times.size:
+                    raise RuntimeError("Lengths of time arrays for model data and MSIDs "
+                                       "do not match. You probably ran a model past the "
+                                       "end date in the engineering archive!")
+        else:
+            msids = EmptyTimeSeries()
+        super(ThermalModelFromFiles, self).__init__(msids, states, models)
+
+class ThermalModelRunner(ModelDataset):
     """
     Class for running Xija thermal models.
 
@@ -194,29 +378,6 @@ class ThermalModelRunner(Dataset):
         return cls(name, tstart, tstop, states_dict, state_times, T_init,
                    model_spec=model_spec, include_bad_times=include_bad_times)
 
-    def write_model(self, filename, overwrite=False):
-        """
-        Write the model data vs. time to an ASCII text file.
-
-        Parameters
-        ----------
-        filename : string
-            The filename to write the data to.
-        overwrite : boolean, optional
-            If True, an existing file with the same name will be overwritten.
-        """
-        if os.path.exists(filename) and not overwrite:
-            raise IOError("File %s already exists, but overwrite=False!" % filename)
-        msid = self.name
-        T = self["model", msid].value
-        times = self.times("model", msid).value
-        dates = self.dates("model", msid)
-        temp_array = np.rec.fromarrays([times, dates, T], names=('time', 'date', msid))
-        fmt = {msid: '%.2f', 'time': '%.2f'}
-        out = open(filename, 'w')
-        Ska.Numpy.pprint(temp_array, fmt, out)
-        out.close()
-
 class ThermalModelFromData(ThermalModelRunner):
     """
     Class for running Xija thermal models using commanded states
@@ -307,30 +468,6 @@ class ThermalModelFromData(ThermalModelRunner):
         else:
             msids_obj = EmptyTimeSeries()
         super(ThermalModelRunner, self).__init__(msids_obj, states_obj, model_obj)
-
-    def write_model_and_data(self, filename, overwrite=False):
-        """
-        Write the model, telemetry, and states data vs. time to
-        an ASCII text file. The state data is interpolated to the
-        times of the model so that everything is at a common set
-        of times. 
-
-        Parameters
-        ----------
-        filename : string
-            The filename to write the data to.
-        overwrite : boolean, optional
-            If True, an existing file with the same name will be overwritten.
-        """
-        msid = self.name
-        self.add_diff_data_model_field(msid)
-        states_to_map = ["vid_board", "pcad_mode", "pitch", "clocking", "simpos",
-                         "ccd_count", "fep_count", "off_nominal_roll", "power_cmd"]
-        for state in states_to_map:
-            self.map_state_to_msid(state, msid)
-        out = [("msids", state) for state in states_to_map]
-        out += [("msids", msid), ("model", msid), ("model", "diff_%s" % msid)]
-        self.write_msids(filename, out, overwrite=overwrite)
 
     def make_dashboard_plots(self, yplotlimits=None, errorplotlimits=None, fig=None):
         """
