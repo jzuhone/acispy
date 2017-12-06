@@ -24,6 +24,7 @@ state_dtypes = {"ccd_count": "int",
                 "vid_board": "int",
                 "clocking": "int"}
 
+
 class States(TimeSeriesData):
 
     def __init__(self, table):
@@ -44,6 +45,8 @@ class States(TimeSeriesData):
 
     @classmethod
     def from_database(cls, tstart, tstop, states=None, server=None):
+        tstart = get_time(tstart)
+        tstop = get_time(tstop)
         if states is not None:
             states = ensure_list(states)
         t = fetch_states(tstart, tstop, vals=states, server=server)
@@ -74,6 +77,8 @@ class States(TimeSeriesData):
     @classmethod
     def from_commands(cls, tstart, tstop, cmds=None):
         import Ska.DBI
+        tstart = get_time(tstart)
+        tstop = get_time(tstop)
         server = os.path.join(os.environ['SKA'], 'data', 'cmd_states', 'cmd_states.db3')
         db = Ska.DBI.DBI(dbi='sqlite', server=server, user='aca_read', database='aca')
         if cmds is None:

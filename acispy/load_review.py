@@ -133,8 +133,8 @@ class ACISLoadReview(object):
             for i, line in enumerate(f.readlines()):
                 words = line.strip().split()
                 if len(words) > 0:
-                    if (line.startswith(self.load_year) or
-                        line.startswith(self.next_year)):
+                    if line.startswith(self.load_year) or \
+                       line.startswith(self.next_year):
                         time = words[0]
                     if find_first_time and time is not None:
                         self.first_time = time

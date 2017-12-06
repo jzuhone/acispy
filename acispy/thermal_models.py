@@ -52,6 +52,7 @@ def find_json(name, model_spec):
         raise IOError("The JSON file %s does not exist!" % model_spec)
     return model_spec
 
+
 class ModelDataset(Dataset):
     def write_model(self, filename, overwrite=False):
         """
@@ -110,61 +111,6 @@ class ModelDataset(Dataset):
                 out += [("msids", msid), ("model", "diff_%s" % msid)]
         self.write_msids(filename, out, overwrite=overwrite)
 
-class ThermalModelFromLoad(ModelDataset):
-    def __init__(self, load, comps=None, get_msids=False, time_range=None,
-                 tl_file=None):
-        """
-        Fetch a temperature model and its associated commanded states
-        from a load review. Optionally get MSIDs for the same time period.
-        If MSID data will be added, it will be interpolated to the times
-        of the model data.
-
-        Parameters
-        ----------
-        load : string
-            The load review to get the model from, i.e. "JAN2516A".
-        comps : list of strings, optional
-            List of temperature components to get from the load models. If
-            not specified all four components will be loaded.
-        get_msids : boolean, optional
-            Whether or not to load the MSIDs corresponding to the
-            temperature models for the same time period from the
-            engineering archive. Default: False.
-
-        Examples
-        --------
-        >>> from acispy import ThermalModelFromLoad
-        >>> comps = ["1deamzt", "1pdeaat", "fptemp_11"]
-        >>> ds = ThermalModelFromLoad("APR0416C", comps, get_msids=True)
-        """
-        if comps is None:
-            comps = ["1deamzt","1dpamzt","1pdeaat","fptemp_11",
-                     "tmp_fep1_mong", "tmp_fep1_actel", "tmp_bep_pcb"]
-        if time_range is not None:
-            time_range = [date2secs(t) for t in time_range]
-        model = Model.from_load_page(load, comps, time_range=time_range)
-        states = States.from_load_page(load)
-        if get_msids:
-            if tl_file is not None:
-                if time_range is None:
-                    tbegin = None
-                    tend = None
-                else:
-                    tbegin, tend = time_range
-                msids = MSIDs.from_tracelog(tl_file, tbegin=tbegin, tend=tend)
-            else:
-                times = model[comps[0]].times.value
-                tstart = secs2date(times[0]-700.0)
-                tstop = secs2date(times[-1]+700.0)
-                msids = MSIDs.from_database(comps, tstart, tstop=tstop,
-                                            interpolate=True, interpolate_times=times)
-                if msids[comps[0]].times.size != times.size:
-                    raise RuntimeError("Lengths of time arrays for model data and MSIDs "
-                                       "do not match. You probably ran a model past the "
-                                       "end date in the engineering archive!")
-        else:
-            msids = EmptyTimeSeries()
-        super(ThermalModelFromLoad, self).__init__(msids, states, model)
 
 class ThermalModelFromFiles(ModelDataset):
     def __init__(self, temp_files, state_file, get_msids=False, tl_file=None):
@@ -236,6 +182,64 @@ class ThermalModelFromFiles(ModelDataset):
             msids = EmptyTimeSeries()
         super(ThermalModelFromFiles, self).__init__(msids, states, models)
 
+
+class ThermalModelFromLoad(ModelDataset):
+    def __init__(self, load, comps=None, get_msids=False, time_range=None,
+                 tl_file=None):
+        """
+        Fetch a temperature model and its associated commanded states
+        from a load review. Optionally get MSIDs for the same time period.
+        If MSID data will be added, it will be interpolated to the times
+        of the model data.
+
+        Parameters
+        ----------
+        load : string
+            The load review to get the model from, i.e. "JAN2516A".
+        comps : list of strings, optional
+            List of temperature components to get from the load models. If
+            not specified all four components will be loaded.
+        get_msids : boolean, optional
+            Whether or not to load the MSIDs corresponding to the
+            temperature models for the same time period from the
+            engineering archive. Default: False.
+
+        Examples
+        --------
+        >>> from acispy import ThermalModelFromLoad
+        >>> comps = ["1deamzt", "1pdeaat", "fptemp_11"]
+        >>> ds = ThermalModelFromLoad("APR0416C", comps, get_msids=True)
+        """
+        if comps is None:
+            comps = ["1deamzt","1dpamzt","1pdeaat","fptemp_11",
+                     "tmp_fep1_mong", "tmp_fep1_actel", "tmp_bep_pcb"]
+        if time_range is not None:
+            time_range = [date2secs(t) for t in time_range]
+        model = Model.from_load_page(load, comps, time_range=time_range)
+        states = States.from_load_page(load)
+        if get_msids:
+            if tl_file is not None:
+                if time_range is None:
+                    tbegin = None
+                    tend = None
+                else:
+                    tbegin, tend = time_range
+                msids = MSIDs.from_tracelog(tl_file, tbegin=tbegin, tend=tend)
+            else:
+                times = model[comps[0]].times.value
+                tstart = secs2date(times[0]-700.0)
+                tstop = secs2date(times[-1]+700.0)
+                msids = MSIDs.from_database(comps, tstart, tstop=tstop,
+                                            interpolate=True, interpolate_times=times)
+                if msids[comps[0]].times.size != times.size:
+                    raise RuntimeError("Lengths of time arrays for model data and MSIDs "
+                                       "do not match. You probably ran a model past the "
+                                       "end date in the engineering archive!")
+        else:
+            msids = EmptyTimeSeries()
+        super(ThermalModelFromLoad, self).__init__(msids, states, model)
+
+
 class ThermalModelRunner(ModelDataset):
     """
     Class for running Xija thermal models.
@@ -248,17 +252,24 @@ class ThermalModelRunner(ModelDataset):
         The start time in YYYY:DOY:HH:MM:SS format.
     tstop : string
         The stop time in YYYY:DOY:HH:MM:SS format.
-    states : dict
+    states : dict, optional
         A dictionary of modeled commanded states required for the model. The
-        states can either be a constant value or NumPy arrays. 
-    T_init : float
-        The starting temperature for the model in degrees C.
+        states can either be a constant value or NumPy arrays. If not supplied,
+        the thermal model will be run with states from the commanded states
+        database.
+    T_init : float, optional
+        The initial temperature for the thermal model run. If None,
+        an initial temperature will be determined from telemetry.
+        Default: None
     model_spec : string, optional
         Path to the model spec JSON file for the model. Default: None, the 
         standard model path will be used.
     include_bad_times : boolean, optional
         If set, bad times from the data are included in the array masks
         and plots. Default: False
+    server : string
+         DBI server or HDF5 file. Only used if the commanded states database
+         is used. Default: None
 
     Examples
     --------
@@ -270,14 +281,33 @@ class ThermalModelRunner(ModelDataset):
     ...           "off_nominal_roll": np.array([0.0]*3),
     ...           "simpos": np.array([-99616.0]*3)}
     >>> dpa_model = ThermalModelRunner("dpa", "2015:002:00:00:00",
-    ...                                "2016:005:00:00:00", states,
-    ...                                10.1)
+    ...                                "2016:005:00:00:00", states=states,
+    ...                                T_init=10.1)
     """
-    def __init__(self, name, tstart, tstop, states, T_init,
-                 model_spec=None, include_bad_times=False):
+    def __init__(self, name, tstart, tstop, states=None, T_init=None,
+                 use_msids=True, model_spec=None, include_bad_times=False,
+                 server=None):
+
+        self.name = name
 
         tstart = get_time(tstart)
         tstop = get_time(tstop)
+
+        tstart_secs = DateTime(tstart).secs
+        start = secs2date(tstart_secs - 700.0)
+
+        if states is None:
+            states_obj = States.from_database(start, tstop, server=server)
+            states = dict((k, np.array(v)) for k, v in states_obj.items())
+            states["off_nominal_roll"] = calc_off_nom_rolls(states)
+        else:
+            states_obj = States(states)
+
+        if T_init is None:
+            if not use_msids:
+                raise RuntimeError("Set 'use_msids=True' if you want to use telemetry "
+                                   "for setting the initial state!")
+            T_init = fetch.MSID(name, tstart_secs-700., tstart_secs+700.).vals.mean()
 
         state_times = np.array([states["tstart"], states["tstop"]])
 
@@ -286,17 +316,15 @@ class ThermalModelRunner(ModelDataset):
         self.xija_model = self._compute_model(name, tstart, tstop, states, 
                                               state_times, T_init)
 
+        self.bad_times = self.xija_model.bad_times
+        self.bad_times_indices = self.xija_model.bad_times_indices
+
         if isinstance(states, dict):
             states.pop("dh_heater", None)
-
-        self.name = name
 
         components = [name]
         if 'dpa_power' in self.xija_model.comp:
             components.append('dpa_power')
-
-        self.bad_times = self.xija_model.bad_times
-        self.bad_times_indices = self.xija_model.bad_times_indices
 
         masks = {}
         if include_bad_times:
@@ -305,9 +333,12 @@ class ThermalModelRunner(ModelDataset):
                 masks[name][left:right] = False
 
         model_obj = Model.from_xija(self.xija_model, components, masks=masks)
-        msids_obj = EmptyTimeSeries()
-        states_obj = States(states)
-
+        if use_msids:
+            msids_obj = MSIDs.from_database([name], tstart, tstop=tstop,
+                                            interpolate=True,
+                                            interpolate_times=self.xija_model.times)
+        else:
+            msids_obj = EmptyTimeSeries()
         super(ThermalModelRunner, self).__init__(msids_obj, states_obj, model_obj)
 
     def _compute_model(self, name, tstart, tstop, states, state_times, T_init):
@@ -374,100 +405,18 @@ class ThermalModelRunner(ModelDataset):
             states_dict["off_nominal_roll"] = states["off_nominal_roll"]
         else:
             states_dict["off_nominal_roll"] = calc_off_nom_rolls(states)
-        state_times = np.array([states["datestart"], states["datestop"]])
-        return cls(name, tstart, tstop, states_dict, state_times, T_init,
+        return cls(name, tstart, tstop, states=states_dict, T_init=T_init,
                    model_spec=model_spec, include_bad_times=include_bad_times)
 
-class ThermalModelFromData(ThermalModelRunner):
-    """
-    Class for running Xija thermal models using commanded states
-    and telemetry data as an initial condition. 
-
-    Parameters
-    ----------
-    name : string
-        The name of the model to simulate. Can be "dea", "dpa", "psmc", 
-        "fep1mong", or "fep1actel".
-    tstart : string
-        The start time in YYYY:DOY:HH:MM:SS format.
-    tstop : string
-        The stop time in YYYY:DOY:HH:MM:SS format.
-    T_init : float, optional
-        The initial temperature for the thermal moden run. If None, 
-        an initial temperature will be determined from telemetry. 
-        Default: None
-    use_msids : boolean, optional
-        If True, telemetry can be used to determine the initial temperature
-        and will be loaded for comparison to the model run. Default: True
-    model_spec : string, optional
-        Path to the model spec JSON file for the model. Default: None, the
-        standard model path will be used.
-    include_bad_times : boolean, optional
-        If set, bad times from the data are included in the array masks
-        and plots. Default: False
-    server : string
-         DBI server or HDF5 file. Default: None
-
-    Examples
-    --------
-    >>> from acispy import ThermalModelFromData
-    >>> tstart = "2016:091:12:05:00.100"
-    >>> tstop = "2016:100:13:07:45.234"
-    >>> dpa_model = ThermalModelFromData("dpa", tstart, tstop)
-    """
-    def __init__(self, name, tstart, tstop, T_init=None, use_msids=True,
-                 model_spec=None, include_bad_times=False, server=None):
+    @classmethod
+    def from_commands(cls, name, tstart, tstop, cmds, T_init,
+                      model_spec=None, include_bad_times=False):
         tstart = get_time(tstart)
         tstop = get_time(tstop)
-        msid = name
-        tstart_secs = DateTime(tstart).secs
-        start = secs2date(tstart_secs-700.0)
-
-        self.model_spec = find_json(name, model_spec)
-
-        states_obj = States.from_database(start, tstop, server=server)
-        states = dict((k, np.array(v)) for k, v in states_obj.items())
-        states["off_nominal_roll"] = calc_off_nom_rolls(states)
-
-        if T_init is None:
-            if not use_msids:
-                raise RuntimeError("Set 'use_msids=True' if you want to use telemetry "
-                                   "for setting the initial state!")
-            T_init = fetch.MSID(msid, tstart_secs-700., tstart_secs+700.).vals.mean()
-
-        self.xija_model = self._compute_model(name, tstart, tstop, states,
-                                              states_obj["ccd_count"].times.value,
-                                              T_init)
-
-        model_times = self.xija_model.times
-
-        components = [msid]
-        if 'dpa_power' in self.xija_model.comp:
-            components.append('dpa_power')
-
-        self.name = name
-
-        self.bad_times = self.xija_model.bad_times
-        self.bad_times_indices = []
-        for t0, t1 in self.bad_times:
-            t0, t1 = DateTime([t0, t1]).secs
-            i0, i1 = np.searchsorted(model_times, [t0, t1])
-            if i1 > i0:
-                self.bad_times_indices.append((i0, i1))
-
-        masks = {}
-        if include_bad_times:
-            masks[msid] = np.ones(model_times.shape, dtype='bool')
-            for (left, right) in self.bad_times_indices:
-                masks[msid][left:right] = False
-
-        model_obj = Model.from_xija(self.xija_model, components, masks=masks)
-        if use_msids:
-            msids_obj = MSIDs.from_database([msid], tstart, tstop=tstop,
-                                            interpolate=True, interpolate_times=model_times)
-        else:
-            msids_obj = EmptyTimeSeries()
-        super(ThermalModelRunner, self).__init__(msids_obj, states_obj, model_obj)
+        t = States.from_commands(tstart, tstop, cmds)
+        states = {k: t[k].value for k in t.keys()}
+        return cls(name, tstart, tstop, states=states, T_init=T_init,
+                   model_spec=model_spec, include_bad_times=include_bad_times)
 
     def make_dashboard_plots(self, yplotlimits=None, errorplotlimits=None, fig=None):
         """
@@ -486,6 +435,10 @@ class ThermalModelFromData(ThermalModelRunner):
         """
         from xijafit import dashboard as dash
         msid = self.name
+        if ("msids", msid) not in self.field_list:
+            raise RuntimeError("You must include the real data if you want to make a "
+                               "dashboard plot! Set use_msids=True when creating the"
+                               "thermal model!")
         telem = self["msids", msid]
         pred = self["model", msid]
         mask = np.logical_and(telem.mask, pred.mask)
@@ -502,17 +455,6 @@ class ThermalModelFromData(ThermalModelRunner):
                        msid=self.name, modelname=full_name[self.name],
                        errorplotlimits=errorplotlimits, yplotlimits=yplotlimits,
                        fig=fig)
-
-class ThermalModelFromCommands(ThermalModelRunner):
-    def __init__(self, name, tstart, tstop, cmds, T_init,
-                 model_spec=None, include_bad_times=False):
-        tstart = get_time(tstart)
-        tstop = get_time(tstop)
-        t = States.from_commands(tstart, tstop, cmds)
-        states = {k: t[k].value for k in t.keys()}
-        super(ThermalModelFromCommands, self).__init__(name, tstart, tstop, states,
-                                                       T_init, model_spec=model_spec,
-                                                       include_bad_times=include_bad_times)
 
 def find_text_time(time, hours=1.0):
     return secs2date(date2secs(time)+hours*3600.0)
