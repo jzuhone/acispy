@@ -706,5 +706,17 @@ class SimulateCTIRun(ThermalModelRunner):
     def mvals(self):
         return self['model', self.name]
 
-    def write_states(self, states_file):
+    def write_msids(self, filename, fields, mask_field=None, overwrite=False):
+        raise NotImplementedError
+
+    def write_states(self, states_file, overwrite=False):
+        raise NotImplementedError
+
+    def write_model(self, filename, overwrite=False):
+        raise NotImplementedError
+
+    def make_dashboard_plots(self, yplotlimits=None, errorplotlimits=None, fig=None):
+        raise NotImplementedError
+
+    def write_model_and_data(self, filename, overwrite=False):
         raise NotImplementedError
