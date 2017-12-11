@@ -34,10 +34,16 @@ full_name = {"1deamzt": "DEA",
 limits = {'1deamzt': 35.5,
           '1dpamzt': 35.5,
           '1pdeaat': 52.5,
-          'fptemp_11': -114.0,
           'tmp_fep1_mong': 43.0,
           'tmp_fep1_actel': 43.0,
           'tmp_bep_pcb': 43.0}
+
+margins = {'1deamzt': 2.0,
+           '1dpamzt': 2.0,
+           '1pdeaat': 52.5,
+           'tmp_fep1_mong': 2.0,
+           'tmp_fep1_actel': 2.0,
+           'tmp_bep_pcb': 2.0}
 
 def find_json(name, model_spec):
     name = short_name[name]
@@ -453,6 +459,9 @@ class ThermalModelRunner(ModelDataset):
             Default: [-15, 15]
         """
         from xijafit import dashboard as dash
+        import matplotlib.pyplot as plt
+        if fig is None:
+            fig = plt.figure(figsize=(20,10))
         msid = self.name
         if ("msids", msid) not in self.field_list:
             raise RuntimeError("You must include the real data if you want to make a "
@@ -468,8 +477,17 @@ class ThermalModelRunner(ModelDataset):
             yplotlimits = [ymin, ymax]
         if errorplotlimits is None:
             errorplotlimits = [-15, 15]
-        mylimits = {"units": "C", "caution_high": limits[self.name]+2,
-                    "planning_limit": limits[self.name]}
+        if msid == "fptemp_11":
+            caution = None
+            planning = None
+        else:
+            caution = limits[self.name]+margins[self.name]
+            planning = limits[self.name]
+        mylimits = {"units": "C", "caution_high": caution, "planning_limit": planning}
+        if msid == "fptemp_11":
+            mylimits["acisi_limit"] = -114.0
+            mylimits["aciss_limit"] = -112.0
+            mylimits["fp_sens_limit"] = -118.7
         dash.dashboard(pred.value[mask], telem.value[mask], times, mylimits,
                        msid=self.name, modelname=full_name[self.name],
                        errorplotlimits=errorplotlimits, yplotlimits=yplotlimits,
