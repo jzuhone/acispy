@@ -5,7 +5,6 @@ from acispy.dataset import ArchiveData, \
 from acispy.plots import DatePlot, MultiDatePlot, \
     PhaseScatterPlot, PhaseHistogramPlot, CustomDatePlot
 from acispy.thermal_models import SimulateCTIRun, \
-    ThermalModelRunner, ThermalModelFromData, \
-    ThermalModelFromCommands, ThermalModelFromLoad, \
+    ThermalModelRunner, ThermalModelFromLoad, \
     ThermalModelFromFiles
 from acispy.load_review import ACISLoadReview

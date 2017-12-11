@@ -30,6 +30,8 @@ class Model(TimeSeriesData):
             if k == "dpa_power":
                 mvals = model.comp[k].mvals*100. / model.comp[k].mult
                 mvals += model.comp[k].bias
+            elif k == "fptemp_11":
+                mvals = model.comp["fptemp"].mvals
             else:
                 mvals = model.comp[k].mvals
             unit = get_units("model", k)

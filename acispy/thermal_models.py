@@ -18,6 +18,7 @@ import Ska.engarchive.fetch_sci as fetch
 short_name = {"1deamzt": "dea",
               "1dpamzt": "dpa",
               "1pdeaat": "psmc",
+              "fptemp_11": "fptemp",
               "tmp_fep1_mong": "fep1_mong",
               "tmp_fep1_actel": "fep1_actel",
               "tmp_bep_pcb": "bep_pcb"}
@@ -25,6 +26,7 @@ short_name = {"1deamzt": "dea",
 full_name = {"1deamzt": "DEA",
              "1dpamzt": "DPA",
              "1pdeaat": "PSMC",
+             "fptemp_11": "Focal Plane",
              "tmp_fep1_mong": "FEP1 Mongoose",
              "tmp_fep1_actel": "FEP1 Actel",
              "tmp_bep_pcb": "BEP PCB"}
@@ -32,6 +34,7 @@ full_name = {"1deamzt": "DEA",
 limits = {'1deamzt': 35.5,
           '1dpamzt': 35.5,
           '1pdeaat': 52.5,
+          'fptemp_11': -114.0,
           'tmp_fep1_mong': 43.0,
           'tmp_fep1_actel': 43.0,
           'tmp_bep_pcb': 43.0}
@@ -342,6 +345,8 @@ class ThermalModelRunner(ModelDataset):
         super(ThermalModelRunner, self).__init__(msids_obj, states_obj, model_obj)
 
     def _compute_model(self, name, tstart, tstop, states, state_times, T_init):
+        if name == "fptemp_11":
+            name = "fptemp"
         if isinstance(states, np.ndarray):
             state_names = states.dtype.names
         else:
@@ -360,12 +365,26 @@ class ThermalModelRunner(ModelDataset):
         if 'dpa_power' in model.comp:
             model.comp['dpa_power'].set_data(0.0) # This is just a hack, we're not
             # really setting the power to zero.
+        # This is for the PSMC model
         if 'pin1at' in model.comp:
             model.comp['pin1at'].set_data(T_init-10.)
         if 'dh_heater' in model.comp:
             model.comp['dh_heater'].set_data(states.get("dh_heater", 0), state_times)
         for st in ('ccd_count', 'fep_count', 'vid_board', 'clocking', 'pitch'):
             model.comp[st].set_data(np.array(states[st]), state_times)
+        if name == "fptemp":
+            model.comp['sim_z'].set_data(states['simpos'], state_times)
+            for axis in "xyz":
+                ephem = 'orbitephem0_{}'.format(axis)
+                msid = fetch.Msid(ephem, model.tstart - 2000, model.tstop + 2000)
+                model.comp[ephem].set_data(msid.vals, msid.times)
+            for i in range(1, 5):
+                quat = 'aoattqt{}'.format(i)
+                quat_name = 'q{}'.format(i)
+                model.comp[quat].set_data(states[quat_name], state_times)
+            model.comp['1cbat'].set_data(-53.0)
+            model.comp['sim_px'].set_data(-120.0)
+
         model.make()
         model.calc()
         return model
