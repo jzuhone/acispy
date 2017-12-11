@@ -7,6 +7,7 @@ from acispy.units import APQuantity, APStringArray, Quantity
 from acispy.time_series import TimeSeriesData
 import six
 from Chandra.Time import date2secs
+import Ska.Numpy
 
 if six.PY2:
     str_type = "|S4"
@@ -122,17 +123,21 @@ class MSIDs(TimeSeriesData):
         msids = ensure_list(msids)
         data = fetch.MSIDset(msids, tstart, stop=tstop, filter_bad=filter_bad,
                              stat=stat)
-        if interpolate:
-            data.interpolate(times=interpolate_times)
         table = {}
         state_codes = {}
         masks = {}
         for k, msid in data.items():
+            if interpolate:
+                indexes = Ska.Numpy.interpolate(np.arange(len(msid.times)),
+                                                msid.times, interpolate_times,
+                                                method='nearest', sorted=True)
+            else:
+                indexes = slice(None, None, None)
             if msid.state_codes:
                 state_codes[k] = dict((k, v) for v, k in msid.state_codes)
-            table[k.lower()] = msid.vals
+            table[k.lower()] = msid.vals[indexes]
             if msid.bads is not None:
-                masks[k.lower()] = ~msid.bads
-        times = dict((k.lower(), get_time(data[k].times, 'secs')) for k in data.keys())
+                masks[k.lower()] = (~msid.bads)[indexes]
+        times = dict((k.lower(), get_time(data[k].times[indexes], 'secs')) for k in data.keys())
         return cls(table, times, state_codes=state_codes, masks=masks)
 
