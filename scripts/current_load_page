@@ -264,7 +264,8 @@ while True:
             fields = [("model", temp)]
             if temp != "fptemp_11":
                 fields.append(("msids", temp))
-            dp = lr.plot(fields, field2="pitch", annotations=["belts", "sim_trans", "comms", "perigee", "cti_runs"],
+            dp = lr.plot(fields, field2="pitch", color=["blue", "red"],
+                         annotations=["belts", "sim_trans", "comms", "perigee", "cti_runs"],
                          tbegin=tbegin, tend=tend, figsize=(10,8), ymin=plot_limits[temp][0],
                          ymax=plot_limits[temp][1])
             dp.add_vline(tnow, lw=3)
@@ -282,7 +283,7 @@ while True:
 
         w1, h1 = dp.fig.get_size_inches()
 
-        ccd = lr.plot("ccd_count", field2=("states","simpos"), tbegin=tbegin, tend=tend,
+        ccd = lr.plot("ccd_count", field2=("states","simpos"), tbegin=tbegin, tend=tend, color="blue",
                       annotations=["belts", "sim_trans", "comms", "perigee", "cti_runs"],
                       figsize=(10,8))
         ccd.add_vline(tnow, lw=3)
@@ -296,8 +297,8 @@ while True:
         ccd.fig.subplots_adjust(left=lm, right=rm)
         ccd.savefig(os.path.join(outdir, "current_ccd.png"))
 
-        roll = lr.plot("off_nominal_roll", field2="grating", tbegin=tbegin, tend=tend, ymin=-20.0, ymax=20.0,
-                       annotations=["belts", "sim_trans", "comms", "perigee", "cti_runs"],
+        roll = lr.plot("off_nominal_roll", field2="grating", tbegin=tbegin, tend=tend, color="blue",
+                       ymin=-20.0, ymax=20.0, annotations=["belts", "sim_trans", "comms", "perigee", "cti_runs"],
                        figsize=(10,8))
         roll.add_vline(tnow, lw=3)
         title_str = "%s\nCurrent Off-nominal roll: %4.3f degree\nGrating: %s" % (tnow, 
@@ -318,7 +319,8 @@ while True:
             plots += ["tmp_fep1_mong", "tmp_fep1_actel", "tmp_bep_pcb"]
 
             for temp in ["tmp_fep1_mong", "tmp_fep1_actel", "tmp_bep_pcb"]:
-                dp = lr.plot(("model", temp), field2="pitch", annotations=["belts", "sim_trans", "comms", "perigee", "cti_runs"],
+                dp = lr.plot(("model", temp), field2="pitch", color="blue",
+                             annotations=["belts", "sim_trans", "comms", "perigee", "cti_runs"],
                              tbegin=tbegin, tend=tend, figsize=(10,8), ymin=plot_limits[temp][0],
                              ymax=plot_limits[temp][1])
                 dp.add_vline(tnow, lw=3)
