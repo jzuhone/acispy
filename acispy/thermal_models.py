@@ -443,7 +443,8 @@ class ThermalModelRunner(ModelDataset):
         return cls(name, tstart, tstop, states=states, T_init=T_init,
                    model_spec=model_spec, include_bad_times=include_bad_times)
 
-    def make_dashboard_plots(self, yplotlimits=None, errorplotlimits=None, fig=None):
+    def make_dashboard_plots(self, yplotlimits=None, errorplotlimits=None, fig=None,
+                             figfile=None):
         """
         Make dashboard plots for the particular thermal model.
 
@@ -491,7 +492,7 @@ class ThermalModelRunner(ModelDataset):
         dash.dashboard(pred.value[mask], telem.value[mask], times, mylimits,
                        msid=self.name, modelname=full_name[self.name],
                        errorplotlimits=errorplotlimits, yplotlimits=yplotlimits,
-                       fig=fig)
+                       fig=fig, figfile=figfile)
 
 def find_text_time(time, hours=1.0):
     return secs2date(date2secs(time)+hours*3600.0)
