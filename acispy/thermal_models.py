@@ -163,7 +163,7 @@ class ThermalModelFromFiles(ModelDataset):
             for i, temp_file in enumerate(temp_files):
                 m = Model.from_load_file(temp_file)
                 model_list.append(m)
-                comps.append(m.keys()[0])
+                comps.append(list(m.keys())[0])
                 if i == 0:
                     times = m[comps[0]].times.value
             comps = np.unique(comps)
