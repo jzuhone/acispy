@@ -170,8 +170,7 @@ class CustomDatePlot(ACISPlot):
     lw : float, optional
         The width of the lines in the plots. Default: 2 px.
     ls : string, optional
-        The line style of the lines. Can be a single linestyle or
-        more than one for each line. Default: '-'
+        The line style of the line. Default: '-'
     fontsize : integer, optional
         The font size for the labels in the plot. Default: 18 pt.
     figsize : tuple of integers, optional
@@ -332,8 +331,10 @@ class DatePlot(CustomDatePlot):
         A single field or list of fields to plot on the left y-axis.
     field2 : tuple of strings, optional
         A single field to plot on the right y-axis. Default: None
-    lw : float, optional
-        The width of the lines in the plots. Default: 2 px.
+    lw : float or list of floats, optional
+        The width of the lines in the plots. If a list, the length
+        of a the list must be equal to the number of fields. If a
+        single number, it will apply to all plots. Default: 2 px.
     ls : string, optional
         The line style of the lines plotted on the left y-axis. 
         Can be a single linestyle or more than one for each line. 
@@ -384,6 +385,7 @@ class DatePlot(CustomDatePlot):
         if color is None:
             color = [None]*len(fields)
         fields = ensure_list(fields)
+        lw = ensure_list(lw)
         self.num_fields = len(fields)
         color = ensure_list(color)
         ls = ensure_list(ls)
@@ -420,7 +422,7 @@ class DatePlot(CustomDatePlot):
                 y = y[mask]
             else:
                 mask = slice(None, None, None)
-            ticklocs, fig, ax = plot_cxctime(x, y, fig=fig, lw=lw, ax=ax,
+            ticklocs, fig, ax = plot_cxctime(x, y, fig=fig, lw=lw[i], ax=ax,
                                              color=color[i], ls=ls[i],
                                              state_codes=state_codes,
                                              drawstyle=drawstyle, 
