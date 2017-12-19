@@ -444,7 +444,7 @@ class ThermalModelRunner(ModelDataset):
                    model_spec=model_spec, include_bad_times=include_bad_times)
 
     def make_dashboard_plots(self, yplotlimits=None, errorplotlimits=None, fig=None,
-                             figfile=None):
+                             figfile=None, bad_times=None):
         """
         Make dashboard plots for the particular thermal model.
 
@@ -458,6 +458,15 @@ class ThermalModelRunner(ModelDataset):
         errorplotlimits : two-element array_like, optional
             The (min, max) error bounds to use for the error plot.
             Default: [-15, 15]
+        fig : :class:`~matplotlib.figure.Figure`, optional
+            A Figure instance to plot in. Default: None, one will be
+            created if not provided.
+        figfile : string, optional
+            The file to write the dashboard plot to. One will be created
+            if not provided.
+        bad_times : list of tuples, optional
+            Provide a set of times to exclude from the creation of the
+            dashboard plot.
         """
         from xijafit import dashboard as dash
         import matplotlib.pyplot as plt
@@ -471,6 +480,11 @@ class ThermalModelRunner(ModelDataset):
         telem = self["msids", msid]
         pred = self["model", msid]
         mask = np.logical_and(telem.mask, pred.mask)
+        if bad_times is not None:
+            for (left, right) in bad_times:
+                idxs = np.logical_and(telem.times.value >= date2secs(left),
+                                      telem.times.value <= date2secs(right))
+                mask[idxs] = False
         times = telem.times.value[mask]
         if yplotlimits is None:
             ymin = min(telem.value[mask].min(), pred.value[mask].min())-2

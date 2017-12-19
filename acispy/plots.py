@@ -355,9 +355,6 @@ class DatePlot(CustomDatePlot):
     fig : :class:`~matplotlib.figure.Figure`, optional
         A Figure instance to plot in. Default: None, one will be
         created if not provided.
-    ax : :class:`~matplotlib.axes.Axes`, optional
-        An Axes instance to plot in. Default: None, one will be
-        created if not provided.
     figsize : tuple of integers, optional
         The size of the plot in (width, height) in inches. Default: (10, 8)
     plot : :class:`~acispy.plots.DatePlot` or :class:`~acispy.plots.CustomDatePlot`, optional
