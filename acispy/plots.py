@@ -382,11 +382,13 @@ class DatePlot(CustomDatePlot):
                  ls2='-', fontsize=18, color=None, color2='magenta', 
                  figsize=(10, 8), plot=None, fig=None, subplot=None, plot_bad=True):
         fig, ax = get_figure(plot, fig, subplot, figsize)
-        if color is None:
-            color = [None]*len(fields)
         fields = ensure_list(fields)
         lw = ensure_list(lw)
         self.num_fields = len(fields)
+        if len(lw) == 1 and len(fields) > 1:
+            lw = lw*self.num_fields
+        if color is None:
+            color = [None]*len(fields)
         color = ensure_list(color)
         ls = ensure_list(ls)
         if len(ls) != len(fields): 
