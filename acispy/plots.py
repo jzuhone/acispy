@@ -343,6 +343,8 @@ class DatePlot(CustomDatePlot):
         The line style of the line plotted on the right y-axis. 
         Can be a single linestyle or more than one for each line. 
         Default: '-'
+    lw2 : float, optional
+        The width of the line plotted on the right y-axis.
     fontsize : integer, optional
         The font size for the labels in the plot. Default: 18 pt.
     color : list of strings, optional
@@ -375,9 +377,9 @@ class DatePlot(CustomDatePlot):
     >>> fields = [("msids", "1dpamzt"), ("msids", "1deamzt"), ("msids", "1pdeaat")]
     >>> p2 = DatePlot(ds, fields, fontsize=12, color=["brown","black","orange"])
     """
-    def __init__(self, ds, fields, field2=None, lw=2, ls='-', 
-                 ls2='-', fontsize=18, color=None, color2='magenta', 
-                 figsize=(10, 8), plot=None, fig=None, subplot=None, plot_bad=True):
+    def __init__(self, ds, fields, field2=None, lw=2, ls='-',  ls2='-', lw2=2,
+                 fontsize=18, color=None, color2='magenta', figsize=(10, 8),
+                 plot=None, fig=None, subplot=None, plot_bad=True):
         fig, ax = get_figure(plot, fig, subplot, figsize)
         fields = ensure_list(fields)
         lw = ensure_list(lw)
@@ -486,7 +488,7 @@ class DatePlot(CustomDatePlot):
             else:
                 mask = slice(None, None, None)
             plot_cxctime(x, y2, fig=fig, ax=self.ax2, ls=ls2,
-                         lw=lw, drawstyle=drawstyle, color=color2,
+                         lw=lw2, drawstyle=drawstyle, color=color2,
                          state_codes=state_codes)
             self.times[field2] = ds[field2].times[mask]
             self.y[field2] = ds[field2][mask]
