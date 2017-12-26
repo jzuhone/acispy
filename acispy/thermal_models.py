@@ -312,7 +312,7 @@ class ThermalModelRunner(ModelDataset):
         else:
             if "tstart" not in states:
                 states["tstart"] = DateTime(states["datestart"]).secs
-                states["tstop"] = DateTime(states["datestart"]).secs
+                states["tstop"] = DateTime(states["datestop"]).secs
             states_obj = States(states)
 
         if T_init is None:
@@ -382,7 +382,6 @@ class ThermalModelRunner(ModelDataset):
         for st in ('ccd_count', 'fep_count', 'vid_board', 'clocking', 'pitch'):
             model.comp[st].set_data(np.array(states[st]), state_times)
         if name == "fptemp":
-            model.comp['sim_z'].set_data(states['simpos'], state_times)
             for axis in "xyz":
                 ephem = 'orbitephem0_{}'.format(axis)
                 msid = fetch.Msid(ephem, model.tstart - 2000, model.tstop + 2000)
@@ -426,12 +425,9 @@ class ThermalModelRunner(ModelDataset):
         """
         tstart = get_time(tstart)
         tstop = get_time(tstop)
-        state_keys = ["ccd_count", "pitch", "fep_count", "clocking", "vid_board", "simpos"]
         states = ascii.read(states_file)
-        states_dict = dict((k, states[k]) for k in state_keys)
-        if "off_nominal_roll" in states.colnames:
-            states_dict["off_nominal_roll"] = states["off_nominal_roll"]
-        else:
+        states_dict = dict((k, states[k]) for k in states.colnames)
+        if "off_nominal_roll" not in states.colnames:
             states_dict["off_nominal_roll"] = calc_off_nom_rolls(states)
         return cls(name, tstart, tstop, states=states_dict, T_init=T_init,
                    model_spec=model_spec, include_bad_times=include_bad_times)
