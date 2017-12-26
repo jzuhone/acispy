@@ -4,9 +4,9 @@ import argparse
 import acispy
 from acispy.utils import mylog
 
-short_name = {"1deamzt": "dea",
-              "1dpamzt": "dpa",
-              "1pdeaat": "psmc"}
+short_name = {"dea": "1deamzt",
+              "dpa": "1dpamzt",
+              "psmc": "1pdeaat"}
 
 parser = argparse.ArgumentParser(description='Simulate a CTI run.')
 parser.add_argument("component", type=str, help='The component to model: dpa, dea, or psmc.')
