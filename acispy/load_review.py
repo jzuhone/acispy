@@ -265,8 +265,8 @@ class ACISLoadReview(object):
         with open(dsnfile) as f:
             for line in f.readlines()[2:]:
                 words = line.strip().split()
-                bot = datetime.strptime("%s:%s:00:00:00" % (words[-4], words[-3][:3]), "%Y:%j:%H:%M:%S")
-                eot = datetime.strptime("%s:%s:00:00:00" % (words[-2], words[-1][:3]), "%Y:%j:%H:%M:%S")
+                bot = datetime.strptime("%s:%s:00:00:00" % (words[-4], words[-3].split(".")[0]), "%Y:%j:%H:%M:%S")
+                eot = datetime.strptime("%s:%s:00:00:00" % (words[-2], words[-1].split(".")[0]), "%Y:%j:%H:%M:%S")
                 time_bot = date2secs(bot.strftime("%Y:%j:%H:%M:%S"))+86400.0*(float(words[-3]) % 1)
                 time_eot = date2secs(eot.strftime("%Y:%j:%H:%M:%S"))+86400.0*(float(words[-1]) % 1)
                 new_durations.append((time_eot-time_bot)/60.0)
