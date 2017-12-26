@@ -310,6 +310,9 @@ class ThermalModelRunner(ModelDataset):
             states = dict((k, np.array(v)) for k, v in states_obj.items())
             states["off_nominal_roll"] = calc_off_nom_rolls(states)
         else:
+            if "tstart" not in states:
+                states["tstart"] = DateTime(states["datestart"]).secs
+                states["tstop"] = DateTime(states["datestart"]).secs
             states_obj = States(states)
 
         if T_init is None:
