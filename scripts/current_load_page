@@ -59,6 +59,10 @@ red_limits = {"1deamzt": 40.5,
               "tmp_fep1_actel": 53.0,
               "tmp_bep_pcb": 49.0}
 
+fp_limits = {"acis_i": -114.0, 
+             "acis_s": -112.0,
+             "fp_sens": -118.7}
+
 def find_the_load(now_time_utc):
 
     t = DateTime(now_time_utc).secs
@@ -278,6 +282,9 @@ while True:
             else:
                 dp_fp = acispy.DatePlot(dea_tl_data, "fptemp_11", color='red', plot=dp)
                 dp_fp.set_ylim(*plot_limits[temp])
+                dp_fp.add_hline(fp_limits["acis_i"], color='purple')
+                dp_fp.add_hline(fp_limits["acis_s"], color='blue')
+                dp_fp.add_hline(fp_limits["fp_sens"], color='red')
             dp.fig.subplots_adjust(right=0.8)
             dp.savefig(os.path.join(outdir, "current_%s.png" % temp))
 
