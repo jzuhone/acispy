@@ -282,7 +282,7 @@ while True:
                 dp.add_hline(yellow_limits[temp], color='gold')
                 dp.add_hline(red_limits[temp], color='r')
             else:
-                title_str += "\nCurrent instrument: %s" % lr.ds["states", "instrument"][tnow].value
+                title_str += "\nCurrent instrument: %s" % lr.ds["states", "instrument"][tnow]
                 dp_fp = acispy.DatePlot(dea_tl_data, "fptemp_11", color='red', plot=dp)
                 dp_fp.set_ylim(*plot_limits[temp])
                 dp_fp.add_hline(fp_limits["acis_i"], color='purple')
