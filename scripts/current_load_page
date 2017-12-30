@@ -270,7 +270,7 @@ while True:
                 fields.append(("msids", temp))
             dp = lr.plot(fields, field2="pitch", color=["blue", "red"],
                          annotations=["belts", "sim_trans", "comms", "perigee", "cti_runs"],
-                         tbegin=tbegin, tend=tend, figsize=(10,8.2), ymin=plot_limits[temp][0],
+                         tbegin=tbegin, tend=tend, figsize=(10,8.5), ymin=plot_limits[temp][0],
                          ymax=plot_limits[temp][1])
             dp.add_vline(tnow, lw=3)
             title_str = "%s\nCurrent %s prediction: %g $\mathrm{^\circ{C}}$\nCurrent pitch: %g degrees"
@@ -332,7 +332,7 @@ while True:
             for temp in ["tmp_fep1_mong", "tmp_fep1_actel", "tmp_bep_pcb"]:
                 dp = lr.plot(("model", temp), field2="pitch", color="blue",
                              annotations=["belts", "sim_trans", "comms", "perigee", "cti_runs"],
-                             tbegin=tbegin, tend=tend, figsize=(10,8.2), ymin=plot_limits[temp][0],
+                             tbegin=tbegin, tend=tend, figsize=(10,8.5), ymin=plot_limits[temp][0],
                              ymax=plot_limits[temp][1])
                 dp.add_vline(tnow, lw=3)
                 title_str = "%s\nCurrent %s prediction: %g $\mathrm{^\circ{C}}$\nCurrent pitch: %g degrees"
