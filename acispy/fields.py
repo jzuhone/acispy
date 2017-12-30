@@ -63,7 +63,20 @@ def create_derived_fields(dset):
 
     dset.add_derived_field("states", "grating", _grating, "",
                            display_name="Grating")
-    
+
+    # Instrument
+
+    def _instrument(ds):
+        simpos = ds.states["simpos"].value
+        inst = np.array(["ACIS-I"]*simpos.size)
+        inst[np.logical_and(82108 >= simpos, simpos >= 70736)] = "ACIS-S"
+        inst[np.logical_and(-20000 >= simpos,  simpos >= -86147)] = "HRC-I"
+        inst[np.logical_and(-86148 >= simpos, simpos >= -104362)] = "HRC-S"
+        return APStringArray(inst, ds.states["simpos"].times)
+
+    dset.add_derived_field("states", "instrument", _instrument, "",
+                           display_name="Instrument")
+
     # DPA, DEA powers
 
     def _dpaa_power(ds):
