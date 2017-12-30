@@ -336,7 +336,11 @@ while True:
                              ymax=plot_limits[temp][1])
                 dp.add_vline(tnow, lw=3)
                 title_str = "%s\nCurrent %s prediction: %g $\mathrm{^\circ{C}}$\nCurrent pitch: %g degrees"
-                dp.set_title(title_str % (tnow, temp.upper(), lr.ds["model", temp][tnow].value, lr.ds["pitch"][tnow].value))
+                title_str = title_str % (tnow, temp.upper(),
+                                         lr.ds["model", temp][tnow].value,
+                                         lr.ds["pitch"][tnow].value)
+                title_str += "\nCurrent instrument: %s" % lr.ds["states", "instrument"][tnow]
+                dp.set_title(title_str)
                 dp.add_hline(planning_limits[temp], color='g')
                 dp.add_hline(yellow_limits[temp], color='gold')
                 dp.add_hline(red_limits[temp], color='r')
