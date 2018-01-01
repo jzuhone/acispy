@@ -235,7 +235,7 @@ while True:
                 new_line = '<font style="background-color:#5AC831"><b>%s</b></font>\n' % new_line
                 newlines.append(new_line)
                 find_time = False
-        if the_time >= begin_time and the_time <= end_time:
+        if end_time >= the_time >= begin_time:
              newlines.append(outline.strip())
 
     if find_time:
