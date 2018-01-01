@@ -9,6 +9,35 @@ import matplotlib.pyplot as plt
 from Chandra.Time import date2secs, secs2date, DateTime
 import argparse
 from kadi import events
+import numpy as np
+
+def find_fp_temp_violations(ds):
+    if ds is None:
+        return [], []
+    ds.map_state_to_msid("instrument", "fptemp_11")
+    temp = ds["msids", "fptemp_11"]
+    times = temp.times
+    viols_i = np.logical_and(ds["msids", "instrument"] == "ACIS-I",
+                             temp.value > -114.0)
+    viols_s = np.logical_and(ds["msids", "instrument"] == "ACIS-S",
+                             temp.value > -112.0)
+    viols_i = np.concatenate(([False], viols_i, [False]))
+    viols_s = np.concatenate(([False], viols_s, [False]))
+    viols_i = np.flatnonzero(viols_i[1:] != viols_i[:-1]).reshape(-1, 2)
+    viols_s = np.flatnonzero(viols_s[1:] != viols_s[:-1]).reshape(-1, 2)
+    v_i = []
+    for v in viols_i:
+        viol = {'datestart': DateTime(times[v[0]]).date,
+                'datestop': DateTime(times[v[1] - 1]).date,
+                'maxtemp': temp.value[v[0]:v[1]].max()}
+        v_i.append(viol)
+    v_s = []
+    for v in viols_s:
+        viol = {'datestart': DateTime(times[v[0]]).date,
+                'datestop': DateTime(times[v[1] - 1]).date,
+                'maxtemp': temp.value[v[0]:v[1]].max()}
+        v_s.append(viol)
+    return v_i, v_s
 
 lr_web_css = [
     "commline {",
@@ -262,6 +291,8 @@ while True:
             except:
                 pass
 
+        viols_i, viols_s = find_fp_temp_violations(dea_tl_data)
+
         tnow = now_time_utc.strftime("%Y:%j:%H:%M:%S")
 
         tbegin = secs2date(max(date2secs(tnow)-3600.0*24.0, date2secs(lr.first_time)))
@@ -356,6 +387,19 @@ while True:
 
         footer = ["<a name=\"plots\"><h2><font face=\"times\">Temperature Models</font></h2></a>",
                   "<a href=\"http://cxc.cfa.harvard.edu/acis/Thermal/%s/%s.html\"><font face=\"times\" color=\"blue\">Full thermal models for %s</font></a>" % (load_year, load_dir, load_name)]
+
+        footer.append("<p />")
+        footer.append("ACIS-I -114 degC violations:")
+        for v_i in viols_i:
+            footer.append("From %s to %s up to %g degrees C." % (v_i["datestart"],
+                                                                 v_i["datestop"],
+                                                                 v_i["maxtemp"]))
+        footer.append("ACIS-S -112 degC violations:")
+        for v_s in viols_s:
+            footer.append("From %s to %s up to %g degrees C." % (v_i["datestart"],
+                                                                 v_i["datestop"],
+                                                                 v_i["maxtemp"]))
+        footer.append("<p />")
 
         for fig in plots:
             footer.append("<img src=\"current_%s.png\" />" % fig)
