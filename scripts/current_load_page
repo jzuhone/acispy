@@ -255,9 +255,12 @@ while True:
             # We subtract a day off to make sure we actually get some telemetry
             tl_tbegin = secs2date(date2secs(lr.first_time)-86400.0)
             tl_tend = lr.last_time
-            dea_tl_data = acispy.TracelogData("/data/acis/eng_plots/acis_dea_10day.tl",
-                                              tbegin=tl_tbegin, tend=tl_tend)
-            last_dea_tl_ts = dea_tl_ts
+            try:
+                dea_tl_data = acispy.TracelogData("/data/acis/eng_plots/acis_dea_10day.tl",
+                                                  tbegin=tl_tbegin, tend=tl_tend)
+                last_dea_tl_ts = dea_tl_ts
+            except:
+                pass
 
         tnow = now_time_utc.strftime("%Y:%j:%H:%M:%S")
 
@@ -282,7 +285,7 @@ while True:
                 dp.add_hline(planning_limits[temp], color='g')
                 dp.add_hline(yellow_limits[temp], color='gold')
                 dp.add_hline(red_limits[temp], color='r')
-            else:
+            elif dea_tl_data is not None:
                 dp_fp = acispy.DatePlot(dea_tl_data, "fptemp_11", color='red', plot=dp)
                 dp_fp.set_ylim(*plot_limits[temp])
                 dp_fp.add_hline(fp_limits["acis_i"], color='purple')
@@ -325,7 +328,7 @@ while True:
 
         plots = ["fptemp_11", "1dpamzt", "1deamzt", "1pdeaat", "ccd", "roll"]
 
-        if ('model', 'tmp_fep1_mong') in lr.ds.field_list:
+        if dea_tl_data is not None and ('model', 'tmp_fep1_mong') in lr.ds.field_list:
 
             plots += ["tmp_fep1_mong", "tmp_fep1_actel", "tmp_bep_pcb"]
 
