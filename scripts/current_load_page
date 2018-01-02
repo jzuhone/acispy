@@ -37,13 +37,13 @@ def find_fp_temp_violations(ds):
         vi = np.logical_and(viols_i, idxs)
         vs = np.logical_and(viols_s, idxs)
         if vi.sum() > 0:
-            viol = {'datestart': secs2date(tleft),
-                    'datestop': secs2date(tright),
+            viol = {'datestart': secs2date(times[vi][0]),
+                    'datestop': secs2date(times[vi][-1]),
                     'maxtemp': temp.value[vi].max()}
             v_i.append(viol)
         if vs.sum() > 0:
-            viol = {'datestart': secs2date(tleft),
-                    'datestop': secs2date(tright),
+            viol = {'datestart': secs2date(times[vs][0]),
+                    'datestop': secs2date(times[vs][-1]),
                     'maxtemp': temp.value[vs].max()}
             v_s.append(viol)
     return v_i, v_s
