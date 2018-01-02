@@ -19,7 +19,8 @@ def find_fp_temp_violations(ds):
     temp = ds["msids", "fptemp_11"]
     times = temp.times.value
     interp_times = np.arange(times[0], times[-1], 328.0)
-    inst = interpolate(times, interp_times, ds["msids", "instrument"])
+    inst = interpolate(times, interp_times, ds["msids", "instrument"].value)
+    obsids = interpolate(times, interp_times, ds["msids", "obsid"].value)
     temp = interpolate(times, interp_times, temp.value)
     viols_i = np.logical_and(inst == "ACIS-I", temp > -114.0)
     viols_s = np.logical_and(inst == "ACIS-S", temp > -112.0)
