@@ -16,7 +16,7 @@ def find_fp_temp_violations(ds):
         return [], []
     ds.map_state_to_msid("instrument", "fptemp_11")
     temp = ds["msids", "fptemp_11"]
-    times = temp.times
+    times = temp.times.value
     viols_i = np.logical_and(ds["msids", "instrument"] == "ACIS-I",
                              temp.value > -114.0)
     viols_s = np.logical_and(ds["msids", "instrument"] == "ACIS-S",
@@ -389,12 +389,12 @@ while True:
                   "<a href=\"http://cxc.cfa.harvard.edu/acis/Thermal/%s/%s.html\"><font face=\"times\" color=\"blue\">Full thermal models for %s</font></a>" % (load_year, load_dir, load_name)]
 
         footer.append("<p />")
-        footer.append("ACIS-I -114 degC violations:")
+        footer.append("Recent ACIS-I -114 degC violations:")
         for v_i in viols_i:
             footer.append("From %s to %s up to %g degrees C." % (v_i["datestart"],
                                                                  v_i["datestop"],
                                                                  v_i["maxtemp"]))
-        footer.append("ACIS-S -112 degC violations:")
+        footer.append("Recent ACIS-S -112 degC violations:")
         for v_s in viols_s:
             footer.append("From %s to %s up to %g degrees C." % (v_i["datestart"],
                                                                  v_i["datestop"],
