@@ -29,8 +29,8 @@ def find_fp_temp_violations(ds):
     #viols_s = np.flatnonzero(viols_s[1:] != viols_s[:-1]).reshape(-1, 2)
     v_i = []
     v_s = []
-    dt = 600.0
-    tsteps = np.arange(tstart, tstop, dt) # ten-minute steps
+    dt = 30*60.0
+    tsteps = np.arange(tstart, tstop, dt) # thirty-minute bins
     for tleft in tsteps:
         tright = tleft+dt
         idxs = np.logical_and(tleft <= times, times <= tright)
