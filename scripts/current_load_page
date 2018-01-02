@@ -17,26 +17,35 @@ def find_fp_temp_violations(ds):
     ds.map_state_to_msid("instrument", "fptemp_11")
     temp = ds["msids", "fptemp_11"]
     times = temp.times.value
+    tstart = times[0]
+    tstop = times[-1]
     viols_i = np.logical_and(ds["msids", "instrument"] == "ACIS-I",
                              temp.value > -114.0)
     viols_s = np.logical_and(ds["msids", "instrument"] == "ACIS-S",
                              temp.value > -112.0)
-    viols_i = np.concatenate(([False], viols_i, [False]))
-    viols_s = np.concatenate(([False], viols_s, [False]))
-    viols_i = np.flatnonzero(viols_i[1:] != viols_i[:-1]).reshape(-1, 2)
-    viols_s = np.flatnonzero(viols_s[1:] != viols_s[:-1]).reshape(-1, 2)
+    #viols_i = np.concatenate(([False], viols_i, [False]))
+    #viols_s = np.concatenate(([False], viols_s, [False]))
+    #viols_i = np.flatnonzero(viols_i[1:] != viols_i[:-1]).reshape(-1, 2)
+    #viols_s = np.flatnonzero(viols_s[1:] != viols_s[:-1]).reshape(-1, 2)
     v_i = []
-    for v in viols_i:
-        viol = {'datestart': DateTime(times[v[0]]).date,
-                'datestop': DateTime(times[v[1] - 1]).date,
-                'maxtemp': temp.value[v[0]:v[1]].max()}
-        v_i.append(viol)
     v_s = []
-    for v in viols_s:
-        viol = {'datestart': DateTime(times[v[0]]).date,
-                'datestop': DateTime(times[v[1] - 1]).date,
-                'maxtemp': temp.value[v[0]:v[1]].max()}
-        v_s.append(viol)
+    dt = 600.0
+    tsteps = np.arange(tstart, tstop, dt) # ten-minute steps
+    for tleft in tsteps:
+        tright = tleft+dt
+        idxs = np.logical_and(tleft <= times, times <= tright)
+        vi = np.logical_and(viols_i, idxs)
+        vs = np.logical_and(viols_s, idxs)
+        if vi.sum() > 0:
+            viol = {'datestart': secs2date(tleft),
+                    'datestop': secs2date(tright),
+                    'maxtemp': temp.value[vi].max()}
+            v_i.append(viol)
+        if vs.sum() > 0:
+            viol = {'datestart': secs2date(tleft),
+                    'datestop': secs2date(tright),
+                    'maxtemp': temp.value[vs].max()}
+            v_s.append(viol)
     return v_i, v_s
 
 lr_web_css = [
