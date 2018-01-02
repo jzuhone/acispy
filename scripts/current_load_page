@@ -5,6 +5,7 @@ import os
 import matplotlib
 matplotlib.use("agg")
 import acispy
+from acispy.utils import interpolate
 import matplotlib.pyplot as plt
 from Chandra.Time import date2secs, secs2date, DateTime
 import argparse
@@ -17,10 +18,11 @@ def find_fp_temp_violations(ds):
     ds.map_state_to_msid("instrument", "fptemp_11")
     temp = ds["msids", "fptemp_11"]
     times = temp.times.value
-    viols_i = np.logical_and(ds["msids", "instrument"] == "ACIS-I",
-                             temp.value > -114.0)
-    viols_s = np.logical_and(ds["msids", "instrument"] == "ACIS-S",
-                             temp.value > -112.0)
+    interp_times = np.arange(times[0], times[-1], 328.0)
+    inst = interpolate(times, interp_times, ds["msids", "instrument"])
+    temp = interpolate(times, interp_times, temp.value)
+    viols_i = np.logical_and(inst == "ACIS-I", temp > -114.0)
+    viols_s = np.logical_and(inst == "ACIS-S", temp > -112.0)
     viols_i = np.concatenate(([False], viols_i, [False]))
     viols_s = np.concatenate(([False], viols_s, [False]))
     viols_i = np.flatnonzero(viols_i[1:] != viols_i[:-1]).reshape(-1, 2)
@@ -29,13 +31,13 @@ def find_fp_temp_violations(ds):
     for v in viols_i:
         viol = {'datestart': DateTime(times[v[0]]).date,
                 'datestop': DateTime(times[v[1] - 1]).date,
-                'maxtemp': temp.value[v[0]:v[1]].max()}
+                'maxtemp': temp[v[0]:v[1]].max()}
         v_i.append(viol)
     v_s = []
     for v in viols_s:
         viol = {'datestart': DateTime(times[v[0]]).date,
                 'datestop': DateTime(times[v[1] - 1]).date,
-                'maxtemp': temp.value[v[0]:v[1]].max()}
+                'maxtemp': temp[v[0]:v[1]].max()}
         v_s.append(viol)
     return v_i, v_s
 
