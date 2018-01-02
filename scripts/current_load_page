@@ -34,15 +34,15 @@ def find_fp_temp_violations(ds):
     viols_s = np.flatnonzero(viols_s[1:] != viols_s[:-1]).reshape(-1, 2)
     v_i = []
     for v in viols_i:
-        viol = {'datestart': DateTime(times[v[0]]).date,
-                'datestop': DateTime(times[v[1] - 1]).date,
+        viol = {'datestart': DateTime(interp_times[v[0]]).date,
+                'datestop': DateTime(interp_times[v[1] - 1]).date,
                 'maxtemp': temp[v[0]:v[1]].max(),
                 'obsids': np.unique(obsids[v[0]:v[1]])}
         v_i.append(viol)
     v_s = []
     for v in viols_s:
-        viol = {'datestart': DateTime(times[v[0]]).date,
-                'datestop': DateTime(times[v[1] - 1]).date,
+        viol = {'datestart': DateTime(interp_times[v[0]]).date,
+                'datestop': DateTime(interp_times[v[1] - 1]).date,
                 'maxtemp': temp[v[0]:v[1]].max(),
                 'obsids': np.unique(obsids[v[0]:v[1]])}
         v_s.append(viol)
