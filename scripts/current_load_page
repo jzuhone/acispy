@@ -16,6 +16,7 @@ def find_fp_temp_violations(ds):
     if ds is None:
         return [], []
     ds.map_state_to_msid("instrument", "fptemp_11")
+    ds.map_state_to_msid("obsid", "fptemp_11")
     temp = ds["msids", "fptemp_11"]
     times = temp.times.value
     interp_times = np.arange(times[0], times[-1], 328.0)
@@ -32,13 +33,15 @@ def find_fp_temp_violations(ds):
     for v in viols_i:
         viol = {'datestart': DateTime(times[v[0]]).date,
                 'datestop': DateTime(times[v[1] - 1]).date,
-                'maxtemp': temp[v[0]:v[1]].max()}
+                'maxtemp': temp[v[0]:v[1]].max(),
+                'obsids': obsids[v[0]:v[1]]}
         v_i.append(viol)
     v_s = []
     for v in viols_s:
         viol = {'datestart': DateTime(times[v[0]]).date,
                 'datestop': DateTime(times[v[1] - 1]).date,
-                'maxtemp': temp[v[0]:v[1]].max()}
+                'maxtemp': temp[v[0]:v[1]].max(),
+                'obsids': obsids[v[0]:v[1]]}
         v_s.append(viol)
     return v_i, v_s
 
@@ -394,14 +397,16 @@ while True:
         footer.append("<p />")
         footer.append("Recent ACIS-I -114 degC violations:<br />")
         for v_i in viols_i:
-            footer.append("From %s to %s up to %g degrees C." % (v_i["datestart"],
-                                                                 v_i["datestop"],
-                                                                 v_i["maxtemp"]))
+            footer.append("From %s to %s up to %g degrees C during obsid(s) %s." % (v_i["datestart"],
+                                                                                    v_i["datestop"],
+                                                                                    v_i["maxtemp"],
+                                                                                    v_i["obsids"]))
         footer.append("<br />Recent ACIS-S -112 degC violations:<br />")
         for v_s in viols_s:
-            footer.append("From %s to %s up to %g degrees C." % (v_i["datestart"],
-                                                                 v_i["datestop"],
-                                                                 v_i["maxtemp"]))
+            footer.append("From %s to %s up to %g degrees C during obsid(s) %s." % (v_s["datestart"],
+                                                                                    v_s["datestop"],
+                                                                                    v_s["maxtemp"],
+                                                                                    v_s["obsids"]))
         footer.append("<p />")
 
         for fig in plots:
