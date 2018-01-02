@@ -24,7 +24,7 @@ def find_fp_temp_violations(ds):
                                     times, interp_times,
                                     method='nearest', sorted=True)
     inst = ds["msids", "instrument"].value[indexes]
-    obsids = ds["msids", "obsid"].value[indexes]
+    obsids = ds["msids", "obsid"].value[indexes].astype("int")
     temp = temp.value[indexes]
     viols_i = np.logical_and(inst == "ACIS-I", temp > -114.0)
     viols_s = np.logical_and(inst == "ACIS-S", temp > -112.0)
@@ -37,14 +37,14 @@ def find_fp_temp_violations(ds):
         viol = {'datestart': DateTime(times[v[0]]).date,
                 'datestop': DateTime(times[v[1] - 1]).date,
                 'maxtemp': temp[v[0]:v[1]].max(),
-                'obsids': obsids[v[0]:v[1]]}
+                'obsids': np.unique(obsids[v[0]:v[1]])}
         v_i.append(viol)
     v_s = []
     for v in viols_s:
         viol = {'datestart': DateTime(times[v[0]]).date,
                 'datestop': DateTime(times[v[1] - 1]).date,
                 'maxtemp': temp[v[0]:v[1]].max(),
-                'obsids': obsids[v[0]:v[1]]}
+                'obsids': np.unique(obsids[v[0]:v[1]])}
         v_s.append(viol)
     return v_i, v_s
 
