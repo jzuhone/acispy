@@ -12,14 +12,14 @@ import argparse
 from kadi import events
 import numpy as np
 
-def find_fp_temp_violations(ds):
+def find_fp_temp_violations(ds, tbegin, tend):
     if ds is None:
         return [], []
     ds.map_state_to_msid("instrument", "fptemp_11")
     ds.map_state_to_msid("obsid", "fptemp_11")
     temp = ds["msids", "fptemp_11"]
     times = temp.times.value
-    interp_times = np.arange(times[0], times[-1], 328.0)
+    interp_times = np.arange(date2secs(tbegin), date2secs(tend), 328.0)
     indexes = Ska.Numpy.interpolate(np.arange(len(times)),
                                     times, interp_times,
                                     method='nearest', sorted=True)
@@ -300,12 +300,12 @@ while True:
             except:
                 pass
 
-        viols_i, viols_s = find_fp_temp_violations(dea_tl_data)
-
         tnow = now_time_utc.strftime("%Y:%j:%H:%M:%S")
 
         tbegin = secs2date(max(date2secs(tnow)-3600.0*24.0, date2secs(lr.first_time)))
         tend = secs2date(min(date2secs(tnow)+3600.0*24.0, date2secs(lr.last_time)))
+
+        viols_i, viols_s = find_fp_temp_violations(dea_tl_data, tbegin, tend)
 
         for temp in ["fptemp_11", "1dpamzt", "1deamzt", "1pdeaat"]:
             fields = [("model", temp)]
