@@ -318,8 +318,8 @@ class CustomDatePlot(ACISPlot):
         if zorder is not None:
             self.legend.set_zorder(zorder)
 
-    def annotate_obsids(self, ypos, ds=None, ywidth=2.0, lw=2.0, fontsize=18,
-                        datestart=None, datestop=None, color='red'):
+    def annotate_obsids(self, ypos, ds=None, ywidth=2.0, txtheight=1.0,
+                        lw=2.0, fontsize=18, datestart=None, datestop=None, color='red'):
         tmin, tmax = self.ax.get_xlim()
         if datestart is not None:
             tmin = cxctime2plotdate(get_time(datestart, 'secs'))
@@ -339,7 +339,7 @@ class CustomDatePlot(ACISPlot):
         tstop = np.concatenate([tstart[:-1]+np.diff(tstart), [tstop[-1]]])
         endcapstart = ypos-0.5*ywidth
         endcapstop = ypos+0.5*ywidth
-        textypos = ypos+ywidth
+        textypos = ypos+txtheight
         for ti, tf, obsid in zip(tstart, tstop, obsids):
             if obsid < 40000:
                 self.ax.hlines(ypos, ti, tf, linestyle='-',

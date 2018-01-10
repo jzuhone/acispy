@@ -332,7 +332,7 @@ while True:
                 dp_fp.add_hline(fp_limits["acis_i"], color='purple')
                 dp_fp.add_hline(fp_limits["acis_s"], color='blue')
                 dp_fp.add_hline(fp_limits["fp_sens"], color='red')
-                dp_fp.annotate_obsids(-111.0, ywidth=1.0, color='g')
+                dp_fp.annotate_obsids(-111.0, ywidth=1.0, color='g', txtheight=0.5, fontsize=15)
             dp.set_title(title_str)
             dp.fig.subplots_adjust(right=0.8)
             dp.savefig(os.path.join(outdir, "current_%s.png" % temp))
