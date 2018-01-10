@@ -323,13 +323,13 @@ while True:
             title_str += "\nCurrent instrument: %s, Current ObsID: %d" % (lr.ds["states", "instrument"][tnow],
                                                                           lr.ds["states", "obsid"][tnow])
             if temp == "fptemp_11":
-                dp.annotate_obsids(-111.5, ywidth=1.0, color='orange', txtheight=0.25, fontsize=12)
-            elif dea_tl_data is not None:
-                dp_fp = acispy.DatePlot(dea_tl_data, "fptemp_11", color='red', plot=dp)
-                dp_fp.set_ylim(*plot_limits[temp])
-                dp_fp.add_hline(fp_limits["acis_i"], color='purple')
-                dp_fp.add_hline(fp_limits["acis_s"], color='blue')
-                dp_fp.add_hline(fp_limits["fp_sens"], color='red')
+                dp.annotate_obsids(-111.5, ywidth=1.0, color='dodgerblue', txtheight=0.25, fontsize=12)
+                if dea_tl_data is not None:
+                    dp_fp = acispy.DatePlot(dea_tl_data, "fptemp_11", color='red', plot=dp)
+                    dp_fp.set_ylim(*plot_limits[temp])
+                    dp_fp.add_hline(fp_limits["acis_i"], color='purple')
+                    dp_fp.add_hline(fp_limits["acis_s"], color='blue')
+                    dp_fp.add_hline(fp_limits["fp_sens"], color='red')
             else:
                 dp.add_hline(planning_limits[temp], color='g')
                 dp.add_hline(yellow_limits[temp], color='gold')
