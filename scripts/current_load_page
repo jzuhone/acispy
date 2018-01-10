@@ -402,13 +402,13 @@ while True:
                   "<a href=\"http://cxc.cfa.harvard.edu/acis/Thermal/%s/%s.html\"><font face=\"times\" color=\"blue\">Full thermal models for %s</font></a>" % (load_year, load_dir, load_name)]
 
         footer.append("<p />")
-        footer.append("Recent ACIS-I -114 degC violations:<br />")
+        footer.append("<h3>Recent ACIS-I -114 degC violations:</h3><br />")
         for v_i in viols_i:
             footer.append("From %s to %s up to %g degrees C during obsid(s) %s." % (v_i["datestart"],
                                                                                     v_i["datestop"],
                                                                                     v_i["maxtemp"],
                                                                                     v_i["obsids"]))
-        footer.append("<br />Recent ACIS-S -112 degC violations:<br />")
+        footer.append("<br /><h3>Recent ACIS-S -112 degC violations:</h3><br />")
         for v_s in viols_s:
             footer.append("From %s to %s up to %g degrees C during obsid(s) %s." % (v_s["datestart"],
                                                                                     v_s["datestop"],
