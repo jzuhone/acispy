@@ -323,7 +323,7 @@ while True:
             title_str += "\nCurrent instrument: %s, Current ObsID: %d" % (lr.ds["states", "instrument"][tnow],
                                                                           lr.ds["states", "obsid"][tnow])
             if temp == "fptemp_11":
-                dp.annotate_obsids(-111.5, ywidth=1.0, color='g', txtheight=0.25, fontsize=12)
+                dp.annotate_obsids(-111.5, ywidth=1.0, color='orange', txtheight=0.25, fontsize=12)
             elif dea_tl_data is not None:
                 dp_fp = acispy.DatePlot(dea_tl_data, "fptemp_11", color='red', plot=dp)
                 dp_fp.set_ylim(*plot_limits[temp])
