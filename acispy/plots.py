@@ -38,6 +38,7 @@ class ACISPlot(object):
     def __init__(self, fig, ax):
         self.fig = fig
         self.ax = ax
+        self.legend = None
 
     def _repr_png_(self):
         canvas = FigureCanvasAgg(self.fig)
@@ -284,7 +285,7 @@ class CustomDatePlot(ACISPlot):
         self.ax.lines[line].set_label(label)
         self.set_legend()
 
-    def set_legend(self, loc='best', fontsize=16, **kwargs):
+    def set_legend(self, loc='best', fontsize=16, zorder=None, **kwargs):
         """
         Adjust a legend on the plot.
 
@@ -313,7 +314,10 @@ class CustomDatePlot(ACISPlot):
         >>> p.set_legend(loc='right', fontsize=18)
         """
         prop = {"size": fontsize}
-        self.ax.legend(loc=loc, prop=prop, **kwargs)
+        self.legend = self.ax.legend(loc=loc, prop=prop, **kwargs)
+        if zorder is not None:
+            self.legend.set_zorder(zorder)
+
 
 class DatePlot(CustomDatePlot):
     r""" Make a single-panel plot of a quantity (or multiple quantities) 
