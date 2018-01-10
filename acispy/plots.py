@@ -345,9 +345,9 @@ class CustomDatePlot(ACISPlot):
                 self.ax.hlines(ypos, ti, tf, linestyle='-',
                                color=color, lw=lw)
                 self.ax.vlines(ti, endcapstart, endcapstop,
-                               color=color, lw=lw)
+                               color=color, lw=lw, zorder=100)
                 self.ax.vlines(tf, endcapstart, endcapstop,
-                               color=color, lw=lw)
+                               color=color, lw=lw, zorder=100)
                 tmid = ti + 0.5*(tf - ti)
                 if tmin <= tmid <= tmax:
                     self.ax.text(tmid, textypos, obsid, color=color,
