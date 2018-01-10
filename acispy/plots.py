@@ -318,6 +318,40 @@ class CustomDatePlot(ACISPlot):
         if zorder is not None:
             self.legend.set_zorder(zorder)
 
+    def annotate_obsids(self, ypos, ds=None, ywidth=2.0, lw=2.0, fontsize=18,
+                        datestart=None, datestop=None, color='red'):
+        tmin, tmax = self.ax.get_xlim()
+        if datestart is not None:
+            tmin = cxctime2plotdate(get_time(datestart, 'secs'))
+        if datestop is not None:
+            tmax = cxctime2plotdate(get_time(datestop, 'secs'))
+        if ds is None:
+            ds = getattr(self, "ds", None)
+        states = getattr(ds, "states", None)
+        if states is None:
+            raise RuntimeError("The dataset associated with or provided to this plot "
+                               "does not include commanded states! Provide a dataset "
+                               "using the keyword argument 'ds' to 'annotate_obsids'!")
+        idxs = np.char.count(states["trans_keys"].value, "obsid").astype("bool")
+        obsids = states["obsid"][idxs].value
+        tstart = cxctime2plotdate(states["obsid"].times[0, idxs].value)
+        tstop = cxctime2plotdate(states["obsid"].times[1, idxs].value)
+        tstop = np.concatenate([tstart[:-1]+np.diff(tstart), [tstop[-1]]])
+        endcapstart = ypos-0.5*ywidth
+        endcapstop = ypos+0.5*ywidth
+        textypos = ypos+ywidth
+        for ti, tf, obsid in zip(tstart, tstop, obsids):
+            if obsid < 40000:
+                self.ax.hlines(ypos, ti, tf, linestyle='-',
+                               color=color, lw=lw)
+                self.ax.vlines(ti, endcapstart, endcapstop,
+                               color=color, lw=lw)
+                self.ax.vlines(tf, endcapstart, endcapstop,
+                               color=color, lw=lw)
+                tmid = ti + 0.5*(tf - ti)
+                if tmin <= tmid <= tmax:
+                    self.ax.text(tmid, textypos, obsid, color=color,
+                                 rotation=90, va='bottom', fontsize=fontsize)
 
 class DatePlot(CustomDatePlot):
     r""" Make a single-panel plot of a quantity (or multiple quantities) 
