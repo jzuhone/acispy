@@ -338,7 +338,7 @@ class ACISLoadReview(object):
                     ymin, ymax = plot.ax.get_ylim()
                     y = (1.0-offsets[key])*ymin+offsets[key]*ymax
                     plot.add_text(tdt, y, text, fontsize=15,
-                                  rotation='vertical', color=color)
+                                  rotation='vertical', color=color, zorder=100)
 
         if plot_belts:
             self._plot_bands(tbegin, tend, plot,
