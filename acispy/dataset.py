@@ -305,44 +305,44 @@ class Dataset(object):
         Table(dict((k,v.value) for k, v in self.states.items())).write(filename, format='ascii')
 
 class ArchiveData(Dataset):
+    """
+    Fetch MSIDs from the engineering archive and states from the commanded
+    states database.
+
+    Parameters
+    ----------
+    tstart : string
+        The start time in YYYY:DOY:HH:MM:SS format
+    tstop : string
+        The stop time in YYYY:DOY:HH:MM:SS format
+    msid_keys : list of strings, optional
+        List of MSIDs to pull from the engineering archive.
+    state_keys : list of strings, optional
+        List of commanded states to pull from the commanded states database.
+        If not supplied, a default list of states will be loaded. Default: None
+    filter_bad : boolean, optional
+        Whether or not to filter out bad values of MSIDs. Default: False.
+    stat : string, optional
+        return 5-minute or daily statistics ('5min' or 'daily') Default: '5min'
+        If ``interpolate_msids=True`` this setting is ignored.
+    interpolate_msids : boolean, optional
+        If True, MSIDs are interpolated to a common time sequence with uniform
+        timesteps of 328 seconds. Default: False
+    server : string
+         DBI server or HDF5 file. Default: None
+
+    Examples
+    --------
+    >>> from acispy import ArchiveData
+    >>> tstart = "2016:091:12:05:00.100"
+    >>> tstop = "2016:100:13:07:45.234"
+    >>> msids = ["1deamzt", "1pin1at"]
+    >>> states = ["pitch", "ccd_count"]
+    >>> ds = ArchiveData(tstart, tstop, msid_keys=msids, state_keys=states)
+    """
     def __init__(self, tstart, tstop, msid_keys=None, state_keys=None,
                  filter_bad=False, stat=None, interpolate_msids=False,
                  server=None):
-        """
-        Fetch MSIDs from the engineering archive and states from the commanded
-        states database.
-
-        Parameters
-        ----------
-        tstart : string
-            The start time in YYYY:DOY:HH:MM:SS format
-        tstop : string
-            The stop time in YYYY:DOY:HH:MM:SS format
-        msid_keys : list of strings, optional
-            List of MSIDs to pull from the engineering archive.
-        state_keys : list of strings, optional
-            List of commanded states to pull from the commanded states database.
-            If not supplied, a default list of states will be loaded. Default: None
-        filter_bad : boolean, optional
-            Whether or not to filter out bad values of MSIDs. Default: False.
-        stat : string, optional
-            return 5-minute or daily statistics ('5min' or 'daily') Default: '5min'
-            If ``interpolate_msids=True`` this setting is ignored.
-        interpolate_msids : boolean, optional
-            If True, MSIDs are interpolated to a common time sequence with uniform
-            timesteps of 328 seconds. Default: False
-        server : string
-             DBI server or HDF5 file. Default: None
-
-        Examples
-        --------
-        >>> from acispy import ArchiveData
-        >>> tstart = "2016:091:12:05:00.100"
-        >>> tstop = "2016:100:13:07:45.234"
-        >>> msids = ["1deamzt", "1pin1at"]
-        >>> states = ["pitch", "ccd_count"]
-        >>> ds = ArchiveData(tstart, tstop, msid_keys=msids, state_keys=states)
-        """
         tstart = get_time(tstart)
         tstop = get_time(tstop)
         if msid_keys is not None:
@@ -357,28 +357,28 @@ class ArchiveData(Dataset):
         super(ArchiveData, self).__init__(msids, states, model)
 
 class TracelogData(Dataset):
-    def __init__(self, filename, state_keys=None, tbegin=None, tend=None,
+    """
+    Fetch MSIDs from a tracelog file and states from the commanded
+    states database.
+
+    Parameters
+    ----------
+    filename : string
+        The path to the tracelog file
+    state_keys : list of strings, optional
+        List of commanded states to pull from the commanded states database.
+        If not supplied, a default list of states will be loaded.
+    server : string
+         DBI server or HDF5 file. Default: None
+
+    Examples
+    --------
+    >>> from acispy import TracelogData
+    >>> states = ["ccd_count", "roll"]
+    >>> ds = TracelogData("acisENG10d_00985114479.70.tl", state_keys=states)
+    """
+    def __init__(self, filename, tbegin=None, tend=None, state_keys=None,
                  server=None):
-        """
-        Fetch MSIDs from a tracelog file and states from the commanded
-        states database.
-
-        Parameters
-        ----------
-        filename : string
-            The path to the tracelog file
-        state_keys : list of strings, optional
-            List of commanded states to pull from the commanded states database.
-            If not supplied, a default list of states will be loaded.
-        server : string
-             DBI server or HDF5 file. Default: None
-
-        Examples
-        --------
-        >>> from acispy import TracelogData
-        >>> states = ["ccd_count", "roll"]
-        >>> ds = TracelogData("acisENG10d_00985114479.70.tl", state_keys=states)
-        """
         if tbegin is not None:
             tbegin = get_time(tbegin)
         if tend is not None:
