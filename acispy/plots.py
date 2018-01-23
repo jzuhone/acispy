@@ -318,9 +318,10 @@ class CustomDatePlot(ACISPlot):
         if zorder is not None:
             self.legend.set_zorder(zorder)
 
-    def annotate_obsids(self, ypos, ds=None, ywidth=2.0, txtheight=1.0,
-                        lw=2.0, fontsize=18, datestart=None, datestop=None,
-                        color='red', txtloc=0.5):
+    def annotate_obsids(self, ypos, ds=None, show_manuvrs=False, ywidth=2.0,
+                        txtheight=1.0, lw=2.0, fontsize=16, datestart=None,
+                        datestop=None, color='red', manuvr_color='blue',
+                        txtloc=0.5):
         tmin, tmax = self.ax.get_xlim()
         if datestart is not None:
             tmin = cxctime2plotdate(get_time(datestart, 'secs'))
@@ -334,24 +335,29 @@ class CustomDatePlot(ACISPlot):
                                "does not include commanded states! Provide a dataset "
                                "using the keyword argument 'ds' to 'annotate_obsids'!")
         idxs = np.char.count(states["trans_keys"].value, "obsid").astype("bool")
-        obsids = states["obsid"][idxs].value
-        tstart = cxctime2plotdate(states["obsid"].times[0, idxs].value)
-        tstop = cxctime2plotdate(states["obsid"].times[1, idxs].value)
-        tstop = np.concatenate([tstart[:-1]+np.diff(tstart), [tstop[-1]]])
+        obsids = np.insert(states["obsid"][idxs].value, 0, states["obsid"][0].value)
+        tstart = cxctime2plotdate(np.insert(states["obsid"].times[0, idxs].value,
+                                  0, states["obsid"].times[0, 0].value))
+        endstop = cxctime2plotdate([states["obsid"].times[1, -1].value])
+        tstop = np.concatenate([tstart[:-1]+np.diff(tstart), endstop])
         endcapstart = ypos-0.5*ywidth
         endcapstop = ypos+0.5*ywidth
         textypos = ypos+txtheight
-        for ti, tf, obsid in zip(tstart, tstop, obsids):
-            if obsid < 40000:
+        num_obsids = obsids.size
+        for i, (ti, tf, obsid) in enumerate(zip(tstart, tstop, obsids)):
+            clr = color if obsid <= 40000 else manuvr_color
+            if obsid <= 40000 or show_manuvrs:
                 self.ax.hlines(ypos, ti, tf, linestyle='-',
-                               color=color, lw=lw)
-                self.ax.vlines(ti, endcapstart, endcapstop,
-                               color=color, lw=lw, zorder=100)
-                self.ax.vlines(tf, endcapstart, endcapstop,
-                               color=color, lw=lw, zorder=100)
+                               color=clr, lw=lw)
+                if i > 0:
+                    self.ax.vlines(ti, endcapstart, endcapstop,
+                                   color=clr, lw=lw, zorder=100)
+                if i < num_obsids-1:
+                    self.ax.vlines(tf, endcapstart, endcapstop,
+                                   color=clr, lw=lw, zorder=100)
                 tmid = ti + txtloc*(tf - ti)
                 if tmin <= tmid <= tmax:
-                    self.ax.text(tmid, textypos, obsid, color=color,
+                    self.ax.text(tmid, textypos, obsid, color=clr,
                                  rotation=90, va='bottom', fontsize=fontsize)
 
 class DatePlot(CustomDatePlot):
