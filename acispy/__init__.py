@@ -1,7 +1,8 @@
 __version__ = "1.4.0"
 
 from acispy.dataset import ArchiveData, \
-    TracelogData
+    TracelogData, EngineeringTracelogData, \
+    DEAHousekeepingTracelogData
 from acispy.plots import DatePlot, MultiDatePlot, \
     PhaseScatterPlot, PhaseHistogramPlot, CustomDatePlot
 from acispy.thermal_models import SimulateCTIRun, \

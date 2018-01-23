@@ -403,5 +403,44 @@ class TracelogData(Dataset):
         model = EmptyTimeSeries()
         super(TracelogData, self).__init__(msids, states, model)
 
+class EngineeringTracelogData(TracelogData):
+    """
+    Fetch MSIDs from the engineering tracelog file and states from
+    the commanded states database.
+
+    Parameters
+    ----------
+    state_keys : list of strings, optional
+        List of commanded states to pull from the commanded states database.
+        If not supplied, a default list of states will be loaded.
+    server : string
+         DBI server or HDF5 file. Default: None
+    """
+    def __init__(self, tbegin=None, tend=None, state_keys=None,
+                 server=None):
+        filename = "/data/acis/eng_plots/acis_eng_10day.tl"
+        super(EngineeringTracelogData, self).__init__(filename, tbegin=tbegin, tend=tend,
+                                                      state_keys=state_keys, server=server)
+
+class DEAHousekeepingTracelogData(TracelogData):
+    """
+    Fetch MSIDs from the DEA housekeeping tracelog file and states from
+    the commanded states database.
+
+    Parameters
+    ----------
+    state_keys : list of strings, optional
+        List of commanded states to pull from the commanded states database.
+        If not supplied, a default list of states will be loaded.
+    server : string
+         DBI server or HDF5 file. Default: None
+    """
+    def __init__(self, tbegin=None, tend=None, state_keys=None,
+                 server=None):
+        filename = "/data/acis/eng_plots/acis_dea_10day.tl"
+        super(DEAHousekeepingTracelogData, self).__init__(filename, tbegin=tbegin,
+                                                          tend=tend, state_keys=state_keys,
+                                                          server=server)
+
 class DataContainer(Dataset):
     pass
