@@ -319,9 +319,8 @@ while True:
                          ymax=plot_limits[temp][1])
             dp.add_vline(tnow, lw=3)
             title_str = "%s\nCurrent %s prediction: %g $\mathrm{^\circ{C}}$\nCurrent pitch: %g degrees"
-            title_str = title_str % (tnow, temp.upper(), 
-                                     lr.ds["model", temp][tnow].value, 
-                                     lr.ds["pitch"][tnow].value)
+            title_str %= (tnow, temp.upper(), lr.ds["model", temp][tnow].value,
+                          lr.ds["pitch"][tnow].value)
             title_str += "\nCurrent instrument: %s, Current ObsID: %d" % (lr.ds["states", "instrument"][tnow],
                                                                           lr.ds["states", "obsid"][tnow])
             if temp == "fptemp_11":
@@ -385,9 +384,8 @@ while True:
                              ymax=plot_limits[temp][1])
                 dp.add_vline(tnow, lw=3)
                 title_str = "%s\nCurrent %s prediction: %g $\mathrm{^\circ{C}}$\nCurrent pitch: %g degrees"
-                title_str = title_str % (tnow, temp.upper(),
-                                         lr.ds["model", temp][tnow].value,
-                                         lr.ds["pitch"][tnow].value)
+                title_str %= (tnow, temp.upper(), lr.ds["model", temp][tnow].value,
+                              lr.ds["pitch"][tnow].value)
                 title_str += "\nCurrent instrument: %s, Current ObsID: %d" % (lr.ds["states", "instrument"][tnow],
                                                                               lr.ds["states", "obsid"][tnow])
                 dp.set_title(title_str)
