@@ -358,7 +358,7 @@ while True:
 
         roll = lr.plot("off_nominal_roll", field2="grating", tbegin=tbegin, tend=tend, color="blue",
                        ymin=-20.0, ymax=20.0, annotations=["belts", "sim_trans", "comms", "perigee", "cti_runs"],
-                       figsize=(10,8))
+                       figsize=(10,8), ymin2=0.5, ymax2=2.5)
         roll.add_vline(tnow, lw=3)
         title_str = "%s\nCurrent Off-nominal roll: %4.3f degree\nGrating: %s" % (tnow, 
                                                                                  lr.ds["off_nominal_roll"][tnow].value,
