@@ -56,8 +56,8 @@ class States(TimeSeriesData):
         return cls(table)
 
     @classmethod
-    def from_load_page(cls, load):
-        url = "http://cxc.cfa.harvard.edu/acis/DPA_thermPredic/"
+    def from_load_page(cls, load, comp="DPA"):
+        url = "http://cxc.cfa.harvard.edu/acis/%s_thermPredic/" % comp
         url += "%s/ofls%s/states.dat" % (load[:-1].upper(), load[-1].lower())
         u = requests.get(url)
         t = ascii.read(u.text)

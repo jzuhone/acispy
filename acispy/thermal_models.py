@@ -194,7 +194,7 @@ class ThermalModelFromFiles(ModelDataset):
 
 class ThermalModelFromLoad(ModelDataset):
     def __init__(self, load, comps=None, get_msids=False, time_range=None,
-                 tl_file=None):
+                 tl_file=None, states_comp="DPA"):
         """
         Fetch a temperature model and its associated commanded states
         from a load review. Optionally get MSIDs for the same time period.
@@ -212,6 +212,9 @@ class ThermalModelFromLoad(ModelDataset):
             Whether or not to load the MSIDs corresponding to the
             temperature models for the same time period from the
             engineering archive. Default: False.
+        states_comp : string, optional
+            The thermal model page to use to get the states. "DEA", "DPA",
+            "PSMC", or "FP". Default: "DPA"
 
         Examples
         --------
@@ -225,7 +228,7 @@ class ThermalModelFromLoad(ModelDataset):
         if time_range is not None:
             time_range = [date2secs(t) for t in time_range]
         model = Model.from_load_page(load, comps, time_range=time_range)
-        states = States.from_load_page(load)
+        states = States.from_load_page(load, comp=states_comp)
         if get_msids:
             if tl_file is not None:
                 if time_range is None:
