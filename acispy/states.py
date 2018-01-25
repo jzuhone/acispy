@@ -1,7 +1,7 @@
 from astropy.io import ascii
 import requests
 from acispy.units import get_units
-from acispy.utils import get_time, ensure_list
+from acispy.utils import get_time, ensure_list, find_load
 from Chandra.cmd_states import fetch_states, get_states, \
     get_state0, get_cmds
 from acispy.units import APQuantity, APStringArray, Quantity
@@ -57,6 +57,7 @@ class States(TimeSeriesData):
 
     @classmethod
     def from_load_page(cls, load, comp="DPA"):
+        load = find_load(load)
         url = "http://cxc.cfa.harvard.edu/acis/%s_thermPredic/" % comp
         url += "%s/ofls%s/states.dat" % (load[:-1].upper(), load[-1].lower())
         u = requests.get(url)

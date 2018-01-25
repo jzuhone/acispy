@@ -6,6 +6,7 @@ import Ska.Numpy
 import numpy as np
 import logging
 import sys
+import os
 
 acispyLogger = logging.getLogger("acispy")
 
@@ -155,3 +156,14 @@ def moving_average(a, n=5):
 
 def convert_state_code(ds, field):
     return np.array([ds.state_codes[field][val] for val in ds[field]])
+
+lr_root = "/data/acis/LoadReviews"
+
+def find_load(load_name):
+    load_week = load_name[:7]
+    load_year = "20%s" % load_week[5:7]
+    loaddir = os.path.join(lr_root, load_year, load_week)
+    load_letter = sorted(os.listdir(loaddir))[-1][-1].upper()
+    if len(load_name) == 7:
+        load_name = load_week + load_letter
+    return load_name

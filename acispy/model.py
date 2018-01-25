@@ -1,7 +1,7 @@
 import requests
 from astropy.io import ascii
 import Ska.Numpy
-from acispy.utils import get_time, mylog
+from acispy.utils import get_time, mylog, find_load
 from acispy.units import APQuantity, Quantity, get_units
 from acispy.utils import ensure_list
 from acispy.time_series import TimeSeriesData
@@ -46,6 +46,8 @@ class Model(TimeSeriesData):
 
     @classmethod
     def from_load_page(cls, load, components, time_range=None):
+        load = find_load(load)
+        mylog.info("Reading model data from the %s load." % load)
         components = ensure_list(components)
         data = {}
         for comp in components:

@@ -2,7 +2,7 @@ from __future__ import print_function
 import os
 from acispy.thermal_models import ThermalModelFromLoad
 from acispy.plots import DatePlot
-from acispy.utils import get_time, mylog
+from acispy.utils import get_time, mylog, find_load, lr_root
 from collections import defaultdict
 from Chandra.Time import date2secs, secs2date
 from Ska.Matplotlib import cxctime2plotdate
@@ -10,7 +10,6 @@ import numpy as np
 from datetime import datetime, timezone
 import bisect
 
-lr_root = "/data/acis/LoadReviews"
 lr_file = "ACIS-LoadReview.txt"
 
 colors = {"perigee": "dodgerblue",
@@ -92,20 +91,14 @@ class ACISLoadReview(object):
     """
     def __init__(self, load_name, get_msids=True, interpolate_msids=False,
                  tl_file=None):
-        self.load_name = load_name
-        if len(load_name) == 7:
-            self.load_week = load_name
-            oflsdir = "ofls"
-        else:
-            self.load_week = load_name[:-1]
-            oflsdir = "ofls%s" % load_name[-1].lower()
+        self.load_name = find_load(load_name)
+        self.load_letter = self.load_name[-1]
+        self.load_week = self.load_name[:7]
         self.load_year = "20%s" % self.load_week[5:7]
         self.next_year = str(int(self.load_year)+1)
         loaddir = os.path.join(lr_root, self.load_year, self.load_week)
-        oflsdir = os.path.join(loaddir, oflsdir)
+        oflsdir = os.path.join(loaddir, "ofls%s" % self.load_letter.lower())
         self.load_file = os.path.join(oflsdir, lr_file)
-        self.load_letter = sorted(os.listdir(loaddir))[-1][-1].upper()
-        self.load_name = self.load_week + self.load_letter
         self.events = defaultdict(dict)
         self.start_status = self._get_start_status()
         self.begin_radzone = int(self.start_status['radmon_status'] == "OORMPDS")
