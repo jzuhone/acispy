@@ -237,7 +237,7 @@ while True:
 
     # HTML header stuff
 
-    lr_link = "http://cxc.cfa.harvard.edu/acis/lr_texts/2017/%s_lr.html" % load_name
+    lr_link = "http://cxc.cfa.harvard.edu/acis/lr_texts/%s/%s_lr.html" % (load_year, load_name)
 
     header = ['<?xml version="1.0" encoding="UTF-8">',
               '<!DOCTYPE html PUBLIC "-//W3C/DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">',
