@@ -39,6 +39,7 @@ class ACISPlot(object):
         self.fig = fig
         self.ax = ax
         self.legend = None
+        self.lines = []
 
     def _repr_png_(self):
         canvas = FigureCanvasAgg(self.fig)
@@ -106,7 +107,8 @@ class ACISPlot(object):
         --------
         >>> p.add_hline(36., lw=3, ls='dashed', color='red')
         """
-        self.ax.axhline(y=y, lw=lw, ls=ls, color=color, **kwargs)
+        self.ax.axhline(y=y, lw=lw, ls=ls, color=color, **kwargs,
+                        label='_nolegend_')
 
     def set_ylim(self, ymin, ymax):
         """
@@ -189,6 +191,7 @@ class CustomDatePlot(ACISPlot):
         ticklocs, fig, ax = plot_cxctime(dates, np.array(values), fig=fig, 
                                          ax=ax, lw=lw, ls=ls, **kwargs)
         super(CustomDatePlot, self).__init__(fig, ax)
+        self.lines.append(ax.lines[-1])
         self.ax.set_xlabel("Date", fontdict={"size": fontsize})
         fontProperties = font_manager.FontProperties(size=fontsize)
         for label in self.ax.get_xticklabels():
@@ -234,7 +237,8 @@ class CustomDatePlot(ACISPlot):
         >>> p.add_vline("2016:101:12:36:10.102", lw=3, ls='dashed', color='red')
         """
         time = datetime.strptime(DateTime(time).iso, "%Y-%m-%d %H:%M:%S.%f")
-        self.ax.axvline(x=time, lw=lw, ls=ls, color=color, **kwargs)
+        self.ax.axvline(x=time, lw=lw, ls=ls, color=color, **kwargs, 
+                        label='_nolegend_')
 
     def add_text(self, time, y, text, fontsize=18, color='black',
                  rotation='horizontal', **kwargs):
@@ -282,7 +286,7 @@ class CustomDatePlot(ACISPlot):
         --------
         >>> dp.set_line_label(1, "DEA Temperature")
         """
-        self.ax.lines[line].set_label(label)
+        self.lines[line].set_label(label)
         self.set_legend()
 
     def set_legend(self, loc='best', fontsize=16, zorder=None, **kwargs):
@@ -428,6 +432,7 @@ class DatePlot(CustomDatePlot):
         fig, ax = get_figure(plot, fig, subplot, figsize)
         fields = ensure_list(fields)
         lw = ensure_list(lw)
+        self.lines = []
         self.num_fields = len(fields)
         if len(lw) == 1 and len(fields) > 1:
             lw = lw*self.num_fields
@@ -473,6 +478,7 @@ class DatePlot(CustomDatePlot):
                                              state_codes=state_codes,
                                              drawstyle=drawstyle, 
                                              label=label)
+            self.lines.append(ax.lines[-1])
             self.y[field] = ds[field][mask]
             self.times[field] = ds[field].times[mask]
         self.fig = fig
@@ -636,7 +642,8 @@ class DatePlot(CustomDatePlot):
         --------
         >>> p.add_hline2(105., lw=3, ls='dashed', color='red')
         """
-        self.ax2.axhline(y=y2, lw=lw, ls=ls, color=color, **kwargs)
+        self.ax2.axhline(y=y2, lw=lw, ls=ls, color=color, **kwargs,
+                         label='_nolegend_')
 
     def set_field_label(self, field, label):
         """
@@ -925,7 +932,8 @@ class PhasePlot(ACISPlot):
         --------
         >>> p.add_vline(25., lw=3, ls='dashed', color='red')
         """
-        self.ax.axvline(x=x, lw=lw, ls=ls, color=color, **kwargs)
+        self.ax.axvline(x=x, lw=lw, ls=ls, color=color, **kwargs,
+                        label='_nolegend_')
 
     def add_text(self, x, y, text, fontsize=18, color='black',
                  rotation='horizontal', **kwargs):
