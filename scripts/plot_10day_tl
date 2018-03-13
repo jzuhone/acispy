@@ -1,0 +1,51 @@
+import numpy as np
+import matplotlib
+matplotlib.use("Qt5Agg")
+import matplotlib.pyplot as plt
+import argparse
+import acispy
+from acispy.utils import state_labels
+from Chandra.Time import date2secs, secs2date
+
+parser = argparse.ArgumentParser(description='Plot a single MSID with another MSID or state '
+                                             'from one of the 10-day tracelog files.')
+parser.add_argument("plots", type=str, help='The MSIDs and states to plot, comma-separated')
+parser.add_argument("--which_tl", type=str, default='eng', help='Which tracelog to plot from. Default: "eng"')
+parser.add_argument("--days", type=int, default=10, help='The number of days before the end of the log to plot. Default: 10')
+parser.add_argument("--one-panel", action='store_true',
+                    help="Whether to make a multi-panel plot or a single-panel plot. The latter is only valid if the quantities have the same units.")
+args = parser.parse_args()
+
+states = []
+msids = []
+
+for p in args.plots.split(','):
+    if p in state_labels:
+        states.append(p)
+    else:
+        msids.append(p)
+
+fields = [("msids", m) for m in msids] + [("states", s) for s in states]
+
+if len(states) == 0:
+    states = None
+
+if args.which_tl == "eng":
+    ds = acispy.EngineeringTracelogData(state_keys=states)
+    dates = ds["1dpamzt"].dates.value
+else:
+    ds = acispy.DEAHousekeepingTracelogData(state_keys=states)
+    dates = ds["fptemp_11"].dates.value
+
+datestop = dates[-1]
+days = max(10, args.days)
+secs = days*24*3600.0
+datestart = secs2date(date2secs(datestop)-secs)
+
+if args.one_panel or len(fields) == 1:
+    cp = acispy.DatePlot(ds, fields)
+else:
+    cp = acispy.MultiDatePlot(ds, fields)
+cp.set_xlim(datestart, datestop)
+
+plt.show()
