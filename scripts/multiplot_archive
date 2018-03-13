@@ -38,5 +38,6 @@ if args.one_panel:
     cp = acispy.DatePlot(ds, fields)
 else:
     cp = acispy.MultiDatePlot(ds, fields)
+cp.set_xlim(args.tstart, args.tstop)
 
 plt.show()
