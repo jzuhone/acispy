@@ -326,6 +326,50 @@ class CustomDatePlot(ACISPlot):
                         txtheight=1.0, lw=2.0, fontsize=16, datestart=None,
                         datestop=None, color='red', manuvr_color='blue',
                         txtloc=0.5):
+        """
+        Annotate obsids on a :class:`~acispy.plots.CustomDatePlot` or 
+        :class:`~acispy.plots.DatePlot` instance. They will be annotated
+        using lines to mark the beginning and end of obsids, and the 
+        actual obsid numbers will be marked on the plot.
+
+        Parameters
+        ----------
+        ypos : float
+            The location on the y-axis at which the obsid lines will be 
+            annotated.
+        ds : :class:`~acispy.dataset.Dataset`, optional
+            If this is a :class:`~acispy.plots.CustomDatePlot` object,
+            you will need to pass in a Dataset object to obtain the
+            obsid information. Default: None
+        show_manuvrs : boolean, optional
+            If True, obsid changes associated with maneuvers will 
+            be shown. Default: False
+        ywidth : float, optional
+            The height of the lines marking obsid changes.
+        txtheight : float, optional 
+            The height in points where to place the text above the obsids
+            line.
+        lw : float, optional
+            The linewidth of the lines. Default: 2.0
+        fontsize : integer, optional
+            The font size of the text.
+        datestart : string, optional
+            Only show obsids after this date and time. Must be in the 
+            YYYY:DOY:HH:MM:SS format. Default is to show from the
+            beginning of the plot. 
+        datestop : string, optional
+            Only show obsids before this date and time. Must be in the 
+            YYYY:DOY:HH:MM:SS format. Default is to show up to the
+            end of the plot.
+        color : string, optional
+            The color of the lines. Default: 'red'
+        manuvr_color : string, optional 
+            The color of the lines for maneuver obsids. Default: 'blue'
+        txtloc : float, optional
+            A float between 0 and 1 to mark the location between
+            the start and stop of the obsid where the obsid number is
+            annotated.
+        """
         tmin, tmax = self.ax.get_xlim()
         if datestart is not None:
             tmin = cxctime2plotdate(get_time(datestart, 'secs'))
@@ -363,6 +407,7 @@ class CustomDatePlot(ACISPlot):
                 if tmin <= tmid <= tmax:
                     self.ax.text(tmid, textypos, obsid, color=clr,
                                  rotation=90, va='bottom', fontsize=fontsize)
+
 
 class DatePlot(CustomDatePlot):
     r""" Make a single-panel plot of a quantity (or multiple quantities) 
