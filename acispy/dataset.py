@@ -304,6 +304,66 @@ class Dataset(object):
             raise IOError("File %s already exists, but overwrite=False!" % filename)
         Table(dict((k,v.value) for k, v in self.states.items())).write(filename, format='ascii')
 
+    def plot(self, fields, field2=None, lw=2, ls='-', ls2='-', lw2=2,
+             fontsize=18, color=None, color2='magenta', figsize=(10, 8),
+             plot=None, fig=None, subplot=None, plot_bad=True):
+        r""" Make a single-panel plot of a quantity (or multiple quantities) 
+        vs. date and time from this Dataset. 
+
+        Multiple quantities can be plotted on the left
+        y-axis together if they have the same units, otherwise a quantity
+        with different units can be plotted on the right y-axis. 
+
+        Parameters
+        ----------
+        fields : tuple of strings or list of tuples of strings
+            A single field or list of fields to plot on the left y-axis.
+        field2 : tuple of strings, optional
+            A single field to plot on the right y-axis. Default: None
+        lw : float or list of floats, optional
+            The width of the lines in the plots. If a list, the length
+            of a the list must be equal to the number of fields. If a
+            single number, it will apply to all plots. Default: 2 px.
+        ls : string, optional
+            The line style of the lines plotted on the left y-axis. 
+            Can be a single linestyle or more than one for each line. 
+            Default: '-'
+        ls2 : string, optional
+            The line style of the line plotted on the right y-axis. 
+            Can be a single linestyle or more than one for each line. 
+            Default: '-'
+        lw2 : float, optional
+            The width of the line plotted on the right y-axis.
+        fontsize : integer, optional
+            The font size for the labels in the plot. Default: 18 pt.
+        color : list of strings, optional
+            The colors for the lines plotted on the left y-axis. Can
+            be a single color or more than one in a list. Default: 
+            Use the default Matplotlib order of colors. 
+        color2 : string, optional
+            The color for the line plotted on the right y-axis.
+            Default: "magenta"
+        fig : :class:`~matplotlib.figure.Figure`, optional
+            A Figure instance to plot in. Default: None, one will be
+            created if not provided.
+        figsize : tuple of integers, optional
+            The size of the plot in (width, height) in inches. Default: (10, 8)
+        plot : :class:`~acispy.plots.DatePlot` or :class:`~acispy.plots.CustomDatePlot`, optional
+            An existing DatePlot to add this plot to. Default: None, one 
+            will be created if not provided.
+        plot_bad : boolean, optional
+            If True, "bad" values will be plotted but the ranges of bad values
+            will be marked with translucent blue rectangles. If False, bad
+            values will be removed from the plot. Default: True
+        """
+        from acispy.plots import DatePlot
+        dp = DatePlot(self, fields, field2=field2, lw=lw, ls=ls, ls2=ls2,
+                      lw2=lw2, fontsize=fontsize, color=color, color2=color2,
+                      figsize=figsize, plot=plot, fig=fig, subplot=subplot,
+                      plot_bad=plot_bad)
+        return dp
+
+
 class ArchiveData(Dataset):
     """
     Fetch MSIDs from the engineering archive and states from the commanded
@@ -441,6 +501,3 @@ class DEAHousekeepingTracelogData(TracelogData):
         super(DEAHousekeepingTracelogData, self).__init__(filename, tbegin=tbegin,
                                                           tend=tend, state_keys=state_keys,
                                                           server=server)
-
-class DataContainer(Dataset):
-    pass
