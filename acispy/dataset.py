@@ -457,7 +457,7 @@ class TracelogData(Dataset):
             else:
                 raise RuntimeError("I cannot parse this file!")
             msid_objs.append(msids)
-        all_msids = CombinedMSIDs(msids)
+        all_msids = CombinedMSIDs(msid_objs)
         tmin = 1.0e55
         tmax = -1.0e55
         for v in all_msids.values():
