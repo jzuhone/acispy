@@ -82,6 +82,7 @@ every time there is a comm and have the last 10 days of data. They are:
 
 You do not have to specify the tracelog file for these classes, but they will
 accept any other arguments also accepted by :class:`~acispy.dataset.TracelogData`:
+
 .. code-block:: python
 
     from acispy import EngineeringTracelogData
@@ -93,18 +94,17 @@ Reading Model Data from a Load
 
 You can also fill a :class:`~acispy.dataset.Dataset` with predicted
 model data for a particular temperature model or multiple models corresponding to 
-a particular load review using :class:`~acispy.dataset.ModelDataFromLoad`:
+a particular load review using :class:`~acispy.thermal_models.ThermalModelFromLoad`:
 
 .. code-block:: python
 
-    from acispy import ModelDataFromLoad
+    from acispy import ThermalModelFromLoad
     comps = ["1deamzt","1dpamzt","fptemp_11"]
-    ds = ModelDataFromLoad("APR0416C", comps)
+    ds = ThermalModelFromLoad("APR0416C", comps)
 
 To get the corresponding MSIDs from the engineering archive during the same 
-time frame, pass to :class:`~acispy.dataset.ModelDataFromLoad` the keyword 
-argument ``get_msids=True``. To interpolate the MSID data to a common
-set of times as the model data, use ``interpolate_msids=True``.
+time frame, pass to :class:`~acispy.thermal_models.ThermalModelFromLoad` the keyword
+argument ``get_msids=True``.
 
 Reading Model Data from Files
 -----------------------------
@@ -113,29 +113,27 @@ The model validation tools (such as `dea_check <http://github.com/acisops/dea_ch
 output ASCII table files ``"temperatures.dat"`` and ``"states.dat"`` that contain the 
 temperature and commanded state information as a function of time. If you have these
 files and would like to load them in, this can be done using
-:class:`~acispy.dataset.ModelDataFromFiles`:
+::class:`~acispy.thermal_models.ThermalModelFromFiles`:
 
 .. code-block:: python
 
-    from acispy import ModelDataFromFiles
+    from acispy import ThermalModelFromFiles
     model_files = ["dea_model/temperatures.dat", "dpa_model/temperatures.dat",
                    "fp_model/temperatures.dat"]
-    ds = ModelDataFromFiles(model_files, "dea_model/states.dat", get_msids=True)
+    ds = ThermalModelFromFiles(model_files, "dea_model/states.dat", get_msids=True)
                                                
 Like the previous :class:`~acispy.dataset.Dataset` type, this one takes the 
 ``get_msids`` keyword argument to obtain the corresponding MSIDs from the archive 
-if desired. To interpolate the MSID data to a common set of times as the model data, 
-use ``interpolate_msids=True``. However, this only really works if the all of the 
-model fields are also at the same times. 
+if desired.
 
 This :class:`~acispy.dataset.Dataset` type can also be used to import model data 
 for the same MSID for different model runs:
 
 .. code-block:: python
 
-    from acispy import ModelDataFromFiles
+    from acispy import ThermalModelFromFiles
     model_files = ["old_model/temperatures.dat", "new_model/temperatures.dat"]
-    ds = ModelDataFromFiles(model_files, "old_model/states.dat", get_msids=True)
+    ds = ThermalModelFromFiles(model_files, "old_model/states.dat", get_msids=True)
 
 Directly Accessing Time Series Data from the Container
 ------------------------------------------------------
@@ -266,7 +264,7 @@ types of arrays:
     [ 22.14923096  22.14923096  22.14923096 ...,  20.17999268  
       20.17999268  20.17999268] deg_C
 
-Note that some arrays (like ``ccd_count'') do not have units. 
+Note that some arrays (like ``ccd_count``) do not have units.
 
 Masks
 +++++
