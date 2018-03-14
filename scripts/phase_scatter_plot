@@ -5,7 +5,7 @@ matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 import argparse
 import acispy
-from acispy.utils import state_labels
+from acispy.utils import state_labels, find_state_keys
 
 parser = argparse.ArgumentParser(description='Make a phase scatter plot of one MSID or state versus another within a certain time frame.')
 parser.add_argument("tstart", type=str, help='The start time in YYYY:DOY:HH:MM:SS format')
@@ -41,8 +41,10 @@ if args.c_field is not None:
         msids.append(args.c_field)
         c_field = ("msids", args.c_field)
 
+state_keys = find_state_keys(states)
+
 ds = acispy.ArchiveData(args.tstart, args.tstop,
-                        msid_keys=msids, state_keys=states,
+                        msid_keys=msids, state_keys=state_keys,
                         interpolate_msids=True, filter_bad=True)
 
 if x_field[0] == "states" and y_field[0] != "states":

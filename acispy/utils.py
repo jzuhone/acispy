@@ -77,6 +77,11 @@ def calc_off_nom_rolls(states):
     return np.array([Ska.Sun.off_nominal_roll(att, time)
                      for time, att in zip(times, atts)])
 
+default_states = ["ccd_count", "clocking", "ra", "dec", "dither", "fep_count",
+                  "hetg", "letg", "obsid", "pcad_mode", "pitch", "power_cmd",
+                  "roll", "si_mode", "simfa_pos", "simpos", "q1", "q2", "q3",
+                  "q4", "trans_keys", "vid_board"]
+
 state_labels = {"ccd_count": "CCD Count",
                 "clocking": "Clocking",
                 "ra": "RA",
@@ -167,3 +172,11 @@ def find_load(load_name):
     if len(load_name) == 7:
         load_name = load_week + load_letter
     return load_name
+
+def find_state_keys(states):
+    state_keys = [state for state in states if state in default_states]
+    if len(state_keys) == 0:
+        state_keys = None
+    if "off_nominal_roll" in states:
+        state_keys += ["q1", "q2", "q3", "q4"]
+    return state_keys

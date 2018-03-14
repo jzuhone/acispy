@@ -5,7 +5,7 @@ matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 import argparse
 import acispy
-from acispy.utils import state_labels
+from acispy.utils import state_labels, find_state_keys
 
 parser = argparse.ArgumentParser(description='Make plots of MSIDs from a tracelog file. Commanded states will be loaded from the commanded states database.')
 parser.add_argument("tracelog", type=str, help='The tracelog file to load the MSIDs from')
@@ -25,10 +25,9 @@ for p in args.plots.split(','):
 
 fields = [("msids", m) for m in msids] + [("states", s) for s in states]
 
-if len(states) == 0:
-    states = None
+state_keys = find_state_keys(states)
 
-ds = acispy.TracelogData(args.tracelog, state_keys=states)
+ds = acispy.TracelogData(args.tracelog, state_keys=state_keys)
 if args.one_panel:
     cp = acispy.DatePlot(ds, fields)
 else:

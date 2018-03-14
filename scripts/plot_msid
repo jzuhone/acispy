@@ -5,7 +5,7 @@ matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 import argparse
 import acispy
-from acispy.utils import state_labels
+from acispy.utils import state_labels, find_state_keys
 
 parser = argparse.ArgumentParser(description='Plot a single MSID with another MSID or state')
 parser.add_argument("tstart", type=str, help='The start time in YYYY:DOY:HH:MM:SS format')
@@ -33,11 +33,10 @@ if args.y2_axis is not None:
 else:
     y2_axis = None
 
-if len(states) == 0:
-    states = None
+state_keys = find_state_keys(states)
 
 ds = acispy.ArchiveData(args.tstart, args.tstop, msid_keys=msids,
-                        state_keys=states, filter_bad=True)
+                        state_keys=state_keys, filter_bad=True)
 
 cp = acispy.DatePlot(ds, y_axis, field2=y2_axis)
 plt.show()
