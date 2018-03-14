@@ -6,7 +6,7 @@ matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 import argparse
 import acispy
-from acispy.utils import state_labels, find_state_keys
+from acispy.utils import state_labels, find_state_keys, mylog
 from Chandra.Time import date2secs, secs2date
 
 parser = argparse.ArgumentParser(description='Plot one or more MSIDs or states from the ACIS 10-day tracelog files.')
@@ -33,6 +33,8 @@ ds = acispy.TenDayTracelogData(state_keys=state_keys)
 dates = ds["1dpamzt"].dates
 
 datestop = dates[-1]
+if args.days > 10:
+    mylog.warning("Cannot plot more than 10 days from the 10-day tracelog. Plotting data from the full tracelog.")
 days = min(10, args.days)
 secs = days*24*3600.0
 datestart = secs2date(date2secs(datestop)-secs)
