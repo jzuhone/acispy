@@ -59,7 +59,34 @@ from the commanded states database.
 In this case, all of the MSIDs in the tracelog are ingested into the 
 :class:`~acispy.dataset.TracelogData` dataset. You may either specify
 a set of states using the ``state_keys`` keyword argument; otherwise 
-the full default set will be loaded.
+the full default set will be loaded. You can also specify a subset of
+the time range in the tracelog using the ``tbegin`` and ``tend`` arguments:
+
+.. code-block:: python
+
+    from acispy import TracelogData
+    states = ["pitch", "ccd_count"]
+    ds = TracelogData("some_data.tl", tbegin="2017:100", tend="2017:110:01:45:45",
+                      state_keys=states)
+
+Special Tracelog Files
+++++++++++++++++++++++
+
+There are three special classes for working with the 10-day tracelog file data,
+which an be used to obtain the data from these tracelog files which are updated
+every time there is a comm and have the last 10 days of data. They are:
+
+* :class:`~acispy.dataset.EngineeringTracelogData`: The engineering data tracelog
+* :class:`~acispy.dataset.DEAHousekeepingTracelogData`: The DEA housekeeping data tracelog
+* :class:`~acispy.dataset.TenDayTracelogData`: Both tracelogs combined
+
+You do not have to specify the tracelog file for these classes, but they will
+accept any other arguments also accepted by :class:`~acispy.dataset.TracelogData`:
+.. code-block:: python
+
+    from acispy import EngineeringTracelogData
+    ds = EngineeringTracelogData(tbegin="2018:060:00:00:00", tend="2018:061:02:30:00",
+                                 state_keys=["fep_count", "vid_board"])
 
 Reading Model Data from a Load
 ------------------------------
