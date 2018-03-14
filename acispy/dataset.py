@@ -506,3 +506,12 @@ class DEAHousekeepingTracelogData(TracelogData):
         super(DEAHousekeepingTracelogData, self).__init__(filename, tbegin=tbegin,
                                                           tend=tend, state_keys=state_keys,
                                                           server=server)
+
+class TenDayTracelogData(TracelogData):
+    def __init__(self, tbegin=None, tend=None, state_keys=None,
+                 server=None):
+        filenames = ["/data/acis/eng_plots/acis_eng_10day.tl",
+                     "/data/acis/eng_plots/acis_dea_10day.tl"]
+        super(TenDayTracelogData, self).__init__(filenames, tbegin=tbegin,
+                                                 tend=tend, state_keys=state_keys,
+                                                 server=server)
