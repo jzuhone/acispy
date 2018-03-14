@@ -165,6 +165,51 @@ Returns:
 
 .. image:: _images/one_panel_multi_tracelog.png
 
+``plot_10day_tl``
+-----------------
+
+.. code-block:: text
+
+    usage: plot_10day_tl [-h] [--days DAYS] [--one-panel] fields
+
+    Plot one or more MSIDs or states from the ACIS 10-day tracelog files.
+
+    positional arguments:
+      fields       The MSIDs and states to plot, comma-separated
+
+    optional arguments:
+      -h, --help   show this help message and exit
+      --days DAYS  The number of days before the end of the log to plot. Default:
+                   10
+      --one-panel  Whether to make a multi-panel plot or a single-panel plot. The
+                   latter is only valid if the quantities have the same units.
+
+Example 1
++++++++++
+
+Plot one MSID and two states in three different panels.
+
+.. code-block:: bash
+
+    [~]$ plot_10day_tl 1pdeaat,pitch,off_nominal_roll
+
+Returns:
+
+.. image:: _images/plot_10day_ex1.png
+
+Example 2
++++++++++
+
+Plot 3 MSIDs from ove the past three days and combine them in one panel.
+
+.. code-block:: bash
+
+    [~]$ plot_10day_tl 1dpamzt,tmp_fep1_mong,tmp_bep_pcb --days 3 --one-panel
+
+Returns:
+
+.. image:: _images/plot_10day_ex2.png
+
 ``plot_model``
 --------------
 
