@@ -1,4 +1,4 @@
-from acispy.msids import MSIDs
+from acispy.msids import MSIDs, CombinedMSIDs
 from acispy.states import States, cmd_state_codes
 from acispy.units import APQuantity, APStringArray
 from Chandra.Time import secs2date
@@ -423,8 +423,8 @@ class TracelogData(Dataset):
 
     Parameters
     ----------
-    filename : string
-        The path to the tracelog file
+    filenames : string or list of strings
+        The path to the tracelog file or list of tracelog files
     state_keys : list of strings, optional
         List of commanded states to pull from the commanded states database.
         If not supplied, a default list of states will be loaded.
@@ -437,31 +437,36 @@ class TracelogData(Dataset):
     >>> states = ["ccd_count", "roll"]
     >>> ds = TracelogData("acisENG10d_00985114479.70.tl", state_keys=states)
     """
-    def __init__(self, filename, tbegin=None, tend=None, state_keys=None,
+    def __init__(self, filenames, tbegin=None, tend=None, state_keys=None,
                  server=None):
+        filenames = ensure_list(filenames)
         if tbegin is not None:
             tbegin = get_time(tbegin)
         if tend is not None:
             tend = get_time(tend)
-        # Figure out what kind of file this is
-        f = open(filename, "r")
-        line = f.readline()
-        f.close()
-        if line.startswith("TIME"):
-            msids = MSIDs.from_tracelog(filename, tbegin=tbegin, tend=tend)
-        elif line.startswith("#YEAR") or line.startswith("YEAR"):
-            msids = MSIDs.from_mit_file(filename, tbegin=tbegin, tend=tend)
-        else:
-            raise RuntimeError("I cannot parse this file!")
+        msid_objs = []
+        for filename in filenames:
+            # Figure out what kind of file this is
+            f = open(filename, "r")
+            line = f.readline()
+            f.close()
+            if line.startswith("TIME"):
+                msids = MSIDs.from_tracelog(filename, tbegin=tbegin, tend=tend)
+            elif line.startswith("#YEAR") or line.startswith("YEAR"):
+                msids = MSIDs.from_mit_file(filename, tbegin=tbegin, tend=tend)
+            else:
+                raise RuntimeError("I cannot parse this file!")
+            msid_objs.append(msids)
+        all_msids = CombinedMSIDs(msids)
         tmin = 1.0e55
         tmax = -1.0e55
-        for v in msids.values():
+        for v in all_msids.values():
             tmin = min(v.times[0].value, tmin)
             tmax = max(v.times[-1].value, tmax)
         states = States.from_database(secs2date(tmin), secs2date(tmax), 
                                       states=state_keys, server=server)
         model = EmptyTimeSeries()
-        super(TracelogData, self).__init__(msids, states, model)
+        super(TracelogData, self).__init__(all_msids, states, model)
 
 class EngineeringTracelogData(TracelogData):
     """

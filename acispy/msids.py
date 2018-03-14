@@ -152,3 +152,13 @@ class MSIDs(TimeSeriesData):
             times[k.lower()] = get_time(data[k].times[indexes], 'secs')
         return cls(table, times, state_codes=state_codes, masks=masks)
 
+
+class CombinedMSIDs(TimeSeriesData):
+    def __init__(self, msid_list):
+        self.table = {}
+        self.state_codes = {}
+        for msids in msid_list:
+            self.table.update(msids.table)
+            self.table.update(msids.table)
+            self.state_codes.update(msids.state_codes)
+            self.state_codes.update(msids.state_codes)
