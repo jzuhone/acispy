@@ -90,10 +90,11 @@ class MSIDs(TimeSeriesData):
         bmask = masks["bilevels"]
         bilevels = np.char.strip(table["bilevels"], "b")[bmask]
         for i in range(7, -1, -1):
-            key = "1STAT%dST" % i
+            key = "1stat%dst" % i
             table[key] = np.array([np.nan]*bmask.size)
-            table[key][bmask] = np.array([b[i] for b in bilevels])
+            table[key][bmask] = np.array([b[i] for b in bilevels], dtype='int')
             times[key] = times["bilevels"]
+            masks[key] = bmask
         return cls(table, times, masks=masks)
 
     @classmethod
