@@ -73,6 +73,7 @@ class MSIDs(TimeSeriesData):
         idxs = np.logical_and(tsecs >= tbegin, tsecs <= tend)
         table = {}
         times = {}
+        masks = {}
         for k in data.keys():
             if k not in [year, "DOY", "SEC"]:
                 if k in mit_trans_table:
@@ -81,7 +82,19 @@ class MSIDs(TimeSeriesData):
                     key = k.lower()
                 table[key] = data[k].data[idxs]
                 times[key] = tsecs[idxs]
-        return cls(table, times)
+                if key == "bilevels":
+                    masks[key] = table[key] != "0"
+                else:
+                    masks[key] = ~np.isnan(table[key]) 
+        # Now we split the bilevel into its components
+        bmask = masks["bilevels"]
+        bilevels = np.char.strip(table["bilevels"], "b")[bmask]
+        for i in range(7, -1, -1):
+            key = "1STAT%dST" % i
+            table[key] = np.array([np.nan]*bmask.size)
+            table[key][bmask] = np.array([b[i] for b in bilevels])
+            times[key] = times["bilevels"]
+        return cls(table, times, masks=masks)
 
     @classmethod
     def from_tracelog(cls, filename, tbegin=None, tend=None):
