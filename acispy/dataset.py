@@ -306,7 +306,7 @@ class Dataset(object):
 
     def plot(self, fields, field2=None, lw=2, ls='-', ls2='-', lw2=2,
              fontsize=18, color=None, color2='magenta', figsize=(10, 8),
-             plot=None, fig=None, subplot=None, plot_bad=True):
+             plot=None, fig=None, subplot=None, plot_bad=False):
         r""" Make a single-panel plot of a quantity (or multiple quantities) 
         vs. date and time from this Dataset. 
 
@@ -354,7 +354,7 @@ class Dataset(object):
         plot_bad : boolean, optional
             If True, "bad" values will be plotted but the ranges of bad values
             will be marked with translucent blue rectangles. If False, bad
-            values will be removed from the plot. Default: True
+            values will be removed from the plot. Default: False
         """
         from acispy.plots import DatePlot
         dp = DatePlot(self, fields, field2=field2, lw=lw, ls=ls, ls2=ls2,

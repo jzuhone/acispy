@@ -107,8 +107,8 @@ class ACISPlot(object):
         --------
         >>> p.add_hline(36., lw=3, ls='dashed', color='red')
         """
-        self.ax.axhline(y=y, lw=lw, ls=ls, color=color, **kwargs,
-                        label='_nolegend_')
+        self.ax.axhline(y=y, lw=lw, ls=ls, color=color, 
+                        label='_nolegend_', **kwargs)
 
     def set_ylim(self, ymin, ymax):
         """
@@ -459,7 +459,7 @@ class DatePlot(CustomDatePlot):
     plot_bad : boolean, optional
         If True, "bad" values will be plotted but the ranges of bad values
         will be marked with translucent blue rectangles. If False, bad
-        values will be removed from the plot. Default: True
+        values will be removed from the plot. Default: False
 
     Examples
     --------
@@ -473,7 +473,7 @@ class DatePlot(CustomDatePlot):
     """
     def __init__(self, ds, fields, field2=None, lw=2, ls='-',  ls2='-', lw2=2,
                  fontsize=18, color=None, color2='magenta', figsize=(10, 8),
-                 plot=None, fig=None, subplot=None, plot_bad=True):
+                 plot=None, fig=None, subplot=None, plot_bad=False):
         fig, ax = get_figure(plot, fig, subplot, figsize)
         fields = ensure_list(fields)
         lw = ensure_list(lw)
@@ -739,7 +739,7 @@ class MultiDatePlot(object):
     plot_bad : boolean, optional
         If True, "bad" values will be plotted but the ranges of bad values
         will be marked with translucent blue rectangles. If False, bad
-        values will be removed from the plot. Default: True
+        values will be removed from the plot. Default: False
 
     Examples
     --------
@@ -753,7 +753,7 @@ class MultiDatePlot(object):
     """
     def __init__(self, ds, fields, subplots=None,
                  fontsize=15, lw=2, figsize=(12, 12),
-                 color=None, plot_bad=True):
+                 color=None, plot_bad=False):
         fig = plt.figure(figsize=figsize)
         if subplots is None:
             subplots = len(fields), 1
