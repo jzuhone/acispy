@@ -500,24 +500,22 @@ class DatePlot(CustomDatePlot):
             src_name, fd = field
             drawstyle = drawstyles.get(fd, None)
             state_codes = ds.state_codes.get(field, None)
-            if state_codes is None:
-                y = ds[field].value
-            else:
-                state_codes = [(v, k) for k, v in state_codes.items()]
-                y = convert_state_code(ds, field)
-            if src_name == "states":
-                tstart, tstop = ds[field].times
-                x = pointpair(tstart.value, tstop.value)
-                y = pointpair(y)
-            else:
-                x = ds[field].times.value
-            label = ds.fields[field].display_name
             if not plot_bad:
                 mask = ds[field].mask
-                x = x[mask]
-                y = y[mask]
             else:
                 mask = slice(None, None, None)
+            if state_codes is None:
+                y = ds[field].value[mask]
+            else:
+                state_codes = [(v, k) for k, v in state_codes.items()]
+                y = convert_state_code(ds, field)[mask]
+            if src_name == "states":
+                tstart, tstop = ds[field].times
+                x = pointpair(tstart.value[mask], tstop.value[mask])
+                y = pointpair(y[mask])
+            else:
+                x = ds[field].times.value[mask]
+            label = ds.fields[field].display_name
             ticklocs, fig, ax = plot_cxctime(x, y, fig=fig, lw=lw[i], ax=ax,
                                              color=color[i], ls=ls[i],
                                              state_codes=state_codes,
@@ -525,7 +523,7 @@ class DatePlot(CustomDatePlot):
                                              label=label)
             self.lines.append(ax.lines[-1])
             self.y[field] = ds[field][mask]
-            self.times[field] = ds[field].times[mask]
+            self.times[field] = ds[field][mask].times
         self.fig = fig
         self.ax = ax
         self.ds = ds
@@ -566,28 +564,26 @@ class DatePlot(CustomDatePlot):
             self.ax2 = self.ax.twinx()
             drawstyle = drawstyles.get(fd2, None)
             state_codes = ds.state_codes.get(field2, None)
+            if not plot_bad:
+                mask2 = ds[field2].mask
+            else:
+                mask2 = slice(None, None, None)
             if state_codes is None:
-                y2 = ds[field2].value
+                y2 = ds[field2].value[mask2]
             else:
                 state_codes = [(v, k) for k, v in state_codes.items()]
-                y2 = convert_state_code(ds, field2)
+                y2 = convert_state_code(ds, field2)[mask2]
             if src_name2 == "states":
                 tstart, tstop = ds[field2].times
-                x = pointpair(tstart.value, tstop.value)
-                y2 = pointpair(y2)
+                x2 = pointpair(tstart.value[mask2], tstop.value[mask2])
+                y2 = pointpair(y2[mask2])
             else:
-                x = ds[field2].times.value
-            if not plot_bad:
-                mask = ds[field].mask
-                x = x[mask]
-                y2 = y2[mask]
-            else:
-                mask = slice(None, None, None)
-            plot_cxctime(x, y2, fig=fig, ax=self.ax2, ls=ls2,
+                x2 = ds[field2].times.value[mask2]
+            plot_cxctime(x2, y2, fig=fig, ax=self.ax2, ls=ls2,
                          lw=lw2, drawstyle=drawstyle, color=color2,
                          state_codes=state_codes)
-            self.times[field2] = ds[field2].times[mask]
-            self.y[field2] = ds[field2][mask]
+            self.times[field2] = ds[field2][mask2].times
+            self.y[field2] = ds[field2][mask2]
             for label in self.ax2.get_xticklabels():
                 label.set_fontproperties(fontProperties)
             for label in self.ax2.get_yticklabels():
