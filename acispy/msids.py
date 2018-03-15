@@ -1,4 +1,5 @@
-from acispy.utils import get_time, mit_trans_table, ensure_list
+from acispy.utils import get_time, mit_trans_table, ensure_list, \
+    get_state_codes
 from acispy.units import get_units
 import Ska.engarchive.fetch_sci as fetch
 from astropy.io import ascii
@@ -74,6 +75,7 @@ class MSIDs(TimeSeriesData):
         table = {}
         times = {}
         masks = {}
+        state_codes = {}
         for k in data.keys():
             if k not in [year, "DOY", "SEC"]:
                 if k in mit_trans_table:
@@ -86,16 +88,18 @@ class MSIDs(TimeSeriesData):
                     masks[key] = table[key] != "0"
                 else:
                     masks[key] = ~np.isnan(table[key]) 
+                state_codes[key] = get_state_codes(key)
         # Now we split the bilevel into its components
         bmask = masks["bilevels"]
         bilevels = np.char.strip(table["bilevels"], "b")[bmask]
         for i in range(8):
             key = "1stat%dst" % (7-i)
-            table[key] = -np.ones(bmask.size, dtype='int')
-            table[key][bmask] = np.array([b[i] for b in bilevels], dtype='int')
+            table[key] = np.array(["BAD"]*bmask.size)
+            table[key][bmask] = np.array([b[i] for b in bilevels])
             times[key] = times["bilevels"]
             masks[key] = bmask
-        return cls(table, times, masks=masks)
+            state_codes[key] = get_state_codes(key)
+        return cls(table, times, masks=masks, state_codes=state_codes)
 
     @classmethod
     def from_tracelog(cls, filename, tbegin=None, tend=None):
@@ -129,7 +133,9 @@ class MSIDs(TimeSeriesData):
         idxs = np.logical_and(data['time'] >= tbegin, data['time'] <= tend)
         table = dict((k.lower(), data[k][idxs]) for k in data.dtype.names if k != "time")
         times = dict((k.lower(), data["time"][idxs]) for k in header if k != "time")
-        return cls(table, times)
+        state_codes = dict((k.lower(), get_state_codes(k.lower()))
+                           for k in data.dtype.names if k != "time")
+        return cls(table, times, state_codes=state_codes)
 
     @classmethod
     def from_database(cls, msids, tstart, tstop=None, filter_bad=False,

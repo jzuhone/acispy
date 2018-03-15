@@ -159,8 +159,23 @@ def interpolate(times_in, times_out, data_in):
 def moving_average(a, n=5):
     return Ska.Numpy.smooth(a, window_len=n, window='flat')
 
+def get_state_codes(msid):
+    import Ska.tdb
+    try:
+        states = Ska.tdb.msids[msid].Tsc
+    except:
+        state_codes = None
+    else:
+        if states is None:
+            state_codes = None
+        else:
+            states = np.sort(states.data, order='LOW_RAW_COUNT')
+            state_codes = dict((state['STATE_CODE'], state['LOW_RAW_COUNT']) 
+                               for state in states)
+    return state_codes
+
 def convert_state_code(ds, field):
-    return np.array([ds.state_codes[field][val] for val in ds[field]])
+    return np.array([ds.state_codes[field].get(val, -1) for val in ds[field]])
 
 lr_root = "/data/acis/LoadReviews"
 
