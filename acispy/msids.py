@@ -16,7 +16,8 @@ else:
     str_type = "|U4"
 
 tl_states = ["1dppsax", "1dppsa", "1dppsbx", "1dppsb",
-             "1depsax", "1depsa", "1depsbx", "1depsb"]
+             "1depsax", "1depsa", "1depsbx", "1depsb",
+             "1mdbuaon", "1mdbubon", "1mcdrbcl", "1meclbcl"]
 
 class MSIDs(TimeSeriesData):
     def __init__(self, table, times, state_codes=None, masks=None):
