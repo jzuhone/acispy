@@ -15,10 +15,6 @@ if six.PY2:
 else:
     str_type = "|U4"
 
-tl_states = ["1dppsax", "1dppsa", "1dppsbx", "1dppsb",
-             "1depsax", "1depsa", "1depsbx", "1depsb",
-             "1mdbuaon", "1mdbubon", "1mcdrbcl", "1meclbcl"]
-
 class MSIDs(TimeSeriesData):
     def __init__(self, table, times, state_codes=None, masks=None):
         if state_codes is None:
@@ -117,8 +113,12 @@ class MSIDs(TimeSeriesData):
         f = open(filename, "r")
         header = f.readline().split()
         dtype = []
+        state_codes = {}
         for msid in header:
-            if msid.lower() in tl_states:
+            state_code = get_state_codes(msid.lower())
+            if msid.lower() != "time":
+                state_codes[msid.lower()] = state_code
+            if state_code is None:
                 dtype.append((msid.lower(), str_type))
             else:
                 dtype.append((msid.lower(), '<f8'))
@@ -134,8 +134,6 @@ class MSIDs(TimeSeriesData):
         idxs = np.logical_and(data['time'] >= tbegin, data['time'] <= tend)
         table = dict((k.lower(), data[k][idxs]) for k in data.dtype.names if k != "time")
         times = dict((k.lower(), data["time"][idxs]) for k in header if k != "time")
-        state_codes = dict((k.lower(), get_state_codes(k.lower()))
-                           for k in data.dtype.names if k != "time")
         return cls(table, times, state_codes=state_codes)
 
     @classmethod
