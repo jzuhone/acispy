@@ -118,7 +118,7 @@ class MSIDs(TimeSeriesData):
             state_code = get_state_codes(msid.lower())
             if msid.lower() != "time":
                 state_codes[msid.lower()] = state_code
-            if state_code is None:
+            if state_code is not None:
                 dtype.append((msid.lower(), str_type))
             else:
                 dtype.append((msid.lower(), '<f8'))
