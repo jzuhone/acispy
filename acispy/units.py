@@ -287,4 +287,6 @@ def get_units(ftype, fname):
                 mylog.warning("Cannot find a unit for MSID %s. " % fname +
                               "Setting to dimensionless.")
                 unit = ''
+    if unit == "DEG":
+        unit = 'deg'
     return unit
