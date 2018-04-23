@@ -562,6 +562,8 @@ class DatePlot(CustomDatePlot):
             self.field2 = field2
             src_name2, fd2 = field2
             self.ax2 = self.ax.twinx()
+            self.ax2.set_zorder(-10)
+            self.ax.patch.set_visible(False)
             drawstyle = drawstyles.get(fd2, None)
             state_codes = ds.state_codes.get(field2, None)
             if not plot_bad:
