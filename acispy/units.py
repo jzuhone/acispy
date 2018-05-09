@@ -216,13 +216,15 @@ class APQuantity(Quantity):
         ret.times = times
         return ret
 
-    def __array_wrap__(self, obj, context=None):
-        ret = super(APQuantity, self).__array_wrap__(obj, context=context)
+    def __array_ufunc__(self, function, method, *inputs, **kwargs):
+        ret = super(APQuantity, self).__array_ufunc__(function,
+                                                      method, *inputs,
+                                                      **kwargs)
         if ret.dtype == 'bool':
             return ret
         mask = self.mask
-        if context[0] in binary_operators:
-            mask2 = getattr(context[1][1], "mask", None)
+        if len(inputs) == 2:
+            mask2 = getattr(inputs[1], "mask", None)
             if mask2 is not None:
                 mask = np.logical_and(mask, mask2)
         ret.mask = mask
