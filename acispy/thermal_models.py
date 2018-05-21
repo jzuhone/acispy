@@ -40,7 +40,7 @@ limits = {'1deamzt': 35.5,
 
 margins = {'1deamzt': 2.0,
            '1dpamzt': 2.0,
-           '1pdeaat': 52.5,
+           '1pdeaat': 4.0,
            'tmp_fep1_mong': 2.0,
            'tmp_fep1_actel': 2.0,
            'tmp_bep_pcb': 2.0}
