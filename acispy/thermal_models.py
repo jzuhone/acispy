@@ -298,7 +298,7 @@ class ThermalModelRunner(ModelDataset):
     """
     def __init__(self, name, tstart, tstop, states=None, T_init=None,
                  use_msids=True, model_spec=None, include_bad_times=False,
-                 server=None):
+                 server=None, ephemeris=None):
 
         self.name = name
 
@@ -328,8 +328,12 @@ class ThermalModelRunner(ModelDataset):
 
         self.model_spec = find_json(name, model_spec)
 
+        ephem_times, ephem_data = self._get_ephemeris(ephemeris)
+
         self.xija_model = self._compute_model(name, tstart, tstop, states, 
-                                              state_times, T_init)
+                                              state_times, T_init, 
+                                              ephem_times=ephem_times,
+                                              ephem_data=ephem_data)
 
         self.bad_times = self.xija_model.bad_times
         self.bad_times_indices = self.xija_model.bad_times_indices
@@ -356,7 +360,12 @@ class ThermalModelRunner(ModelDataset):
             msids_obj = EmptyTimeSeries()
         super(ThermalModelRunner, self).__init__(msids_obj, states_obj, model_obj)
 
-    def _compute_model(self, name, tstart, tstop, states, state_times, T_init):
+    def _get_ephemeris(self, ephemeris):
+        if ephemeris is None:
+            return None, None
+
+    def _compute_model(self, name, tstart, tstop, states, state_times, T_init,
+                       ephem_times=None, ephem_data=None):
         if name == "fptemp_11":
             name = "fptemp"
         if isinstance(states, np.ndarray):
@@ -375,8 +384,9 @@ class ThermalModelRunner(ModelDataset):
         if 'roll' in model.comp:
             model.comp['roll'].set_data(roll, state_times)
         if 'dpa_power' in model.comp:
-            model.comp['dpa_power'].set_data(0.0) # This is just a hack, we're not
+            # This is just a hack, we're not
             # really setting the power to zero.
+            model.comp['dpa_power'].set_data(0.0) 
         # This is for the PSMC model
         if 'pin1at' in model.comp:
             model.comp['pin1at'].set_data(T_init-10.)
@@ -389,8 +399,14 @@ class ThermalModelRunner(ModelDataset):
         if name == "fptemp":
             for axis in "xyz":
                 ephem = 'orbitephem0_{}'.format(axis)
-                msid = fetch.Msid(ephem, model.tstart - 2000, model.tstop + 2000)
-                model.comp[ephem].set_data(msid.vals, msid.times)
+                if ephem_times is None:
+                    msid = fetch.Msid(ephem, model.tstart - 2000, model.tstop + 2000)
+                    e_times = msid.times
+                    e_data = msid.vals
+                else:
+                    e_times = ephem_times[axis]
+                    e_data = ephem_data[axis]
+                model.comp[ephem].set_data(e_data, e_times)
             for i in range(1, 5):
                 quat = 'aoattqt{}'.format(i)
                 quat_name = 'q{}'.format(i)
@@ -404,7 +420,8 @@ class ThermalModelRunner(ModelDataset):
 
     @classmethod
     def from_states_table(cls, name, tstart, tstop, states_file, T_init,
-                          model_spec=None, include_bad_times=False):
+                          model_spec=None, include_bad_times=False, 
+                          ephemeris=None):
         """
         Class for running Xija thermal models.
 
@@ -435,17 +452,19 @@ class ThermalModelRunner(ModelDataset):
         if "off_nominal_roll" not in states.colnames:
             states_dict["off_nominal_roll"] = calc_off_nom_rolls(states)
         return cls(name, tstart, tstop, states=states_dict, T_init=T_init,
-                   model_spec=model_spec, include_bad_times=include_bad_times)
+                   model_spec=model_spec, include_bad_times=include_bad_times,
+                   ephemeris=ephemeris)
 
     @classmethod
     def from_commands(cls, name, tstart, tstop, cmds, T_init,
-                      model_spec=None, include_bad_times=False):
+                      model_spec=None, include_bad_times=False, ephemeris=None):
         tstart = get_time(tstart)
         tstop = get_time(tstop)
         t = States.from_commands(tstart, tstop, cmds)
         states = {k: t[k].value for k in t.keys()}
         return cls(name, tstart, tstop, states=states, T_init=T_init,
-                   model_spec=model_spec, include_bad_times=include_bad_times)
+                   model_spec=model_spec, include_bad_times=include_bad_times,
+                   ephemeris=ephemeris)
 
     def make_dashboard_plots(self, yplotlimits=None, errorplotlimits=None, fig=None,
                              figfile=None, bad_times=None):
