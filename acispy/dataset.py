@@ -375,11 +375,8 @@ class ArchiveData(Dataset):
         The start time in YYYY:DOY:HH:MM:SS format
     tstop : string
         The stop time in YYYY:DOY:HH:MM:SS format
-    msid_keys : list of strings, optional
+    msids : list of strings, optional
         List of MSIDs to pull from the engineering archive.
-    state_keys : list of strings, optional
-        List of commanded states to pull from the commanded states database.
-        If not supplied, a default list of states will be loaded. Default: None
     filter_bad : boolean, optional
         Whether or not to filter out bad values of MSIDs. Default: False.
     stat : string, optional
@@ -388,8 +385,9 @@ class ArchiveData(Dataset):
     interpolate_msids : boolean, optional
         If True, MSIDs are interpolated to a common time sequence with uniform
         timesteps of 328 seconds. Default: False
-    server : string
-         DBI server or HDF5 file. Default: None
+    server : string, optional
+         DBI server or HDF5 file to grab states from. Default: None, which will
+         grab the states from the main commanded states database.
 
     Examples
     --------
@@ -397,8 +395,7 @@ class ArchiveData(Dataset):
     >>> tstart = "2016:091:12:05:00.100"
     >>> tstop = "2016:100:13:07:45.234"
     >>> msids = ["1deamzt", "1pin1at"]
-    >>> states = ["pitch", "ccd_count"]
-    >>> ds = ArchiveData(tstart, tstop, msid_keys=msids, state_keys=states)
+    >>> ds = ArchiveData(tstart, tstop, msids)
     """
     def __init__(self, tstart, tstop, msids, filter_bad=False, stat=None,
                  interpolate_msids=False, server=None):
@@ -420,17 +417,20 @@ class TracelogData(Dataset):
     ----------
     filenames : string or list of strings
         The path to the tracelog file or list of tracelog files
-    state_keys : list of strings, optional
-        List of commanded states to pull from the commanded states database.
-        If not supplied, a default list of states will be loaded.
-    server : string
-         DBI server or HDF5 file. Default: None
+    tbegin : string
+        The start time in YYYY:DOY:HH:MM:SS format. Default: None, which
+        will read from the beginning of the tracelog.
+    tend : string
+        The stop time in YYYY:DOY:HH:MM:SS format.  Default: None, which
+        will read from the beginning of the tracelog.
+    server : string, optional
+        DBI server or HDF5 file to grab states from. Default: None, which will
+        grab the states from the main commanded states database.
 
     Examples
     --------
     >>> from acispy import TracelogData
-    >>> states = ["ccd_count", "roll"]
-    >>> ds = TracelogData("acisENG10d_00985114479.70.tl", state_keys=states)
+    >>> ds = TracelogData("acisENG10d_00985114479.70.tl")
     """
     def __init__(self, filenames, tbegin=None, tend=None, server=None):
         filenames = ensure_list(filenames)
@@ -462,6 +462,7 @@ class TracelogData(Dataset):
         model = EmptyTimeSeries()
         super(TracelogData, self).__init__(all_msids, states, model)
 
+
 class EngineeringTracelogData(TracelogData):
     """
     Fetch MSIDs from the engineering tracelog file and states from
@@ -469,11 +470,15 @@ class EngineeringTracelogData(TracelogData):
 
     Parameters
     ----------
-    state_keys : list of strings, optional
-        List of commanded states to pull from the commanded states database.
-        If not supplied, a default list of states will be loaded.
-    server : string
-         DBI server or HDF5 file. Default: None
+    tbegin : string
+        The start time in YYYY:DOY:HH:MM:SS format. Default: None, which
+        will read from the beginning of the tracelog.
+    tend : string
+        The stop time in YYYY:DOY:HH:MM:SS format.  Default: None, which
+        will read from the beginning of the tracelog.
+    server : string, optional
+        DBI server or HDF5 file to grab states from. Default: None, which will
+        grab the states from the main commanded states database.
     """
     def __init__(self, tbegin=None, tend=None, server=None):
         filename = "/data/acis/eng_plots/acis_eng_10day.tl"
@@ -488,11 +493,15 @@ class DEAHousekeepingTracelogData(TracelogData):
 
     Parameters
     ----------
-    state_keys : list of strings, optional
-        List of commanded states to pull from the commanded states database.
-        If not supplied, a default list of states will be loaded.
-    server : string
-         DBI server or HDF5 file. Default: None
+    tbegin : string
+        The start time in YYYY:DOY:HH:MM:SS format. Default: None, which
+        will read from the beginning of the tracelog.
+    tend : string
+        The stop time in YYYY:DOY:HH:MM:SS format.  Default: None, which
+        will read from the beginning of the tracelog.
+    server : string, optional
+        DBI server or HDF5 file to grab states from. Default: None, which will
+        grab the states from the main commanded states database.
     """
     def __init__(self, tbegin=None, tend=None, server=None):
         filename = "/data/acis/eng_plots/acis_dea_10day.tl"
@@ -501,8 +510,22 @@ class DEAHousekeepingTracelogData(TracelogData):
 
 
 class TenDayTracelogData(TracelogData):
-    def __init__(self, tbegin=None, tend=None, state_keys=None,
-                 server=None):
+    """
+    Fetch MSIDs from both the engineering and DEA housekeeping
+    tracelog files in one dataset.
+
+    Parameters
+    ----------
+    tbegin : string
+        The start time in YYYY:DOY:HH:MM:SS format. Default: None, which
+        will read from the beginning of the tracelog.
+    tend : string
+        The stop time in YYYY:DOY:HH:MM:SS format.  Default: None, which
+        will read from the beginning of the tracelog.
+    server : string, optional
+        DBI server or HDF5 file to grab states from. Default: None, which will
+        grab the states from the main commanded states database.
+    """
     def __init__(self, tbegin=None, tend=None, server=None):
         filenames = ["/data/acis/eng_plots/acis_eng_10day.tl",
                      "/data/acis/eng_plots/acis_dea_10day.tl"]
