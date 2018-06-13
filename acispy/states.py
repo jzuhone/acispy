@@ -43,7 +43,7 @@ class States(TimeSeriesData):
             else:
                 new_table[k] = APQuantity(v, times, get_units("states", k),
                                           dtype=v.dtype)
-        super(States, self).__init__(new_table)
+        super(States, self).__init__(table=new_table)
 
     @classmethod
     def from_database(cls, tstart, tstop, states=None, server=None):

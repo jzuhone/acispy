@@ -15,13 +15,14 @@ if six.PY2:
 else:
     str_type = "|U4"
 
+
 class MSIDs(TimeSeriesData):
     def __init__(self, table, times, state_codes=None, masks=None):
+        super(MSIDs, self).__init__()
         if state_codes is None:
             state_codes = {}
         if masks is None:
             masks = {}
-        self.table = {}
         for k, v in table.items():
             mask = masks.get(k, None)
             t = Quantity(times[k], "s")
@@ -32,6 +33,7 @@ class MSIDs(TimeSeriesData):
                 self.table[k] = APQuantity(v, t, unit=unit, dtype=v.dtype, 
                                            mask=mask)
         self.state_codes = state_codes
+
 
     @classmethod
     def from_mit_file(cls, filename, tbegin=None, tend=None):
@@ -174,7 +176,7 @@ class MSIDs(TimeSeriesData):
 
 class CombinedMSIDs(TimeSeriesData):
     def __init__(self, msid_list):
-        self.table = {}
+        super(CombinedMSIDs, self).__init__()
         self.state_codes = {}
         for msids in msid_list:
             self.table.update(msids.table)

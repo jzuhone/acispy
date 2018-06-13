@@ -42,7 +42,7 @@ class Model(TimeSeriesData):
                 v = Ska.Numpy.interpolate(mvals, model.times, interp_times)
             times = Quantity(t, "s")
             table[k] = APQuantity(v, times, unit, dtype=v.dtype, mask=mask)
-        return cls(table)
+        return cls(table=table)
 
     @classmethod
     def from_load_page(cls, load, components, time_range=None):
@@ -69,7 +69,7 @@ class Model(TimeSeriesData):
             data[comp] = APQuantity(table[table_key].data[idxs], times,
                                     get_units("model", comp), 
                                     dtype=table[table_key].data.dtype)
-        return cls(data)
+        return cls(table=data)
 
     @classmethod
     def from_load_file(cls, temps_file):
@@ -81,7 +81,7 @@ class Model(TimeSeriesData):
         data[key] = APQuantity(table[comp].data, times, 
                                get_units("model", key), 
                                dtype=table[comp].data.dtype)
-        return cls(data)
+        return cls(table=data)
 
     def get_values(self, time):
         time = get_time(time, fmt='secs')
@@ -103,4 +103,4 @@ class Model(TimeSeriesData):
         table = {}
         for model in model_list:
             table.update(model.table)
-        return cls(table)
+        return cls(table=table)
