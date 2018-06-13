@@ -52,6 +52,7 @@ cti_simodes = ["TE_007AC", "TE_00B26", "TE_007AE",
                "TE_00CA8", "TE_00C60", "TE_007AE",
                "TN_000B4", "TN_000B6"]
 
+
 class LoadReviewEvent(object):
     def __init__(self, name, event):
         self.event = event
@@ -65,6 +66,7 @@ class LoadReviewEvent(object):
 
     def __getattr__(self, item):
         return self.event[item]
+
 
 class ACISLoadReview(object):
     """
@@ -342,7 +344,6 @@ class ACISLoadReview(object):
             self._plot_bands(tbegin, tend, plot,
                              ["comm_begins", "comm_ends"], "pink",
                              alpha=1.0)
-
 
     def _plot_bands(self, tbegin, tend, plot, events, color, alpha=1.0):
         tc_start = list(self.events[events[0]]["times"])

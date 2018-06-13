@@ -34,6 +34,7 @@ unit_labels = {"V": 'V',
                "s": "s",
                "deg": "deg"}
 
+
 class ACISPlot(object):
     def __init__(self, fig, ax):
         self.fig = fig
@@ -143,6 +144,7 @@ class ACISPlot(object):
     def tight_layout(self, *args, **kwargs):
         self.fig.tight_layout(*args, **kwargs)
 
+
 def get_figure(plot, fig, subplot, figsize):
     if plot is None:
         if fig is None:
@@ -159,6 +161,7 @@ def get_figure(plot, fig, subplot, figsize):
         else:
             ax = fig.add_subplot(subplot)
     return fig, ax
+
 
 class CustomDatePlot(ACISPlot):
     r"""
@@ -707,10 +710,12 @@ class DatePlot(CustomDatePlot):
         idx = self.fields.index(fd)
         self.set_line_label(idx, label)
 
+
 class DummyDatePlot(object):
     def __init__(self, fig, ax):
         self.fig = fig
         self.ax = ax
+
 
 class MultiDatePlot(object):
     r""" Make a multi-panel plot of multiple quantities vs. date and time.
@@ -866,6 +871,7 @@ class MultiDatePlot(object):
         """
         self.fig.canvas.draw()
 
+
 class PhasePlot(ACISPlot):
     def __init__(self, ds, x_field, y_field, figsize=(12, 12), plot=None):
         if plot is None:
@@ -1006,6 +1012,7 @@ class PhasePlot(ACISPlot):
         self.ax.text(x, y, text, fontsize=fontsize, color=color,
                      rotation=rotation, **kwargs)
 
+
 class PhaseScatterPlot(PhasePlot):
     r""" Make a single-panel phase scatter plot of one quantity vs. another.
 
@@ -1076,6 +1083,7 @@ class PhaseScatterPlot(PhasePlot):
             for label in cb.ax.get_yticklabels():
                 label.set_fontproperties(fontProperties)
             self.cb = cb
+
 
 class PhaseHistogramPlot(PhasePlot):
     r""" Make a single-panel 2D binned histogram plot of one quantity 
