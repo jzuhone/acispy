@@ -1060,7 +1060,7 @@ class PhaseScatterPlot(PhasePlot):
         if c_field is None:
             self.cc = color
         else:
-            self.cc = ds[c_field]
+            self.cc = np.array(ds[c_field])
 
         cm = plt.cm.get_cmap(cmap)
         pp = self.ax.scatter(np.array(self.xx), np.array(self.yy),
