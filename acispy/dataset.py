@@ -400,19 +400,14 @@ class ArchiveData(Dataset):
     >>> states = ["pitch", "ccd_count"]
     >>> ds = ArchiveData(tstart, tstop, msid_keys=msids, state_keys=states)
     """
-    def __init__(self, tstart, tstop, msid_keys=None, state_keys=None,
-                 filter_bad=False, stat=None, interpolate_msids=False,
-                 server=None):
+    def __init__(self, tstart, tstop, msids, filter_bad=False, stat=None,
+                 interpolate_msids=False, server=None):
         tstart = get_time(tstart)
         tstop = get_time(tstop)
-        if msid_keys is not None:
-            msids = MSIDs.from_database(msid_keys, tstart, tstop=tstop,
-                                        filter_bad=filter_bad, stat=stat,
-                                        interpolate=interpolate_msids)
-        else:
-            msids = EmptyTimeSeries()
-        states = States.from_database(tstart, tstop, states=state_keys, 
-                                      server=server)
+        msids = MSIDs.from_database(msids, tstart, tstop=tstop,
+                                    filter_bad=filter_bad, stat=stat,
+                                    interpolate=interpolate_msids)
+        states = States.from_database(tstart, tstop, server=server)
         model = EmptyTimeSeries()
         super(ArchiveData, self).__init__(msids, states, model)
 
@@ -437,8 +432,7 @@ class TracelogData(Dataset):
     >>> states = ["ccd_count", "roll"]
     >>> ds = TracelogData("acisENG10d_00985114479.70.tl", state_keys=states)
     """
-    def __init__(self, filenames, tbegin=None, tend=None, state_keys=None,
-                 server=None):
+    def __init__(self, filenames, tbegin=None, tend=None, server=None):
         filenames = ensure_list(filenames)
         if tbegin is not None:
             tbegin = get_time(tbegin)
@@ -464,7 +458,7 @@ class TracelogData(Dataset):
             tmin = min(v.times[0].value, tmin)
             tmax = max(v.times[-1].value, tmax)
         states = States.from_database(secs2date(tmin), secs2date(tmax), 
-                                      states=state_keys, server=server)
+                                      server=server)
         model = EmptyTimeSeries()
         super(TracelogData, self).__init__(all_msids, states, model)
 
@@ -481,11 +475,11 @@ class EngineeringTracelogData(TracelogData):
     server : string
          DBI server or HDF5 file. Default: None
     """
-    def __init__(self, tbegin=None, tend=None, state_keys=None,
-                 server=None):
+    def __init__(self, tbegin=None, tend=None, server=None):
         filename = "/data/acis/eng_plots/acis_eng_10day.tl"
         super(EngineeringTracelogData, self).__init__(filename, tbegin=tbegin, tend=tend,
-                                                      state_keys=state_keys, server=server)
+                                                      server=server)
+
 
 class DEAHousekeepingTracelogData(TracelogData):
     """
@@ -500,18 +494,17 @@ class DEAHousekeepingTracelogData(TracelogData):
     server : string
          DBI server or HDF5 file. Default: None
     """
-    def __init__(self, tbegin=None, tend=None, state_keys=None,
-                 server=None):
+    def __init__(self, tbegin=None, tend=None, server=None):
         filename = "/data/acis/eng_plots/acis_dea_10day.tl"
         super(DEAHousekeepingTracelogData, self).__init__(filename, tbegin=tbegin,
-                                                          tend=tend, state_keys=state_keys,
-                                                          server=server)
+                                                          tend=tend, server=server)
+
 
 class TenDayTracelogData(TracelogData):
     def __init__(self, tbegin=None, tend=None, state_keys=None,
                  server=None):
+    def __init__(self, tbegin=None, tend=None, server=None):
         filenames = ["/data/acis/eng_plots/acis_eng_10day.tl",
                      "/data/acis/eng_plots/acis_dea_10day.tl"]
         super(TenDayTracelogData, self).__init__(filenames, tbegin=tbegin,
-                                                 tend=tend, state_keys=state_keys,
-                                                 server=server)
+                                                 tend=tend, server=server)
