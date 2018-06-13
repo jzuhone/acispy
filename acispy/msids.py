@@ -141,6 +141,8 @@ class MSIDs(TimeSeriesData):
     @classmethod
     def from_database(cls, msids, tstart, tstop=None, filter_bad=False,
                       stat='5min', interpolate=False, interpolate_times=None):
+        tstart = get_time(tstart)
+        tstop = get_time(tstop)
         msids = ensure_list(msids)
         data = fetch.MSIDset(msids, tstart, stop=tstop, filter_bad=filter_bad,
                              stat=stat)
@@ -173,6 +175,24 @@ class MSIDs(TimeSeriesData):
             times[k.lower()] = get_time(data[k].times[indexes], 'secs')
         return cls(table, times, state_codes=state_codes, masks=masks)
 
+    @classmethod
+    def from_maude(cls, msids, tstart, tstop=None, user=None, password=None):
+        import maude
+        tstart = get_time(tstart)
+        tstop = get_time(tstop)
+        msids = ensure_list(msids)
+        table = {}
+        times = {}
+        state_codes = {}
+        out = maude.get_msids(msids, start=tstart, stop=tstop, user=user,
+                              password=password)
+        for msid in out["data"]:
+            k = msid["msid"].lower()
+            table[k] = msid["values"]
+            times[k] = msid['times']
+            state_codes[k] = get_state_codes(k)
+        return cls(table, times, state_codes=state_codes)
+
 
 class CombinedMSIDs(TimeSeriesData):
     def __init__(self, msid_list):
@@ -183,3 +203,20 @@ class CombinedMSIDs(TimeSeriesData):
             self.table.update(msids.table)
             self.state_codes.update(msids.state_codes)
             self.state_codes.update(msids.state_codes)
+
+
+class ConcatenatedMSIDs(TimeSeriesData):
+    def __init__(self, msids1, msids2):
+        super(ConcatenatedMSIDs, self).__init__()
+        self.state_codes = msids1.state_codes
+        for key in msids1.table:
+            v1 = msids1.table[key]
+            v2 = msids2.table[key]
+            v = np.concatenate([v1.value, v2.value])
+            t = Quantity(np.concatenate([v1.times.value, v2.times.value]), "s")
+            mask = np.concatenate([v1.mask, v2.mask])
+            if v1.dtype.char in ['S', 'U']:
+                self.table[key] = APStringArray(v, t, mask)
+            else:
+                self.table[key] = APQuantity(v, t, unit=v1.unit, dtype=v.dtype,
+                                             mask=mask)

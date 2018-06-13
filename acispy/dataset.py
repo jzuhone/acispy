@@ -1,4 +1,4 @@
-from acispy.msids import MSIDs, CombinedMSIDs
+from acispy.msids import MSIDs, CombinedMSIDs, ConcatenatedMSIDs
 from acispy.states import States, cmd_state_codes
 from acispy.units import APQuantity, APStringArray
 from Chandra.Time import secs2date
@@ -11,6 +11,7 @@ from acispy.units import get_units
 import numpy as np
 import os
 from six import string_types
+import Ska.engarchive.fetch_sci as fetch
 
 class Dataset(object):
     def __init__(self, msids, states, model):
@@ -407,6 +408,93 @@ class ArchiveData(Dataset):
         states = States.from_database(tstart, tstop, server=server)
         model = EmptyTimeSeries()
         super(ArchiveData, self).__init__(msids, states, model)
+
+
+class MaudeData(Dataset):
+    """
+    Fetch MSID data from Maude.
+
+    Parameters
+    ----------
+    tstart : string
+        The start time in YYYY:DOY:HH:MM:SS format
+    tstop : string
+        The stop time in YYYY:DOY:HH:MM:SS format
+    msids : list of strings, optional
+        List of MSIDs to pull from the engineering archive.
+    user : string, optional
+        OCCWEB username to access the MAUDE database with. Default: None,
+        which will use the username in the ${HOME}/.netrc file.
+    password : string, optional
+        OCCWEB password to access the MAUDE database with. Default: None,
+        which will use the password in the ${HOME}/.netrc file.
+    server : string, optional
+        DBI server or HDF5 file to grab states from. Default: None, which will
+        grab the states from the main commanded states database.
+    """
+    def __init__(self, tstart, tstop, msids, user=None, password=None, server=None):
+        tstart = get_time(tstart)
+        tstop = get_time(tstop)
+        msids = MSIDs.from_maude(msids, tstart, tstop=tstop, user=user,
+                                 password=password)
+        states = States.from_database(tstart, tstop, server=server)
+        model = EmptyTimeSeries()
+        super(MaudeData, self).__init__(msids, states, model)
+
+
+class TelemData(Dataset):
+    """
+    Fetch MSID data from Maude.
+
+    Parameters
+    ----------
+    tstart : string
+        The start time in YYYY:DOY:HH:MM:SS format
+    tstop : string
+        The stop time in YYYY:DOY:HH:MM:SS format
+    msids : list of strings, optional
+        List of MSIDs to pull from the engineering archive.
+    filter_bad : boolean, optional
+        Whether or not to filter out bad values of MSIDs. Default: False.
+    stat : string, optional
+        return 5-minute or daily statistics ('5min' or 'daily') Default: '5min'
+        If ``interpolate_msids=True`` this setting is ignored.
+    interpolate_msids : boolean, optional
+        If True, MSIDs are interpolated to a common time sequence with uniform
+        timesteps of 328 seconds. Default: False
+    user : string, optional
+        OCCWEB username to access the MAUDE database with. Default: None,
+        which will use the username in the ${HOME}/.netrc file.
+    password : string, optional
+        OCCWEB password to access the MAUDE database with. Default: None,
+        which will use the password in the ${HOME}/.netrc file.
+    server : string, optional
+        DBI server or HDF5 file to grab states from. Default: None, which will
+        grab the states from the main commanded states database.
+    """
+    def __init__(self, tstart, tstop, msids, filter_bad=False, stat=None,
+                 interpolate_msids=False, user=None, password=None, server=None):
+        msids = ensure_list(msids)
+        tstart = get_time(tstart, fmt='secs')
+        tstop = get_time(tstop, fmt='secs')
+        tmid = 1.0e99
+        for msid in msids:
+            tm = fetch.get_time_range(msid, format="secs")[-1]
+            tmid = min(tmid, tm)
+        tmid = get_time(tmid, fmt='secs')
+        msids1 = MSIDs.from_database(msids, tstart, tstop=tmid,
+                                     filter_bad=filter_bad, stat=stat,
+                                     interpolate=interpolate_msids)
+        if tmid < tstop:
+            msids2 = MSIDs.from_maude(msids, tmid, tstop=tstop, user=user,
+                                      password=password)
+            msids = ConcatenatedMSIDs(msids1, msids2)
+        else:
+            msids = msids1
+        states = States.from_database(tstart, tstop, server=server)
+        model = EmptyTimeSeries()
+        super(TelemData, self).__init__(msids, states, model)
+
 
 class TracelogData(Dataset):
     """
