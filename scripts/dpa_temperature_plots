@@ -1,0 +1,53 @@
+#!/usr/bin/env python
+
+import matplotlib
+matplotlib.use("Qt5Agg")
+matplotlib.rc("font", size=18, family="serif")
+import acispy
+import numpy as np
+import matplotlib.pyplot as plt
+from acispy.utils import get_time
+
+board_temps = ["tmp_bep_pcb", "tmp_bep_osc", "tmp_fep0_mong", "tmp_fep0_pcb", "tmp_fep0_actel", 
+               "tmp_fep0_ram", "tmp_fep0_fb", "tmp_fep1_mong", "tmp_fep1_pcb", "tmp_fep1_actel", 
+               "tmp_fep1_ram", "tmp_fep1_fb"]
+
+tstop = get_time("now", fmt="secs")
+tstart = tstop - 365.0*24.0*3600.0
+
+dc = acispy.ArchiveData(tstart, tstop, ["1dpamzt"]+board_temps, interpolate_msids=True)
+
+unit_line = np.linspace(-10, 60, 200)
+
+colors = ["red", "orange", "green", "cyan", "blue", "violet", "brown"]
+alphas = [0.5, 0.5, 0.75, 0.75, 0.75, 1.0, 1.0]
+limits = [44.0, 42.0, 48.0, 45.0, 47.0, 46.0, 43.0, 49.0, 46.0, 48.0, 48.0, 43.0]
+
+dc.map_state_to_msid("ccd_count", "1dpamzt")
+
+for j, msid in enumerate(board_temps):
+    xx = dc["msids", "1dpamzt"].value
+    yy = dc["msids", msid].value
+    cc = dc["msids", "ccd_count"].value
+    fig = plt.figure(figsize=(36, 20))
+    for i, n in enumerate(range(6, -1, -1)):
+        ax = fig.add_subplot(241+i)
+        fig.subplots_adjust(hspace=0.0, wspace=0.0)
+        c = cc[cc == n]
+        x = xx[cc == n]
+        y = yy[cc == n]
+        ax.scatter(x, y, c=colors[i], linewidth=0.0, s=10.0, label="%d CCDs" % n)
+        ax.plot(unit_line, unit_line, ls='--', lw=2, color='k')
+        ax.axhline(limits[j], ls='dashed', color='gold', lw=3)
+        ax.axvline(37.5, ls='dashed', color='gold', lw=3)
+        ax.set_xlim(3, 47)
+        ax.set_ylim(3, max(47, limits[j]+1))
+        if i in [1, 2, 3, 5, 6]:
+            ax.set_yticklabels([])
+        if i in [3, 4, 5, 6]:
+            ax.set_xlabel(r"1DPAMZT $\mathrm{(^{\circ}C)}$")
+        if i in [0, 4]:
+            ax.set_ylabel(r"%s $\mathrm{(^{\circ}C)}$" % msid.upper())
+        ax.legend(loc=2)
+    fig.savefig("%s_scatter.png" % msid, bbox_inches='tight', dpi=50)
+
