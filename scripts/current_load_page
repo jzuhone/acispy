@@ -74,8 +74,8 @@ plot_limits = {"fptemp_11": (-120.0, -110.0),
                "1deamzt": (5.0, 42.0),
                "1dpamzt": (5.0, 42.0),
                "1pdeaat": (15.0, 63.0),
-               "tmp_fep1_mong": (5.0, 55.0),
-               "tmp_fep1_actel": (5.0, 54.0),
+               "tmp_fep1_mong": (-1.0, 55.0),
+               "tmp_fep1_actel": (-1.0, 54.0),
                "tmp_bep_pcb": (5.0, 50.0)}
 
 planning_limits = {"1deamzt": 35.5,
@@ -97,7 +97,17 @@ red_limits = {"1deamzt": 40.5,
               "tmp_fep1_actel": 53.0,
               "tmp_bep_pcb": 49.0}
 
-fp_limits = {"acis_i": -114.0, 
+low_planning_limits = {"tmp_fep1_mong": 2.0,
+                       "tmp_fep1_actel": 2.0,
+                       "tmp_bep_pcb": 8.5}
+low_yellow_limits = {"tmp_fep1_mong": 0.0,
+                     "tmp_fep1_actel": 0.0,
+                     "tmp_bep_pcb": 6.5}
+low_red_limits = {"tmp_fep1_mong": -10.0,
+                  "tmp_fep1_actel": -10.0,
+                  "tmp_bep_pcb": -10.0}
+
+fp_limits = {"acis_i": -114.0,
              "acis_s": -112.0,
              "fp_sens": -118.7}
 
@@ -392,6 +402,9 @@ while True:
                 dp.add_hline(planning_limits[temp], color='g')
                 dp.add_hline(yellow_limits[temp], color='gold')
                 dp.add_hline(red_limits[temp], color='r')
+                dp.add_hline(low_planning_limits[temp], color='g')
+                dp.add_hline(low_yellow_limits[temp], color='gold')
+                dp.add_hline(low_red_limits[temp], color='r')
                 dpt = acispy.DatePlot(dea_tl_data, ("msids", temp), color='red', plot=dp)
                 dpt.set_ylim(*plot_limits[temp])
                 dp.fig.subplots_adjust(right=0.8)
