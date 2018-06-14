@@ -7,6 +7,7 @@ import acispy
 import numpy as np
 import matplotlib.pyplot as plt
 from acispy.utils import get_time
+from Chandra.Time import secs2date
 
 board_temps = ["tmp_bep_pcb", "tmp_bep_osc", "tmp_fep0_mong", "tmp_fep0_pcb", "tmp_fep0_actel", 
                "tmp_fep0_ram", "tmp_fep0_fb", "tmp_fep1_mong", "tmp_fep1_pcb", "tmp_fep1_actel", 
@@ -49,5 +50,7 @@ for j, msid in enumerate(board_temps):
         if i in [0, 4]:
             ax.set_ylabel(r"%s $\mathrm{(^{\circ}C)}$" % msid.upper())
         ax.legend(loc=2)
+    fig.suptitle("%s vs. 1DPAMZT\n%s - %s" % (msid.upper(), secs2date(tstart), secs2date(tstop)),
+                 y=0.94, fontsize=30)
     fig.savefig("%s_scatter.png" % msid, bbox_inches='tight', dpi=50)
 
