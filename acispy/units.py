@@ -119,7 +119,11 @@ msid_units = {'1deamzt': 'deg_C',
               'dp_dpa_power': 'W',
               'Point_EarthCentAng': 'deg',
               'Dist_SatEarth': 'm',
-              'roll': 'deg'}
+              'roll': 'deg',
+              'vcdu': '',
+              'fmt': '',
+              'obsid': '',
+              'cmdid': ''}
 
 binary_operators = (
     add, subtract, multiply, divide, logaddexp, logaddexp2, true_divide, power,
