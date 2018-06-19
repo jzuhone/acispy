@@ -8,6 +8,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from acispy.utils import get_time
 from Chandra.Time import secs2date
+import os
+import sys
 
 board_temps = ["tmp_bep_pcb", "tmp_bep_osc", "tmp_fep0_mong",
                "tmp_fep0_pcb", "tmp_fep0_actel", "tmp_fep0_ram",
@@ -16,6 +18,11 @@ board_temps = ["tmp_bep_pcb", "tmp_bep_osc", "tmp_fep0_mong",
 
 tstop = get_time("now", fmt="secs")
 tstart = tstop - 365.0*24.0*3600.0
+
+if len(sys.argv) > 1:
+    outpath = sys.argv[1]
+else:
+    outpath = os.getcwd()
 
 dc = acispy.ArchiveData(tstart, tstop, ["1dpamzt"]+board_temps,
                         interpolate_msids=True)
@@ -41,7 +48,7 @@ for j, msid in enumerate(board_temps):
         x = xx[cc == n]
         y = yy[cc == n]
         ax.scatter(x, y, c=colors[i], linewidth=0.0, s=10.0, 
-                   label="%d CCDs" % n)
+                   label="%d FEPs" % n)
         ax.plot(unit_line, unit_line, ls='--', lw=2, color='k')
         ax.axhline(limits[j], ls='dashed', color='gold', lw=3)
         ax.axvline(37.5, ls='dashed', color='gold', lw=3)
@@ -58,5 +65,6 @@ for j, msid in enumerate(board_temps):
                                               secs2date(tstart),
                                               secs2date(tstop)),
                  y=0.94, fontsize=30)
-    fig.savefig("%s_scatter.png" % msid, bbox_inches='tight', dpi=50)
+    filename = os.path.join(outpath, "%s_scatter.png" % msid)
+    fig.savefig(filename, bbox_inches='tight', dpi=50)
 
