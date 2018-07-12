@@ -17,7 +17,7 @@ import numpy as np
 drawstyles = {"simpos": "steps",
               "pitch": "steps",
               "ccd_count": "steps",
-              "fmt": "steps"}
+              "ccsdstmf": "steps"}
 
 units_map = {"deg_C": "Temperature",
              "V": "Voltage",
