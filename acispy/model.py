@@ -27,21 +27,25 @@ class Model(TimeSeriesData):
             t = interp_times
         table = {}
         for k in components:
+            key = k
             if k == "dpa_power":
                 mvals = model.comp[k].mvals*100. / model.comp[k].mult
                 mvals += model.comp[k].bias
             elif k == "fptemp_11":
                 mvals = model.comp["fptemp"].mvals
+            elif k == "earthheat__fptemp":
+                key = "earth_solid_angle"
+                mvals = model.comp["earthheat__fptemp"].dvals
             else:
                 mvals = model.comp[k].mvals
-            unit = get_units("model", k)
-            mask = masks.get(k, None)
+            unit = get_units("model", key)
+            mask = masks.get(key, None)
             if interp_times is None:
                 v = mvals
             else:
                 v = Ska.Numpy.interpolate(mvals, model.times, interp_times)
             times = Quantity(t, "s")
-            table[k] = APQuantity(v, times, unit, dtype=v.dtype, mask=mask)
+            table[key] = APQuantity(v, times, unit, dtype=v.dtype, mask=mask)
         return cls(table=table)
 
     @classmethod
@@ -49,15 +53,25 @@ class Model(TimeSeriesData):
         load = find_load(load)
         mylog.info("Reading model data from the %s load." % load)
         components = ensure_list(components)
+        if "fptemp_11" in components:
+            components.append("earth_solid_angle")
         data = {}
         for comp in components:
-            c = comp_map[comp].upper()
-            table_key = "fptemp" if comp == "fptemp_11" else comp
-            url = "http://cxc.cfa.harvard.edu/acis/%s_thermPredic/" % c
-            url += "%s/ofls%s/temperatures.dat" % (load[:-1].upper(), load[-1].lower())
+            if comp == "earth_solid_angle":
+                url = "http://cxc.cfa.harvard.edu/acis/FP_thermPredic/"
+                url += "%s/ofls%s/earth_solid_angles.dat" % (load[:-1].upper(), load[-1].lower())
+                table_key = comp
+            else:
+                c = comp_map[comp].upper()
+                table_key = "fptemp" if comp == "fptemp_11" else comp
+                url = "http://cxc.cfa.harvard.edu/acis/%s_thermPredic/" % c
+                url += "%s/ofls%s/temperatures.dat" % (load[:-1].upper(), load[-1].lower())
             u = requests.get(url)
             if not u.ok:
-                mylog.warning("Could not find the model page for '%s'. Skipping." % comp)
+                if table_key == "earth_solid_angle":
+                    mylog.warning("Could not find the earth solid angles file. Skipping.")
+                else:
+                    mylog.warning("Could not find the model page for '%s'. Skipping." % comp)
                 continue
             table = ascii.read(u.text)
             if time_range is None:

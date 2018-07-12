@@ -345,6 +345,8 @@ class ThermalModelRunner(ModelDataset):
         components = [name]
         if 'dpa_power' in self.xija_model.comp:
             components.append('dpa_power')
+        if 'earthheat__fptemp' in self.xija_model.comp:
+            components.append('earthheat__fptemp')
 
         masks = {}
         if include_bad_times:
