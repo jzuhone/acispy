@@ -306,6 +306,7 @@ class ThermalModelRunner(ModelDataset):
         tstop = get_time(tstop)
 
         tstart_secs = DateTime(tstart).secs
+        tstop_secs = DateTime(tstop).secs
         start = secs2date(tstart_secs - 700.0)
 
         if states is None:
@@ -328,7 +329,7 @@ class ThermalModelRunner(ModelDataset):
 
         self.model_spec = find_json(name, model_spec)
 
-        ephem_times, ephem_data = self._get_ephemeris(ephemeris)
+        ephem_times, ephem_data = self._get_ephemeris(ephemeris, tstart_secs, tstop_secs)
 
         self.xija_model = self._compute_model(name, tstart, tstop, states, 
                                               state_times, T_init, 
@@ -360,9 +361,16 @@ class ThermalModelRunner(ModelDataset):
             msids_obj = EmptyTimeSeries()
         super(ThermalModelRunner, self).__init__(msids_obj, states_obj, model_obj)
 
-    def _get_ephemeris(self, ephemeris):
+    def _get_ephemeris(self, ephemeris, tstart, tstop):
         if ephemeris is None:
             return None, None
+        ephem_data = ascii.read(ephemeris, format='ascii')
+        msids = ['orbitephem0_{}'.format(axis) for axis in "xyz"]
+        idxs = np.logical_and(ephem_data["times"] >= tstart - 2000.0,
+                              ephem_data["times"] <= tstop + 2000.0)
+        ephemeris = dict((k, ephem_data[k].data[idxs]) for k in msids)
+        ephemeris_times = ephemeris["times"].data[idxs]
+        return ephemeris_times, ephemeris
 
     def _compute_model(self, name, tstart, tstop, states, state_times, T_init,
                        ephem_times=None, ephem_data=None):
@@ -404,8 +412,8 @@ class ThermalModelRunner(ModelDataset):
                     e_times = msid.times
                     e_data = msid.vals
                 else:
-                    e_times = ephem_times[axis]
-                    e_data = ephem_data[axis]
+                    e_times = ephem_times
+                    e_data = ephem_data[ephem]
                 model.comp[ephem].set_data(e_data, e_times)
             for i in range(1, 5):
                 quat = 'aoattqt{}'.format(i)
