@@ -364,12 +364,12 @@ class ThermalModelRunner(ModelDataset):
     def _get_ephemeris(self, ephemeris, tstart, tstop):
         if ephemeris is None:
             return None, None
-        ephem_data = ascii.read(ephemeris, format='ascii')
+        ephem_data = ascii.read(ephemeris)
         msids = ['orbitephem0_{}'.format(axis) for axis in "xyz"]
         idxs = np.logical_and(ephem_data["times"] >= tstart - 2000.0,
                               ephem_data["times"] <= tstop + 2000.0)
         ephemeris = dict((k, ephem_data[k].data[idxs]) for k in msids)
-        ephemeris_times = ephemeris["times"].data[idxs]
+        ephemeris_times = ephem_data["times"].data[idxs]
         return ephemeris_times, ephemeris
 
     def _compute_model(self, name, tstart, tstop, states, state_times, T_init,
