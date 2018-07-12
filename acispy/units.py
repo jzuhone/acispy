@@ -10,6 +10,7 @@ from numpy import \
     bitwise_xor, left_shift, right_shift, greater, greater_equal, less, \
     less_equal, not_equal, equal, logical_and, logical_or, logical_xor, \
     maximum, minimum, fmax, fmin, copysign, nextafter, ldexp, fmod
+from distutils.version import LooseVersion
 
 u.imperial.enable()
 
@@ -220,20 +221,37 @@ class APQuantity(Quantity):
         ret.times = times
         return ret
 
-    def __array_ufunc__(self, function, method, *inputs, **kwargs):
-        ret = super(APQuantity, self).__array_ufunc__(function,
-                                                      method, *inputs,
-                                                      **kwargs)
-        if ret.dtype == 'bool':
+    if LooseVersion(np.__version__) < LooseVersion('1.13.0'):
+
+        def __array_wrap__(self, obj, context=None):
+            ret = super(APQuantity, self).__array_wrap__(obj, context=context)
+            if ret.dtype == 'bool':
+                return ret
+            mask = self.mask
+            if context[0] in binary_operators:
+                mask2 = getattr(context[1][1], "mask", None)
+                if mask2 is not None:
+                    mask = np.logical_and(mask, mask2)
+            ret.mask = mask
+            ret.times = self.times
             return ret
-        mask = self.mask
-        if len(inputs) == 2:
-            mask2 = getattr(inputs[1], "mask", None)
-            if mask2 is not None:
-                mask = np.logical_and(mask, mask2)
-        ret.mask = mask
-        ret.times = self.times
-        return ret
+
+    else:
+
+        def __array_ufunc__(self, function, method, *inputs, **kwargs):
+            ret = super(APQuantity, self).__array_ufunc__(function,
+                                                          method, *inputs,
+                                                          **kwargs)
+            if ret.dtype == 'bool':
+                return ret
+            mask = self.mask
+            if len(inputs) == 2:
+                mask2 = getattr(inputs[1], "mask", None)
+                if mask2 is not None:
+                    mask = np.logical_and(mask, mask2)
+            ret.mask = mask
+            ret.times = self.times
+            return ret
 
     def __getitem__(self, item):
         idxs, t = find_indices(item, self.times.value)
