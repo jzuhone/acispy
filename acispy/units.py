@@ -124,7 +124,8 @@ msid_units = {'1deamzt': 'deg_C',
               'vcdu': '',
               'fmt': '',
               'obsid': '',
-              'cmdid': ''}
+              'cmdid': '',
+              'earth_solid_angle': 'sr'}
 
 binary_operators = (
     add, subtract, multiply, divide, logaddexp, logaddexp2, true_divide, power,
