@@ -128,6 +128,6 @@ def create_derived_fields(dset):
                 q_att = q_att / q_norm
             _, illums, _ = calc_earth_vis(ephem, q_att)
             ret[i] = illums.sum()
-        return ret
+        return APQuantity(ret, ds.msids["orbitephem0_x"].times, "sr")
     dset.add_derived_field("msids", "earth_solid_angle", _earth_solid_angle,
                            "sr", display_name="Effective Earth Solid Angle")
