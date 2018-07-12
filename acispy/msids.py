@@ -144,6 +144,7 @@ class MSIDs(TimeSeriesData):
         tstart = get_time(tstart)
         tstop = get_time(tstop)
         msids = ensure_list(msids)
+        msids = [msid.lower() for msid in msids]
         data = fetch.MSIDset(msids, tstart, stop=tstop, filter_bad=filter_bad,
                              stat=stat)
         table = {}
