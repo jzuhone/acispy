@@ -380,6 +380,8 @@ class ThermalModelRunner(ModelDataset):
         # This is for the PSMC model
         if 'pin1at' in model.comp:
             model.comp['pin1at'].set_data(T_init-10.)
+        if 'dpa0' in model.comp:
+            model.comp['dpa0'].set_data(T_init)
         if 'dh_heater' in model.comp:
             model.comp['dh_heater'].set_data(states.get("dh_heater", 0), state_times)
         for st in ('ccd_count', 'fep_count', 'vid_board', 'clocking', 'pitch'):
