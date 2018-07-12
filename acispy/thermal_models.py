@@ -18,7 +18,7 @@ import Ska.engarchive.fetch_sci as fetch
 short_name = {"1deamzt": "dea",
               "1dpamzt": "dpa",
               "1pdeaat": "psmc",
-              "fptemp_11": "fptemp",
+              "fptemp_11": "acisfp",
               "tmp_fep1_mong": "fep1_mong",
               "tmp_fep1_actel": "fep1_actel",
               "tmp_bep_pcb": "bep_pcb"}
@@ -473,6 +473,17 @@ class ThermalModelRunner(ModelDataset):
         return cls(name, tstart, tstop, states=states, T_init=T_init,
                    model_spec=model_spec, include_bad_times=include_bad_times,
                    ephemeris=ephemeris)
+
+    @classmethod
+    def from_backstop(cls, name, backstop_file, T_init, model_spec=None,
+                      include_bad_times=False,  ephemeris=None):
+        import Ska.ParseCM
+        bs_cmds = Ska.ParseCM.read_backstop(backstop_file)
+        tstart = bs_cmds[0]['time']
+        tstop = bs_cmds[-1]['time']
+        return cls.from_commands(name, tstart, tstop, bs_cmds, T_init,
+                                 model_spec=model_spec, include_bad_times=include_bad_times,
+                                 ephemeris=ephemeris)
 
     def make_dashboard_plots(self, yplotlimits=None, errorplotlimits=None, fig=None,
                              figfile=None, bad_times=None):
