@@ -429,7 +429,7 @@ class ThermalModelRunner(ModelDataset):
     @classmethod
     def from_states_table(cls, name, tstart, tstop, states_file, T_init,
                           model_spec=None, include_bad_times=False, 
-                          ephemeris=None):
+                          ephemeris=None, use_msids=True):
         """
         Class for running Xija thermal models.
 
@@ -461,10 +461,10 @@ class ThermalModelRunner(ModelDataset):
             states_dict["off_nominal_roll"] = calc_off_nom_rolls(states)
         return cls(name, tstart, tstop, states=states_dict, T_init=T_init,
                    model_spec=model_spec, include_bad_times=include_bad_times,
-                   ephemeris=ephemeris)
+                   ephemeris=ephemeris, use_msids=use_msids)
 
     @classmethod
-    def from_commands(cls, name, tstart, tstop, cmds, T_init,
+    def from_commands(cls, name, tstart, tstop, cmds, T_init, use_msids=True,
                       model_spec=None, include_bad_times=False, ephemeris=None):
         tstart = get_time(tstart)
         tstop = get_time(tstop)
@@ -472,17 +472,18 @@ class ThermalModelRunner(ModelDataset):
         states = {k: t[k].value for k in t.keys()}
         return cls(name, tstart, tstop, states=states, T_init=T_init,
                    model_spec=model_spec, include_bad_times=include_bad_times,
-                   ephemeris=ephemeris)
+                   ephemeris=ephemeris, use_msids=use_msids)
 
     @classmethod
     def from_backstop(cls, name, backstop_file, T_init, model_spec=None,
-                      include_bad_times=False,  ephemeris=None):
+                      include_bad_times=False, ephemeris=None, use_msids=True):
         import Ska.ParseCM
         bs_cmds = Ska.ParseCM.read_backstop(backstop_file)
         tstart = bs_cmds[0]['time']
         tstop = bs_cmds[-1]['time']
         return cls.from_commands(name, tstart, tstop, bs_cmds, T_init,
-                                 model_spec=model_spec, include_bad_times=include_bad_times,
+                                 model_spec=model_spec, use_msids=use_msids,
+                                 include_bad_times=include_bad_times,
                                  ephemeris=ephemeris)
 
     def make_dashboard_plots(self, yplotlimits=None, errorplotlimits=None, fig=None,
