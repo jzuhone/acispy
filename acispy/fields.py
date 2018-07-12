@@ -1,6 +1,8 @@
 from acispy.units import APQuantity, APStringArray
 from acispy.utils import calc_off_nom_rolls
 import numpy as np
+from itertools import count
+from acis_taco import calc_earth_vis
 
 class OutputFieldFunction(object):
     def __init__(self, ftype, fname):
@@ -109,3 +111,23 @@ def create_derived_fields(dset):
                            "", display_name="SIM Position")
 
 
+    def _earth_solid_angle(ds):
+        # Collect individual MSIDs for use in calc_earth_vis()
+        ephem_xyzs = [ds["msids", "orbitephem0_{}".format(x)]
+                      for x in "xyz"]
+        aoattqt_1234s = [ds["msids","aoattqt{}".format(x)]
+                         for x in range(1, 5)]
+        ephems = np.array([x.value for x in ephem_xyzs]).transpose()
+        q_atts = np.array([x.value for x in aoattqt_1234s]).transpose()
+        ret = np.empty(ds["msids", "orbitephem0_x"].shape, dtype=float)
+        for i, ephem, q_att in zip(count(), ephems, q_atts):
+            q_norm = np.sqrt(np.sum(q_att ** 2))
+            if q_norm < 0.9:
+                q_att = np.array([0.0, 0.0, 0.0, 1.0])
+            else:
+                q_att = q_att / q_norm
+            _, illums, _ = calc_earth_vis(ephem, q_att)
+            ret[i] = illums.sum()
+        return ret
+    dset.add_derived_field("msids", "earth_solid_angle", _earth_solid_angle,
+                           "sr", display_name="Effective Earth Solid Angle")
