@@ -43,13 +43,13 @@ plot_limits = {"fptemp_11": (-120.0, -110.0),
                "tmp_bep_pcb": (5.0, 50.0)}
 
 planning_limits = {"1deamzt": 35.5,
-                   "1dpamzt": 35.5,
+                   "1dpamzt": 36.5,
                    "1pdeaat": 52.5,
                    "tmp_fep1_mong": 47.0,
                    "tmp_fep1_actel": 46.0,
                    "tmp_bep_pcb": 42.0}
 yellow_limits = {"1deamzt": 37.5,
-                 "1dpamzt": 37.5,
+                 "1dpamzt": 38.5,
                  "1pdeaat": 57.0,
                  "tmp_fep1_mong": 49.0,
                  "tmp_fep1_actel": 48.0,
