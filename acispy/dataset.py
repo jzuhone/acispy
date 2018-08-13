@@ -441,6 +441,7 @@ class MaudeData(Dataset):
         model = EmptyTimeSeries()
         super(MaudeData, self).__init__(msids, states, model)
 
+
 def _parse_tracelogs(tbegin, tend, filenames):
     filenames = ensure_list(filenames)
     if tbegin is not None:
@@ -617,10 +618,10 @@ class TelemData(Dataset):
             tm = fetch.get_time_range(msid, format="secs")[-1]
             tmid = min(tmid, tm)
         tmid = get_time(tmid, fmt='secs')
-        msids1 = MSIDs.from_database(msids, tstart, tstop=tmid,
-                                     filter_bad=filter_bad, stat=stat,
-                                     interpolate=interpolate_msids)
         if tmid < tstop:
+            msids1 = MSIDs.from_database(msids, tstart, tstop=tmid,
+                                         filter_bad=filter_bad, stat=stat,
+                                         interpolate=interpolate_msids)
             if recent_source == "maude":
                 msids2 = MSIDs.from_maude(msids, tmid, tstop=tstop, user=user,
                                           password=password)
@@ -630,7 +631,9 @@ class TelemData(Dataset):
                                            "/data/acis/eng_plots/acis_dea_10day.tl"])
             msids = ConcatenatedMSIDs(msids1, msids2)
         else:
-            msids = msids1
+            msids = MSIDs.from_database(msids, tstart, tstop=tstop,
+                                        filter_bad=filter_bad, stat=stat,
+                                        interpolate=interpolate_msids)
         states = States.from_database(tstart, tstop, server=server)
         model = EmptyTimeSeries()
         super(TelemData, self).__init__(msids, states, model)
