@@ -80,7 +80,8 @@ def calc_off_nom_rolls(states):
 default_states = ["ccd_count", "clocking", "ra", "dec", "dither", "fep_count",
                   "hetg", "letg", "obsid", "pcad_mode", "pitch", "power_cmd",
                   "roll", "si_mode", "simfa_pos", "simpos", "q1", "q2", "q3",
-                  "q4", "trans_keys", "vid_board"]
+                  "q4", "trans_keys", "vid_board", "datestart", "datestop",
+                  "tstart", "tstop"]
 
 state_labels = {"ccd_count": "CCD Count",
                 "clocking": "Clocking",
