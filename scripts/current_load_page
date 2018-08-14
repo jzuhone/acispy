@@ -12,8 +12,6 @@ from Chandra.Time import date2secs, secs2date, DateTime
 import argparse
 from kadi import events, commands
 import numpy as np
-import Ska.ParseCM
-from collections import defaultdict
 
 six_hours = 6.0*3600.0
 
@@ -46,8 +44,8 @@ lr_web_css = [
     "}"
 ]
 
-temps = ["fptemp_11", "1dpamzt", "1deamzt", "1pdeaat", "tmp_fep1_mong",
-         "tmp_fep1_actel", "tmp_bep_pcb"]
+temps = ["fptemp_11", "1dpamzt", "1deamzt", "1pdeaat"]#, "tmp_fep1_mong",
+         #"tmp_fep1_actel", "tmp_bep_pcb"]
 
 plot_limits = {"fptemp_11": (-120.0, -110.0),
                "1deamzt": (5.0, 42.0),
@@ -239,7 +237,7 @@ def add_annotations(dp, simtrans, comms, cti_runs, radzones):
         tdt = secs2date(date2secs(tran[0]) + 1800.0)
         ymin, ymax = dp.ax.get_ylim()
         y = 0.25*ymin + 0.75*ymax
-        dp.add_text(tdt, y, tran[0], fontsize=15,
+        dp.add_text(tdt, y, tran[1], fontsize=15,
                     rotation='vertical', color="brown", zorder=100)
     for cti_run in cti_runs:
         dp.add_vline(cti_run, color='darkgreen', ls='--')
@@ -267,6 +265,8 @@ cmds = None
 comms = None
 cti_runs = None
 radzones = None
+load_year = ""
+load_dir = ""
 
 while True:
 
@@ -333,14 +333,12 @@ while True:
                              figsize=(10, 10))
         dp2 = acispy.DatePlot(ds_tlm, ("msids", temp), color="red", plot=dp)
         dp.add_vline(now_time_str, lw=3)
-        title_str = "%s\nCurrent %s prediction: %g $\mathrm{^\circ{C}}$\nCurrent pitch: %g degrees"
+        title_str = "%s\nCurrent %s prediction: %.2f $\mathrm{^\circ{C}}$\nCurrent pitch: %.2f degrees"
         title_str %= (now_time_str, temp.upper(), ds_model["model", temp][now_time_str].value,
                       ds_model["pitch"][now_time_str].value)
         title_str += "\nCurrent instrument: %s, Current ObsID: %d" % (ds_model["states", "instrument"][now_time_str],
                                                                       ds_model["states", "obsid"][now_time_str])
         if temp == "fptemp_11":
-            dp.annotate_obsids(-111.5, ywidth=1.0, color='dodgerblue',
-                               txtheight=0.25, txtloc=0.1, fontsize=12)
             dp.add_hline(fp_limits["acis_i"], color='purple')
             dp.add_hline(fp_limits["acis_s"], color='blue')
             dp.add_hline(fp_limits["fp_sens"], color='red')
@@ -356,6 +354,9 @@ while True:
         dp.set_ylim(plot_limits[temp][0], plot_limits[temp][1])
         add_annotations(dp, simtrans, comms, cti_runs, radzones)
         dp.set_xlim(begin_time_str, end_time_str)
+        if temp == "fptemp_11":
+            dp.annotate_obsids(-111.5, ywidth=1.0, color='dodgerblue',
+                               txtheight=0.25, txtloc=0.1, fontsize=12)
         dp.fig.subplots_adjust(right=0.8)
         dp.savefig(os.path.join(outdir, "current_%s.png" % temp))
 
@@ -379,7 +380,7 @@ while True:
     roll = acispy.DatePlot(ds_model, "off_nominal_roll", field2="grating", color="blue",
                            figsize=(10, 8))
     roll.add_vline(now_time_str, lw=3)
-    title_str = "%s\nCurrent Off-nominal roll: %4.3f degree\nGrating: %s" % (now_time_str,
+    title_str = "%s\nCurrent Off-nominal roll: %.2f degree\nGrating: %s" % (now_time_str,
                                                                              ds_model["off_nominal_roll"][now_time_str].value,
                                                                              ds_model["grating"][now_time_str])
     roll.set_title(title_str)
@@ -394,8 +395,8 @@ while True:
     roll.fig.subplots_adjust(left=lm, right=rm)
     roll.savefig(os.path.join(outdir, "current_roll.png"))
 
-    plots = ["fptemp_11", "1dpamzt", "1deamzt", "1pdeaat", "ccd", "roll",
-             "tmp_fep1_mong", "tmp_fep1_actel", "tmp_bep_pcb"]
+    plots = ["fptemp_11", "1dpamzt", "1deamzt", "1pdeaat", "ccd", "roll"]#,
+             #"tmp_fep1_mong", "tmp_fep1_actel", "tmp_bep_pcb"]
 
     plt.close("all")
 
