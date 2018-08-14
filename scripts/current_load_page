@@ -46,8 +46,8 @@ lr_web_css = [
     "}"
 ]
 
-temps = ["fptemp_11", "1dpamzt", "1deamzt", "1pdeaat"]#, "tmp_fep1_mong",
-         #"tmp_fep1_actel", "tmp_bep_pcb"]
+temps = ["fptemp_11", "1dpamzt", "1deamzt", "1pdeaat", "tmp_fep1_mong",
+         "tmp_fep1_actel", "tmp_bep_pcb"]
 
 plot_limits = {"fptemp_11": (-120.0, -110.0),
                "1deamzt": (5.0, 42.0),
@@ -447,8 +447,8 @@ while True:
     roll.fig.subplots_adjust(left=lm, right=rm)
     roll.savefig(os.path.join(outdir, "current_roll.png"))
 
-    plots = ["fptemp_11", "1dpamzt", "1deamzt", "1pdeaat", "ccd", "roll"]#,
-             #"tmp_fep1_mong", "tmp_fep1_actel", "tmp_bep_pcb"]
+    plots = ["fptemp_11", "1dpamzt", "1deamzt", "1pdeaat", "ccd", "roll",
+             "tmp_fep1_mong", "tmp_fep1_actel", "tmp_bep_pcb"]
 
     plt.close("all")
 
