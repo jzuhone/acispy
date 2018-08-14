@@ -11,7 +11,7 @@ from acispy.model import Model
 from acispy.msids import MSIDs
 from acispy.time_series import EmptyTimeSeries
 from acispy.utils import mylog, calc_off_nom_rolls, \
-    get_time, ensure_list
+    get_time, ensure_list, default_states
 import Ska.Numpy
 import Ska.engarchive.fetch_sci as fetch
 
@@ -487,7 +487,16 @@ class ThermalModelRunner(ModelDataset):
         tstart = get_time(tstart)
         tstop = get_time(tstop)
         t = cmd_states.get_states(tstart, tstop)
-        states = {k: t[k].data for k in t.names}
+        states = {}
+        for k in default_states:
+            if k == "tstart":
+                states[k] = date2secs(t["datestart"].data)
+            elif k == "tstop":
+                states[k] = date2secs(t["datestop"].data)
+            elif k == "trans_keys":
+                states[k] = np.array([",".join(d) for d in t["trans_keys"].data])
+            else:
+                states[k] = t[k].data
         return cls(name, tstart, tstop, states=states, T_init=T_init,
                    model_spec=model_spec, include_bad_times=include_bad_times,
                    ephemeris=ephemeris, use_msids=use_msids)
