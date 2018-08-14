@@ -310,7 +310,7 @@ while True:
         for temp in temps:
             ds_models[temp] = acispy.ThermalModelRunner.from_kadi(temp, model_start,
                                                                   model_end, None,
-                                                                  use_msids=False)
+                                                                  use_msids=True)
         cti_runs = find_cti_runs(ds_models["1dpamzt"].states)
         reload = False
         last_reload_time = DateTime(now_time_utc).secs
