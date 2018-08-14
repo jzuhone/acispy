@@ -340,8 +340,8 @@ class ThermalModelRunner(ModelDataset):
                                               ephem_times=ephem_times,
                                               ephem_data=ephem_data)
 
-        self.bad_times = self.xija_model.bad_times
-        self.bad_times_indices = self.xija_model.bad_times_indices
+        self.bad_times = getattr(self.xija_model, "bad_times", None)
+        self.bad_times_indices = getattr(self.xija_model, "bad_times_indices", None)
 
         if isinstance(states, dict):
             states.pop("dh_heater", None)
@@ -353,7 +353,7 @@ class ThermalModelRunner(ModelDataset):
             components.append('earthheat__fptemp')
 
         masks = {}
-        if include_bad_times:
+        if include_bad_times and self.bad_times is not None:
             masks[name] = np.ones(self.xija_model.times.shape, dtype='bool')
             for (left, right) in self.bad_times_indices:
                 masks[name][left:right] = False
