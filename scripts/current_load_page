@@ -5,6 +5,7 @@ import os
 import matplotlib
 matplotlib.use("agg")
 import acispy
+from acispy.utils import cti_simodes
 import Ska.Numpy
 import matplotlib.pyplot as plt
 from Chandra.Time import date2secs, secs2date, DateTime
@@ -12,6 +13,19 @@ import argparse
 from kadi import events, commands
 import numpy as np
 import Ska.ParseCM
+from collections import defaultdict
+
+six_hours = 6.0*3600.0
+
+header = ['<?xml version="1.0" encoding="UTF-8">',
+          '<!DOCTYPE html PUBLIC "-//W3C/DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">',
+          '<html lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml">',
+          '<head>\n<meta http-equiv="refresh" content="30" />',
+          '<title>Current ACIS Load Real-Time</title>',
+          '<link href="lr_web.css" rel="stylesheet" type="text/css">\n</head>',
+          '<body text="#000000" bgcolor="#ffffff" link="#ff0000" vlink="#ffff22" alink="#7500FF">\n<pre>',
+          '<h1><font face="times">Current ACIS Load Real-Time</font></h1>',
+          "<a name=\"review\"><h2><font face=\"times\">Load Commands</font></h2></a>"]
 
 lr_web_css = [
     "commline {",
@@ -32,8 +46,8 @@ lr_web_css = [
     "}"
 ]
 
-load_root = "/data/acis/LoadReviews"
-review_file = "ACIS-LoadReview.txt"
+temps = ["fptemp_11", "1dpamzt", "1deamzt", "1pdeaat", "tmp_fep1_mong",
+         "tmp_fep1_actel", "tmp_bep_pcb"]
 
 plot_limits = {"fptemp_11": (-120.0, -110.0),
                "1deamzt": (5.0, 42.0),
@@ -89,25 +103,25 @@ def get_instr(simpos):
     return instr
 
 
-def find_the_load(now_time_utc):
-
-    t = DateTime(now_time_utc).secs
-
+def find_the_load(t):
     ls = events.load_segments.filter(start=t, stop=t+300.0)
-
     if len(ls) > 0:
         return ls[0].load_name
     else:
         return None
 
 
-def process_commands(now_time_utc, now_time_local, cmds, comms):
+def process_commands(now_time_utc, now_time_local, cmds):
 
-    now_time = DateTime(now_time_utc).secs
+    now_time_secs = DateTime(now_time_utc).secs
+    end_time_secs = now_time_secs + 86400.0
+    start_time_secs = now_time_secs - 86400.0
 
     obsid_link = "https://icxc.harvard.edu/cgi-bin/mp/target_param.cgi?"
 
     outlines = []
+    cmdtimes = []
+    simtrans = []
 
     find_time = True
 
@@ -119,12 +133,16 @@ def process_commands(now_time_utc, now_time_local, cmds, comms):
 
         the_time = date2secs(cmd["date"])
 
-        if the_time > now_time and find_time:
+        if the_time < start_time_secs or the_time > end_time_secs:
+            continue
+
+        if the_time > now_time_secs and find_time:
             new_line = '<a name="now"></a>NOW: %s (%s)' % (now_time_utc.strftime("%Y:%j:%H:%M:%S"),
                                                            now_time_local.strftime("%D %H:%M:%S"))
             new_line += ' ' * (100 - len(new_line))
             new_line = '<font style="background-color:#5AC831"><b>%s</b></font>\n' % new_line
             outlines.append(new_line)
+            cmdtimes.append(the_time)
             find_time = False
 
         if cmd["type"] == "COMMAND_SW":
@@ -155,6 +173,7 @@ def process_commands(now_time_utc, now_time_local, cmds, comms):
             instr = get_instr(simpos)
             param = "%d  (%s)" % (simpos, instr)
             highlight = "<mechline>%s</mechline>"
+            simtrans.append((cmd["date"], instr))
         elif cmd["type"] == "COMMAND_SW" and "ETG" in cmd["params"]["msid"]:
             param = cmd["params"]["msid"]
             highlight = "<mechline>%s</mechline>"
@@ -186,17 +205,44 @@ def process_commands(now_time_utc, now_time_local, cmds, comms):
 
         outlines.append(line)
         outlines.append(" ")
+        cmdtimes.append(the_time)
 
         if duration is not None and not in_science:
             line = "ACIS integration time is %.2f ks." % (-duration*1.0e-3)
             outlines.append(line)
             outlines.append(" ")
+            cmdtimes.append(the_time)
             duration = None
 
     outlines += ["</pre>", "</body>"]
 
-    return outlines
+    return cmdtimes, outlines, simtrans
 
+
+def find_cti_runs(states):
+    cti_runs = []
+    si_modes = states["si_mode"]
+    power_cmds = states["power_cmd"]
+    for mode in cti_simodes:
+        where_mode = np.logical_and(si_modes == mode,
+                                    power_cmds == "XTZ0000005")
+        idxs = np.concatenate([[False], where_mode, [False]])
+        idxs = np.flatnonzero(idxs[1:] != idxs[:-1]).reshape(-1, 2)
+        for ii, jj in idxs:
+            cti_runs += [si_modes.dates[0, ii], si_modes.dates[0, jj]]
+    return cti_runs
+
+
+def add_annotations(dp, simtrans, comms, cti_runs, radzones):
+    for tran in simtrans:
+        dp.add_vline(tran[0], color='brown', ls='-')
+        tdt = secs2date(date2secs(tran[0]) + 1800.0)
+        ymin, ymax = dp.ax.get_ylim()
+        y = 0.25*ymin + 0.75*ymax
+        dp.add_text(tdt, y, tran[0], fontsize=15,
+                    rotation='vertical', color="brown", zorder=100)
+    for cti_run in cti_runs:
+        dp.add_vline(cti_run, color='darkgreen', ls='--')
 
 parser = argparse.ArgumentParser(description='Run script for the "ACIS Current Load Real-Time" page.')
 parser.add_argument("--page_path", type=str, default="/data/wdocs/jzuhone/current_acis_load.html",
@@ -209,98 +255,89 @@ cssfile = os.path.join(outdir, "lr_web.css")
 
 find_load = True
 lr = None
-dea_tl_data = None
+lr_link = None
+ds_models = {}
+ds_tlm = None
 last_tl_ts = 0.0
 last_dea_tl_ts = 0.0
 load_name = ""
 old_load_name = ""
+reload = True
+cmds = None
+comms = None
+cti_runs = None
+radzones = None
 
 while True:
 
     # Find the current time
     now_time_utc = datetime.utcnow()
+    now_time_str = now_time_utc.strftime("%Y:%j:%H:%M:%S")
+    now_time_secs = date2secs(now_time_str)
     now_time_local = datetime.now()
     year_string = "%s:" % now_time_utc.year
     last_year_string = "%s:" % (now_time_utc.year-1)
     next_year_string = "%s:" % (now_time_utc.year+1)
 
-    load_name = find_the_load(now_time_utc.strftime("%Y:%j:%H:%M:%S"))
+    load_name = find_the_load(now_time_secs)
 
     if load_name is None:
         if old_load_name == "":
             raise RuntimeError("Cannot find any load!!")
         # Fallback so we don't crash
         load_name = old_load_name
+        load_year = "20%s" % load_name[-3:-1]
+        lr_link = "http://cxc.cfa.harvard.edu/acis/lr_texts/%s/%s_lr.html" % (load_year, load_name)
+        load_dir = load_name[:-1]
 
-    load_year = "20%s" % load_name[-3:-1]
-    load_dir = load_name[:-1]
-
-    # HTML header stuff
-
-    lr_link = "http://cxc.cfa.harvard.edu/acis/lr_texts/%s/%s_lr.html" % (load_year, load_name)
-
-    header = ['<?xml version="1.0" encoding="UTF-8">',
-              '<!DOCTYPE html PUBLIC "-//W3C/DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">',
-              '<html lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml">',
-              '<head>\n<meta http-equiv="refresh" content="30" />',
-              '<title>Current ACIS Load Real-Time</title>',
-              '<link href="lr_web.css" rel="stylesheet" type="text/css">\n</head>',
-              '<body text="#000000" bgcolor="#ffffff" link="#ff0000" vlink="#ffff22" alink="#7500FF">\n<pre>',
-              '<h1><font face="times">Current ACIS Load Real-Time</font></h1>',
-              "<a name=\"review\"><h2><font face=\"times\">Load Commands</font></h2></a>",
-              "<font face=\"times\">This is the <a href=\"%s\"><font style=\"color:blue\">%s</font></a> load.</font>" % (lr_link, load_name),
-              " ", " "]
+    outlines = ["<font face=\"times\">This is the <a href=\"%s\"><font style=\"color:blue\">%s</font></a> load.</font>" % (lr_link, load_name),
+                " ", " "]
 
     begin_time = now_time_utc - timedelta(days=1)
     end_time = begin_time + timedelta(days=2)
-
+    last_time = begin_time + timedelta(days=4)
     begin_time_str = begin_time.strftime("%Y:%j:%H:%M:%S")
     end_time_str = end_time.strftime("%Y:%j:%H:%M:%S")
+    last_time_str = last_time.strftime("%Y:%j:%H:%M:%S")
 
-    cmds = commands.get_cmds(begin_time_str, end_time_str)
-    cmds.fetch_params()
+    if reload or cmds is None:
+        cmds = commands.get_cmds(begin_time_str, last_time_str)
+        cmds.fetch_params()
+        comms = events.dsn_comms.filter(begin_time_str, last_time_str)
+        radzones = events.rad_zones.filter(begin_time_str, last_time_str)
+        model_start = now_time_secs - 4.0*86400.0
+        model_end = now_time_secs + 4.0*86400.0
+        for temp in temps:
+            ds_models[temp] = acispy.ThermalModelRunner.from_kadi(temp, model_start,
+                                                                  model_end, None,
+                                                                  use_msids=False)
+        cti_runs = find_cti_runs(ds_models["1dpamzt"].states)
+        reload = False
+        last_reload_time = DateTime(now_time_utc).secs
 
-    comms = None
+    cmdtimes, cmdlines, simtrans = process_commands(now_time_utc,
+                                                    now_time_local, cmds)
 
-    outlines = process_commands(now_time_utc, now_time_local, cmds, comms)
+    outlines += cmdlines
 
-    """
     tl_ts = os.path.getmtime("/data/acis/eng_plots/acis_eng_10day.tl")
     dea_tl_ts = os.path.getmtime("/data/acis/eng_plots/acis_dea_10day.tl")
-    if tl_ts != last_tl_ts:
-        lr = acispy.ACISLoadReview(load_dir, get_msids=True,
-                                   tl_file="/data/acis/eng_plots/acis_eng_10day.tl")
-        lr.get_updated_dsn_comms()
+    if tl_ts != last_tl_ts or dea_tl_ts != last_dea_tl_ts or ds_tlm is None:
+        ds_tlm = acispy.TenDayTracelogData(tbegin=begin_time_str)
         last_tl_ts = tl_ts
-    if dea_tl_data is None or dea_tl_ts != last_dea_tl_ts:
-        # We subtract a day off to make sure we actually get some telemetry
-        tl_tbegin = secs2date(date2secs(lr.first_time)-86400.0)
-        tl_tend = lr.last_time
-        try:
-            dea_tl_data = acispy.TracelogData("/data/acis/eng_plots/acis_dea_10day.tl",
-                                              tbegin=tl_tbegin, tend=tl_tend)
-            last_dea_tl_ts = dea_tl_ts
-        except:
-            pass
+        last_dea_tl_ts = dea_tl_ts
 
-    tnow = now_time_utc.strftime("%Y:%j:%H:%M:%S")
-
-    tbegin = secs2date(max(date2secs(tnow)-3600.0*24.0, date2secs(lr.first_time)))
-    tend = secs2date(min(date2secs(tnow)+3600.0*24.0, date2secs(lr.last_time)))
-
-    for temp in ["fptemp_11", "1dpamzt", "1deamzt", "1pdeaat", "tmp_fep1_mong", 
-                 "tmp_fep1_actel", "tmp_bep_pcb"]:
-        fields = [("model", temp), ("msids", temp)]
-        dp = acispy.DatePlot(ds, fields, field2="pitch", color=["blue", "red"],
-                             annotations=["belts", "sim_trans", "comms", "perigee", "cti_runs"],
-                             tbegin=tbegin, tend=tend, figsize=(10,10), ymin=plot_limits[temp][0],
-                             ymax=plot_limits[temp][1])
-        dp.add_vline(tnow, lw=3)
+    for temp in temps:
+        ds_model = ds_models[temp]
+        dp = acispy.DatePlot(ds_model, ("model", temp), field2="pitch", color="blue",
+                             figsize=(10, 10))
+        dp2 = acispy.DatePlot(ds_tlm, ("msids", temp), color="red", plot=dp)
+        dp.add_vline(now_time_str, lw=3)
         title_str = "%s\nCurrent %s prediction: %g $\mathrm{^\circ{C}}$\nCurrent pitch: %g degrees"
-        title_str %= (tnow, temp.upper(), ds["model", temp][tnow].value,
-                      ds["pitch"][tnow].value)
-        title_str += "\nCurrent instrument: %s, Current ObsID: %d" % (ds["states", "instrument"][tnow],
-                                                                      ds["states", "obsid"][tnow])
+        title_str %= (now_time_str, temp.upper(), ds_model["model", temp][now_time_str].value,
+                      ds_model["pitch"][now_time_str].value)
+        title_str += "\nCurrent instrument: %s, Current ObsID: %d" % (ds_model["states", "instrument"][now_time_str],
+                                                                      ds_model["states", "obsid"][now_time_str])
         if temp == "fptemp_11":
             dp.annotate_obsids(-111.5, ywidth=1.0, color='dodgerblue',
                                txtheight=0.25, txtloc=0.1, fontsize=12)
@@ -316,19 +353,22 @@ while True:
             dp.add_hline(low_yellow_limits[temp], color='gold')
             dp.add_hline(low_red_limits[temp], color='r')
         dp.set_title(title_str)
+        dp.set_ylim(plot_limits[temp][0], plot_limits[temp][1])
+        add_annotations(dp, simtrans, comms, cti_runs, radzones)
+        dp.set_xlim(begin_time_str, end_time_str)
         dp.fig.subplots_adjust(right=0.8)
         dp.savefig(os.path.join(outdir, "current_%s.png" % temp))
 
     w1, h1 = dp.fig.get_size_inches()
 
-    ccd = acispy.DatePlot(ds, "ccd_count", field2=("states","simpos"), tbegin=tbegin, 
-                          tend=tend, color="blue",
-                          annotations=["belts", "sim_trans", "comms", "perigee", "cti_runs"],
+    ccd = acispy.DatePlot(ds_model, "ccd_count", field2=("states", "simpos"), color="blue",
                           figsize=(10,8))
-    ccd.add_vline(tnow, lw=3)
-    title_str = "%s\nCurrent CCD count: %d\nCurrent SIM-Z: %g" % (tnow, ds["ccd_count"][tnow].value,
-                                                                  ds["states","simpos"][tnow].value)
+    ccd.add_vline(now_time_str, lw=3)
+    title_str = "%s\nCurrent CCD count: %d\nCurrent SIM-Z: %g" % (now_time_str, ds_model["ccd_count"][now_time_str].value,
+                                                                  ds_model["states","simpos"][now_time_str].value)
     ccd.set_title(title_str)
+    add_annotations(ccd, simtrans, comms, cti_runs, radzones)
+    ccd.set_xlim(begin_time_str, end_time_str)
 
     w2, h2 = ccd.fig.get_size_inches()
     lm = dp.fig.subplotpars.left*w1/w2
@@ -336,15 +376,17 @@ while True:
     ccd.fig.subplots_adjust(left=lm, right=rm)
     ccd.savefig(os.path.join(outdir, "current_ccd.png"))
 
-    roll = acispy.DatePlot(ds, "off_nominal_roll", field2="grating", tbegin=tbegin,
-                           tend=tend, color="blue", ymin=-20.0, ymax=20.0,
-                           annotations=["belts", "sim_trans", "comms", "perigee", "cti_runs"],
-                           figsize=(10,8), ymin2=-0.5, ymax2=2.5)
-    roll.add_vline(tnow, lw=3)
-    title_str = "%s\nCurrent Off-nominal roll: %4.3f degree\nGrating: %s" % (tnow,
-                                                                             ds["off_nominal_roll"][tnow].value,
-                                                                             ds["grating"][tnow])
+    roll = acispy.DatePlot(ds_model, "off_nominal_roll", field2="grating", color="blue",
+                           figsize=(10, 8))
+    roll.add_vline(now_time_str, lw=3)
+    title_str = "%s\nCurrent Off-nominal roll: %4.3f degree\nGrating: %s" % (now_time_str,
+                                                                             ds_model["off_nominal_roll"][now_time_str].value,
+                                                                             ds_model["grating"][now_time_str])
     roll.set_title(title_str)
+    roll.set_ylim(-20.0, 20.0)
+    roll.set_ylim2(-0.5, 2.5)
+    add_annotations(roll, simtrans, comms, cti_runs, radzones)
+    roll.set_xlim(begin_time_str, end_time_str)
 
     w3, h3 = roll.fig.get_size_inches()
     lm = dp.fig.subplotpars.left*w1/w2
@@ -352,20 +394,18 @@ while True:
     roll.fig.subplots_adjust(left=lm, right=rm)
     roll.savefig(os.path.join(outdir, "current_roll.png"))
 
-    plots = ["fptemp_11", "1dpamzt", "1deamzt", "1pdeaat", "ccd", "roll", 
+    plots = ["fptemp_11", "1dpamzt", "1deamzt", "1pdeaat", "ccd", "roll",
              "tmp_fep1_mong", "tmp_fep1_actel", "tmp_bep_pcb"]
 
     plt.close("all")
-    """
+
     tm_link = "http://cxc.cfa.harvard.edu/acis/Thermal/%s/%s.html" % (load_year, load_dir)
     footer = ["<a name=\"plots\"><h2><font face=\"times\">Temperature Models</font></h2></a>",
               "<a href=\"%s\"><font face=\"times\" color=\"blue\">Full thermal models for %s</font></a>" % (tm_link, load_name)]
 
-    """
     for fig in plots:
         footer.append("<img src=\"current_%s.png\" />" % fig)
         footer.append("<p />")
-    """
 
     f = open(outfile, "w")
     f.write("\n".join(header+outlines+footer))
@@ -375,3 +415,7 @@ while True:
         f = open(cssfile, "w")
         f.write("\n".join(lr_web_css))
         f.close()
+
+    if now_time_secs - last_reload_time > six_hours:
+        reload = True
+
