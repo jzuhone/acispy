@@ -2,7 +2,8 @@ from __future__ import print_function
 import os
 from acispy.thermal_models import ThermalModelFromLoad
 from acispy.plots import DatePlot
-from acispy.utils import get_time, mylog, find_load, lr_root
+from acispy.utils import get_time, mylog, find_load, \
+    lr_root, cti_simodes
 from collections import defaultdict
 from Chandra.Time import date2secs, secs2date
 from Ska.Matplotlib import cxctime2plotdate
@@ -47,10 +48,6 @@ pretty_names = {"comm_ends": "End of Comm",
                 "fmt_change": "Change of Telemetry Format"}
 
 offsets = {"sim_trans": 0.75}
-
-cti_simodes = ["TE_007AC", "TE_00B26", "TE_007AE",
-               "TE_00CA8", "TE_00C60", "TE_007AE",
-               "TN_000B4", "TN_000B6"]
 
 
 class LoadReviewEvent(object):

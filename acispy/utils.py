@@ -136,6 +136,10 @@ mit_trans_table = {"BEP_PCB": "tmp_bep_pcb",
                    "DEAM6VDCB": "deam6voltb",
                    "DEAP6VDCB": "deap6voltb"}
 
+cti_simodes = ["TE_007AC", "TE_00B26", "TE_007AE",
+               "TE_00CA8", "TE_00C60", "TE_007AE",
+               "TN_000B4", "TN_000B6"]
+
 def get_display_name(type, name):
     if type.startswith("model"):
         display_name = name.upper() + " Model"
