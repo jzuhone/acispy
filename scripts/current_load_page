@@ -1,19 +1,21 @@
 #!/usr/bin/env python
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import os
 import matplotlib
 matplotlib.use("agg")
 import acispy
 from acispy.utils import cti_simodes
-import Ska.Numpy
 import matplotlib.pyplot as plt
 from Chandra.Time import date2secs, secs2date, DateTime
 import argparse
 from kadi import events, commands
 import numpy as np
+from Ska.Matplotlib import cxctime2plotdate
+import bisect
 
 six_hours = 6.0*3600.0
+dsnfile = "/data/acis/dsn_summary.dat"
 
 header = ['<?xml version="1.0" encoding="UTF-8">',
           '<!DOCTYPE html PUBLIC "-//W3C/DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">',
@@ -201,14 +203,12 @@ def process_commands(now_time_utc, now_time_local, cmds):
                 line = line.replace(str(param),
                                     "<a href=\"%s%s\"><font color=\"blue\">%s</font></a>" % (obsid_link, param, param))
 
-        outlines.append(line)
-        outlines.append(" ")
+        outlines.append(line+"\n")
         cmdtimes.append(the_time)
 
         if duration is not None and not in_science:
-            line = "ACIS integration time is %.2f ks." % (-duration*1.0e-3)
+            line = "==> ACIS integration time is %.2f ks.\n" % (-duration*1.0e-3)
             outlines.append(line)
-            outlines.append(" ")
             cmdtimes.append(the_time)
             duration = None
 
@@ -231,7 +231,39 @@ def find_cti_runs(states):
     return cti_runs
 
 
-def add_annotations(dp, simtrans, comms, cti_runs, radzones):
+def get_comms(begin_time_str, last_time_str):
+    comms = []
+    durations = []
+    with open(dsnfile) as f:
+        for line in f.readlines()[2:]:
+            words = line.strip().split()
+            bot = datetime.strptime("%s:%s:00:00:00" % (words[-4], words[-3].split(".")[0]), "%Y:%j:%H:%M:%S")
+            eot = datetime.strptime("%s:%s:00:00:00" % (words[-2], words[-1].split(".")[0]), "%Y:%j:%H:%M:%S")
+            time_bot = date2secs(bot.strftime("%Y:%j:%H:%M:%S"))+86400.0*(float(words[-3]) % 1)
+            time_eot = date2secs(eot.strftime("%Y:%j:%H:%M:%S"))+86400.0*(float(words[-1]) % 1)
+            durations.append((time_eot-time_bot)/60.0)
+            comms.append((secs2date(time_bot), secs2date(time_eot)))
+    return comms, durations
+
+
+def insert_comms(cmdtimes, cmdlines, comms, durations, tmin, tmax):
+    for i, comm in enumerate(comms):
+        tbegin = date2secs(comm[0])
+        tend = date2secs(comm[1])
+        if tbegin < tmin or tend > tmax:
+            continue
+        tbegin_loc = datetime.strptime(comm[0], "%Y:%j:%H:%M:%S.%f").replace(tzinfo=timezone.utc).astimezone(tz=None) 
+        tend_loc = datetime.strptime(comm[1], "%Y:%j:%H:%M:%S.%f").replace(tzinfo=timezone.utc).astimezone(tz=None)
+        idx = bisect.bisect_right(cmdtimes, tbegin)
+        cmdtimes.insert(idx, tbegin)
+        cmdlines.insert(idx, "<commline>%s   REAL-TIME COMM BEGINS   %s  EDT             </commline>\n" % (comm[0], tbegin_loc.strftime("%Y:%j:%H:%M:%S")))
+        idx = bisect.bisect_right(cmdtimes, tend)
+        cmdtimes.insert(idx, tend)
+        cmdlines.insert(idx, "<commline>%s   REAL-TIME COMM ENDS     %s  EDT             </commline>\n" % (comm[1], tend_loc.strftime("%Y:%j:%H:%M:%S")))
+        cmdtimes.insert(idx+1, tend)
+        cmdlines.insert(idx+1, "==> COMM DURATION:  %.2f mins.\n" % durations[i])
+
+def add_annotations(dp, tmin, tmax, simtrans, comms, cti_runs, radzones):
     for tran in simtrans:
         dp.add_vline(tran[0], color='brown', ls='-')
         tdt = secs2date(date2secs(tran[0]) + 1800.0)
@@ -241,6 +273,22 @@ def add_annotations(dp, simtrans, comms, cti_runs, radzones):
                     rotation='vertical', color="brown", zorder=100)
     for cti_run in cti_runs:
         dp.add_vline(cti_run, color='darkgreen', ls='--')
+    xmin, xmax = dp.ax.get_xlim()
+    ybot, ytop = dp.ax.get_ylim()
+    t = np.linspace(tmin, tmax, 1000)
+    tplot = cxctime2plotdate(t)
+    for radzone in radzones:
+        in_evt = (t >= radzone.tstart) & (t <= radzone.tstop)
+        dp.ax.fill_between(tplot, ybot, ytop, where=in_evt, 
+                           color="mediumpurple", alpha=0.333333)
+        dp.add_vline(radzone.perigee, color='dodgerblue', ls='--')
+    for comm in comms:
+        tc_start = date2secs(comm[0])
+        tc_end = date2secs(comm[1])
+        in_evt = (t >= tc_start) & (t <= tc_end)
+        dp.ax.fill_between(tplot, ybot, ytop,
+                           where=in_evt, color="pink")
+
 
 parser = argparse.ArgumentParser(description='Run script for the "ACIS Current Load Real-Time" page.')
 parser.add_argument("--page_path", type=str, default="/data/wdocs/jzuhone/current_acis_load.html",
@@ -267,6 +315,7 @@ cti_runs = None
 radzones = None
 load_year = ""
 load_dir = ""
+durations = None
 
 while True:
 
@@ -299,11 +348,13 @@ while True:
     begin_time_str = begin_time.strftime("%Y:%j:%H:%M:%S")
     end_time_str = end_time.strftime("%Y:%j:%H:%M:%S")
     last_time_str = last_time.strftime("%Y:%j:%H:%M:%S")
+    begin_time_secs = date2secs(begin_time_str)
+    end_time_secs = date2secs(end_time_str)
 
     if reload or cmds is None:
         cmds = commands.get_cmds(begin_time_str, last_time_str)
         cmds.fetch_params()
-        comms = events.dsn_comms.filter(begin_time_str, last_time_str)
+        comms, durations = get_comms(begin_time_str, last_time_str)
         radzones = events.rad_zones.filter(begin_time_str, last_time_str)
         model_start = now_time_secs - 4.0*86400.0
         model_end = now_time_secs + 4.0*86400.0
@@ -317,6 +368,7 @@ while True:
 
     cmdtimes, cmdlines, simtrans = process_commands(now_time_utc,
                                                     now_time_local, cmds)
+    insert_comms(cmdtimes, cmdlines, comms, durations, begin_time_secs, end_time_secs)
 
     outlines += cmdlines
 
@@ -352,7 +404,7 @@ while True:
             dp.add_hline(low_red_limits[temp], color='r')
         dp.set_title(title_str)
         dp.set_ylim(plot_limits[temp][0], plot_limits[temp][1])
-        add_annotations(dp, simtrans, comms, cti_runs, radzones)
+        add_annotations(dp, begin_time_secs, end_time_secs, simtrans, comms, cti_runs, radzones)
         dp.set_xlim(begin_time_str, end_time_str)
         if temp == "fptemp_11":
             dp.annotate_obsids(-111.5, ywidth=1.0, color='dodgerblue',
@@ -368,7 +420,7 @@ while True:
     title_str = "%s\nCurrent CCD count: %d\nCurrent SIM-Z: %g" % (now_time_str, ds_model["ccd_count"][now_time_str].value,
                                                                   ds_model["states","simpos"][now_time_str].value)
     ccd.set_title(title_str)
-    add_annotations(ccd, simtrans, comms, cti_runs, radzones)
+    add_annotations(ccd, begin_time_secs, end_time_secs, simtrans, comms, cti_runs, radzones)
     ccd.set_xlim(begin_time_str, end_time_str)
 
     w2, h2 = ccd.fig.get_size_inches()
@@ -386,7 +438,7 @@ while True:
     roll.set_title(title_str)
     roll.set_ylim(-20.0, 20.0)
     roll.set_ylim2(-0.5, 2.5)
-    add_annotations(roll, simtrans, comms, cti_runs, radzones)
+    add_annotations(roll, begin_time_secs, end_time_secs, simtrans, comms, cti_runs, radzones)
     roll.set_xlim(begin_time_str, end_time_str)
 
     w3, h3 = roll.fig.get_size_inches()
@@ -402,7 +454,7 @@ while True:
 
     tm_link = "http://cxc.cfa.harvard.edu/acis/Thermal/%s/%s.html" % (load_year, load_dir)
     footer = ["<a name=\"plots\"><h2><font face=\"times\">Temperature Models</font></h2></a>",
-              "<a href=\"%s\"><font face=\"times\" color=\"blue\">Full thermal models for %s</font></a>" % (tm_link, load_name)]
+              "<a href=\"%s\"><font face=\"times\" color=\"blue\">Full thermal models for %s</font></a><p />" % (tm_link, load_name)]
 
     for fig in plots:
         footer.append("<img src=\"current_%s.png\" />" % fig)
