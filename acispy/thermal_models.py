@@ -14,6 +14,7 @@ from acispy.utils import mylog, calc_off_nom_rolls, \
     get_time, ensure_list, default_states
 import Ska.Numpy
 import Ska.engarchive.fetch_sci as fetch
+from chandra_models import get_xija_model_file
 
 short_name = {"1deamzt": "dea",
               "1dpamzt": "dpa",
@@ -48,20 +49,8 @@ margins = {'1deamzt': 2.0,
 def find_json(name, model_spec):
     name = short_name[name]
     if model_spec is None:
-        if name == "psmc":
-            path = "psmc_check"
-        else:
-            path = name
-        if name == "acisfp":
-            mid = ""
-        else:
-            mid = "model_"
-        if "SKA" in os.environ and os.path.exists(os.environ["SKA"]):
-            model_spec = os.path.join(os.environ["SKA"],
-                                      "share/%s/%s_%sspec.json" % (path, name, mid))
-        else:
-            model_spec = os.path.join(os.getcwd(), "%s_%sspec.json" % (name, mid))
-    if not os.path.exists(model_spec):
+        model_spec = get_xija_model_file(name)
+    elif not os.path.exists(model_spec):
         raise IOError("The JSON file %s does not exist!" % model_spec)
     return model_spec
 
