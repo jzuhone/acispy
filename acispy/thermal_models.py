@@ -477,6 +477,18 @@ class ThermalModelRunner(ModelDataset):
                    ephemeris=ephemeris, use_msids=use_msids)
 
     @classmethod
+    def from_kadi(cls, name, tstart, tstop, T_init, use_msids=True, 
+                  model_spec=None, include_bad_times=False, ephemeris=None):
+        from kadi.commands import states as cmd_states
+        tstart = get_time(tstart)
+        tstop = get_time(tstop)
+        t = cmd_states.get_states(tstart, tstop)
+        states = {k: t[k].data for k in t.names}
+        return cls(name, tstart, tstop, states=states, T_init=T_init,
+                   model_spec=model_spec, include_bad_times=include_bad_times,
+                   ephemeris=ephemeris, use_msids=use_msids)
+
+    @classmethod
     def from_backstop(cls, name, backstop_file, T_init, model_spec=None,
                       include_bad_times=False, ephemeris=None, use_msids=True):
         import Ska.ParseCM
@@ -553,8 +565,10 @@ class ThermalModelRunner(ModelDataset):
                        errorplotlimits=errorplotlimits, yplotlimits=yplotlimits,
                        fig=fig, figfile=figfile)
 
+
 def find_text_time(time, hours=1.0):
     return secs2date(date2secs(time)+hours*3600.0)
+
 
 class SimulateCTIRun(ThermalModelRunner):
     """
