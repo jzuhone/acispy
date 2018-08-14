@@ -263,10 +263,14 @@ def insert_comms(cmdtimes, cmdlines, comms, durations, tmin, tmax):
         cmdtimes.insert(idx+1, tend)
         cmdlines.insert(idx+1, "==> COMM DURATION:  %.2f mins.\n" % durations[i])
 
+
 def add_annotations(dp, tmin, tmax, simtrans, comms, cti_runs, radzones):
     for tran in simtrans:
         dp.add_vline(tran[0], color='brown', ls='-')
-        tdt = secs2date(date2secs(tran[0]) + 1800.0)
+        t = date2secs(tran[0])
+        tdt = secs2date(t + 1800.0)
+        if t < tmax or t+3600.0 > tmax:
+            continue
         ymin, ymax = dp.ax.get_ylim()
         y = 0.25*ymin + 0.75*ymax
         dp.add_text(tdt, y, tran[1], fontsize=15,
