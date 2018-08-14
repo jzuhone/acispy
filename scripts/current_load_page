@@ -9,8 +9,9 @@ import Ska.Numpy
 import matplotlib.pyplot as plt
 from Chandra.Time import date2secs, secs2date, DateTime
 import argparse
-from kadi import events
+from kadi import events, commands
 import numpy as np
+import Ska.ParseCM
 
 lr_web_css = [
     "commline {",
@@ -75,6 +76,19 @@ fp_limits = {"acis_i": -114.0,
              "acis_s": -112.0,
              "fp_sens": -118.7}
 
+
+def get_instr(simpos):
+    if 104839 >= simpos >= 82109:
+        instr = 'ACIS-I'
+    elif 82108 >= simpos >= 70736:
+        instr = 'ACIS-S'
+    elif -20000 >= simpos >= -86147:
+        instr = 'HRC-I'
+    elif -86148 >= simpos >= -104362:
+        instr = 'HRC-S'
+    return instr
+
+
 def find_the_load(now_time_utc):
 
     t = DateTime(now_time_utc).secs
@@ -86,81 +100,103 @@ def find_the_load(now_time_utc):
     else:
         return None
 
-def process_load(lr):
+
+def process_commands(now_time_utc, now_time_local, cmds, comms):
+
+    now_time = DateTime(now_time_utc).secs
 
     obsid_link = "https://icxc.harvard.edu/cgi-bin/mp/target_param.cgi?"
 
     outlines = []
 
-    inScience = False
-    radzone = lr.begin_radzone
+    find_time = True
 
-    for i, line in enumerate(lr.lines):
+    in_science = False
 
-        a_line = line.strip()
-        words = a_line.split()
+    duration = None
 
-        # Pad lines so highlighting happens across the page
-        if len(a_line) < 74:
-            the_pad = ' '*(74 - len(a_line))
-            a_line = a_line + the_pad
+    for cmd in cmds:
 
-        # Color obsid changes pink
-        if "MP_OBSID" in a_line:
-            if int(words[-1]) < 40000:
-                obsid = "<a href=\"%s%s\"><font color=\"blue\">%s</font></a>" % (obsid_link, words[-1], words[-1])
-                a_line = "%s    %s  MP_OBSID    %s                       " % (words[0], words[1], obsid)
-            a_line = "<obsidline>%s</obsidline>" % a_line
+        the_time = date2secs(cmd["date"])
 
-        # Highlight radmon entry/exit, triplet, first ascending ACIS stop science
-        if "COMMAND_SW" in a_line and "OORMP" in a_line:
-            a_line = "<padtime>%s</padtime>" % a_line
-            if "OORMPDS" in a_line:
-                radzone += 1
-            else:
-                radzone = 0
+        if the_time > now_time and find_time:
+            new_line = '<a name="now"></a>NOW: %s (%s)' % (now_time_utc.strftime("%Y:%j:%H:%M:%S"),
+                                                           now_time_local.strftime("%D %H:%M:%S"))
+            new_line += ' ' * (100 - len(new_line))
+            new_line = '<font style="background-color:#5AC831"><b>%s</b></font>\n' % new_line
+            outlines.append(new_line)
+            find_time = False
 
-        if radzone != 0:
-            if radzone == 1 and inScience and "AA00000000" in a_line:
-                # Looking for descending stop science?
-                radzone += 1
-            elif radzone == 2 and ("AA00000000" in a_line or
-                                   "WSVIDALLDN" in a_line or 
-                                   "RS_0000001" in a_line):
-                a_line = "<padtime>%s</padtime>" % a_line
-                if "RS_0000001" in a_line:
-                    # radzone state 3 - look for ascend ACIS cmd
-                    radzone += 1
-            elif radzone == 2 and "POINT" in a_line and "EPERIGEE" in a_line:
-                # Missing triplet
-                radzone += 1
-            elif radzone == 3 and "ACISPKT" in a_line:
-                # first asc CTI ACIS cmd?
-                a_line = "<padtime>%s</padtime>" % a_line
-                radzone += 1
+        if cmd["type"] == "COMMAND_SW":
+            if "OORM" not in cmd["params"]["msid"] and "ETG" not in cmd["params"]["msid"]:
+                continue
+        if cmd["type"] == "COMMAND_HW" and "CSELFMT" not in cmd["params"]:
+            continue
+        if cmd["type"].startswith("MP_") and not cmd["type"].endswith("OBSID"):
+            continue
+        if cmd["type"] == "ORBPOINT":
+            if "EF100" not in cmd["params"]["event_type"] and \
+               "GEE" not in cmd["params"]["event_type"]:
+                continue
 
-        # Start science
-        if not inScience and "Z0000005" in a_line:
-            inScience = True
+        highlight = None
+        param = None
 
-        # Stop science
-        if inScience and "AA00000000" in a_line:
-            inScience = False
+        if cmd["type"] == "ACISPKT":
+            param = "\t%s" % cmd["tlmsid"]
+            if cmd["tlmsid"].startswith("XCZ") or cmd["tlmsid"].startswith("XTZ"):
+                in_science = True
+                duration = the_time
+            if cmd["tlmsid"].startswith("AA000") and in_science:
+                in_science = False
+                duration -= the_time
+        elif cmd["type"] == "SIMTRANS":
+            simpos = int(cmd["params"]['pos'])
+            instr = get_instr(simpos)
+            param = "%d  (%s)" % (simpos, instr)
+            highlight = "<mechline>%s</mechline>"
+        elif cmd["type"] == "COMMAND_SW" and "ETG" in cmd["params"]["msid"]:
+            param = cmd["params"]["msid"]
+            highlight = "<mechline>%s</mechline>"
+        elif cmd["type"] == "COMMAND_SW" and "OORM" in cmd["params"]["msid"]:
+            # Assuming that this is radmon commanding
+            param = cmd["params"]['msid']
+            highlight = "<padtime>%s</padtime>"
+        elif cmd["type"] == "COMMAND_HW":
+            # Assuming that this is a format change
+            param = cmd["tlsmid"]
+        elif cmd["type"] == "MP_OBSID":
+            param = cmd["params"]['id']
+            highlight = "<obsidline>%s</obsidline>"
+        elif cmd["type"] == "ORBPOINT":
+            param = cmd["event_type"]
 
-        # Highlight comms in blue
-        if "REAL-TIME COMM" in a_line:
-            a_line = "<commline>%s</commline>" % a_line
+        line = "%s\t%s\t%s" % (cmd["date"], cmd["type"], param)
 
-        # Mechanical motions
-        if "COMMAND_SW" in a_line and "ETG" in a_line or "SIMTRANS" in a_line:
-            a_line = "<mechline>%s</mechline>" % a_line
+        if highlight is not None:
+            # Pad lines so highlighting happens across the page
+            if len(line) < 74:
+                line += ' ' * (74 - len(line))
+            line = highlight % line
 
-        outlines.append(a_line)
+        if cmd["type"] == "MP_OBSID":
+            if param < 40000:
+                line = line.replace(str(param),
+                                    "<a href=\"%s%s\"><font color=\"blue\">%s</font></a>" % (obsid_link, param, param))
+
+        outlines.append(line)
         outlines.append(" ")
+
+        if duration is not None and not in_science:
+            line = "ACIS integration time is %.2f ks." % (-duration*1.0e-3)
+            outlines.append(line)
+            outlines.append(" ")
+            duration = None
 
     outlines += ["</pre>", "</body>"]
 
     return outlines
+
 
 parser = argparse.ArgumentParser(description='Run script for the "ACIS Current Load Real-Time" page.')
 parser.add_argument("--page_path", type=str, default="/data/wdocs/jzuhone/current_acis_load.html",
@@ -192,22 +228,12 @@ while True:
 
     if load_name is None:
         if old_load_name == "":
-            raise RuntimeError("Cannot find initial load!!")
+            raise RuntimeError("Cannot find any load!!")
         # Fallback so we don't crash
         load_name = old_load_name
 
     load_year = "20%s" % load_name[-3:-1]
     load_dir = load_name[:-1]
-
-    if load_name != old_load_name or find_load:
-        lr = acispy.ACISLoadReview(load_dir, get_msids=True,
-                                   tl_file="/data/acis/eng_plots/acis_eng_10day.tl")
-        lr.get_updated_dsn_comms()
-        outlines = process_load(lr)
-        find_load = False
-        old_load_name = load_name
-
-    find_time = True
 
     # HTML header stuff
 
@@ -225,168 +251,127 @@ while True:
               "<font face=\"times\">This is the <a href=\"%s\"><font style=\"color:blue\">%s</font></a> load.</font>" % (lr_link, load_name),
               " ", " "]
 
-    load_start = datetime.strptime(lr.first_time[:-4], "%Y:%j:%H:%M:%S")
-    load_end = datetime.strptime(lr.last_time[:-4], "%Y:%j:%H:%M:%S")
-    the_time = now_time_utc - timedelta(days=2)
-    begin_time = max(now_time_utc - timedelta(days=1), load_start)
-    end_time = min(begin_time + timedelta(days=2), load_end)
+    begin_time = now_time_utc - timedelta(days=1)
+    end_time = begin_time + timedelta(days=2)
 
-    newlines = []
+    begin_time_str = begin_time.strftime("%Y:%j:%H:%M:%S")
+    end_time_str = end_time.strftime("%Y:%j:%H:%M:%S")
 
-    find_time = True
+    cmds = commands.get_cmds(begin_time_str, end_time_str)
+    cmds.fetch_params()
 
-    for i, outline in enumerate(outlines):
-        # Now check for the current time
-        if year_string in outline or next_year_string in outline:
-            idx = outline.find(year_string)
-            if idx < 0:
-                idx = outline.find(next_year_string)
-            the_time = datetime.strptime(outline[idx:idx+17], "%Y:%j:%H:%M:%S")
-            if the_time > now_time_utc and find_time:
-                new_line = '<a name="now"></a>NOW: %s (%s)' % (now_time_utc.strftime("%Y:%j:%H:%M:%S"),
-                                                               now_time_local.strftime("%D %H:%M:%S"))
-                new_line += ' '*(92 - len(new_line))
-                new_line = '<font style="background-color:#5AC831"><b>%s</b></font>\n' % new_line
-                newlines.append(new_line)
-                find_time = False
-        if end_time >= the_time >= begin_time:
-             newlines.append(outline.strip())
+    comms = None
 
-    if find_time:
-        # Need to determine the load again because we ran out
-        find_load = True
-        lr = None
-        dea_tl_data = None
-    else:
-        tl_ts = os.path.getmtime("/data/acis/eng_plots/acis_eng_10day.tl")
-        dea_tl_ts = os.path.getmtime("/data/acis/eng_plots/acis_dea_10day.tl")
-        if tl_ts != last_tl_ts:
-            lr = acispy.ACISLoadReview(load_dir, get_msids=True,
-                                       tl_file="/data/acis/eng_plots/acis_eng_10day.tl")
-            lr.get_updated_dsn_comms()
-            last_tl_ts = tl_ts
-        if dea_tl_data is None or dea_tl_ts != last_dea_tl_ts:
-            # We subtract a day off to make sure we actually get some telemetry
-            tl_tbegin = secs2date(date2secs(lr.first_time)-86400.0)
-            tl_tend = lr.last_time
-            try:
-                dea_tl_data = acispy.TracelogData("/data/acis/eng_plots/acis_dea_10day.tl",
-                                                  tbegin=tl_tbegin, tend=tl_tend)
-                last_dea_tl_ts = dea_tl_ts
-            except:
-                pass
+    outlines = process_commands(now_time_utc, now_time_local, cmds, comms)
 
-        tnow = now_time_utc.strftime("%Y:%j:%H:%M:%S")
+    """
+    tl_ts = os.path.getmtime("/data/acis/eng_plots/acis_eng_10day.tl")
+    dea_tl_ts = os.path.getmtime("/data/acis/eng_plots/acis_dea_10day.tl")
+    if tl_ts != last_tl_ts:
+        lr = acispy.ACISLoadReview(load_dir, get_msids=True,
+                                   tl_file="/data/acis/eng_plots/acis_eng_10day.tl")
+        lr.get_updated_dsn_comms()
+        last_tl_ts = tl_ts
+    if dea_tl_data is None or dea_tl_ts != last_dea_tl_ts:
+        # We subtract a day off to make sure we actually get some telemetry
+        tl_tbegin = secs2date(date2secs(lr.first_time)-86400.0)
+        tl_tend = lr.last_time
+        try:
+            dea_tl_data = acispy.TracelogData("/data/acis/eng_plots/acis_dea_10day.tl",
+                                              tbegin=tl_tbegin, tend=tl_tend)
+            last_dea_tl_ts = dea_tl_ts
+        except:
+            pass
 
-        tbegin = secs2date(max(date2secs(tnow)-3600.0*24.0, date2secs(lr.first_time)))
-        tend = secs2date(min(date2secs(tnow)+3600.0*24.0, date2secs(lr.last_time)))
+    tnow = now_time_utc.strftime("%Y:%j:%H:%M:%S")
 
-        for temp in ["fptemp_11", "1dpamzt", "1deamzt", "1pdeaat"]:
-            fields = [("model", temp)]
-            if temp != "fptemp_11":
-                fields.append(("msids", temp))
-            dp = lr.plot(fields, field2="pitch", color=["blue", "red"],
-                         annotations=["belts", "sim_trans", "comms", "perigee", "cti_runs"],
-                         tbegin=tbegin, tend=tend, figsize=(10,10), ymin=plot_limits[temp][0],
-                         ymax=plot_limits[temp][1])
-            dp.add_vline(tnow, lw=3)
-            title_str = "%s\nCurrent %s prediction: %g $\mathrm{^\circ{C}}$\nCurrent pitch: %g degrees"
-            title_str %= (tnow, temp.upper(), lr.ds["model", temp][tnow].value,
-                          lr.ds["pitch"][tnow].value)
-            title_str += "\nCurrent instrument: %s, Current ObsID: %d" % (lr.ds["states", "instrument"][tnow],
-                                                                          lr.ds["states", "obsid"][tnow])
-            if temp == "fptemp_11":
-                dp.annotate_obsids(-111.5, ywidth=1.0, color='dodgerblue',
-                                   txtheight=0.25, txtloc=0.1, fontsize=12)
-                if dea_tl_data is not None:
-                    dp_fp = acispy.DatePlot(dea_tl_data, "fptemp_11", color='red', plot=dp)
-                    dp_fp.set_ylim(*plot_limits[temp])
-                    dp_fp.add_hline(fp_limits["acis_i"], color='purple')
-                    dp_fp.add_hline(fp_limits["acis_s"], color='blue')
-                    dp_fp.add_hline(fp_limits["fp_sens"], color='red')
-            else:
-                dp.add_hline(planning_limits[temp], color='g')
-                dp.add_hline(yellow_limits[temp], color='gold')
-                dp.add_hline(red_limits[temp], color='r')
-            dp.set_title(title_str)
-            dp.fig.subplots_adjust(right=0.8)
-            dp.savefig(os.path.join(outdir, "current_%s.png" % temp))
+    tbegin = secs2date(max(date2secs(tnow)-3600.0*24.0, date2secs(lr.first_time)))
+    tend = secs2date(min(date2secs(tnow)+3600.0*24.0, date2secs(lr.last_time)))
 
-        w1, h1 = dp.fig.get_size_inches()
-
-        ccd = lr.plot("ccd_count", field2=("states","simpos"), tbegin=tbegin, tend=tend, color="blue",
-                      annotations=["belts", "sim_trans", "comms", "perigee", "cti_runs"],
-                      figsize=(10,8))
-        ccd.add_vline(tnow, lw=3)
-        title_str = "%s\nCurrent CCD count: %d\nCurrent SIM-Z: %g" % (tnow, lr.ds["ccd_count"][tnow].value,
-                                                                      lr.ds["states","simpos"][tnow].value)
-        ccd.set_title(title_str)
-
-        w2, h2 = ccd.fig.get_size_inches()
-        lm = dp.fig.subplotpars.left*w1/w2
-        rm = dp.fig.subplotpars.right*w1/w2
-        ccd.fig.subplots_adjust(left=lm, right=rm)
-        ccd.savefig(os.path.join(outdir, "current_ccd.png"))
-
-        roll = lr.plot("off_nominal_roll", field2="grating", tbegin=tbegin, tend=tend, color="blue",
-                       ymin=-20.0, ymax=20.0, annotations=["belts", "sim_trans", "comms", "perigee", "cti_runs"],
-                       figsize=(10,8), ymin2=-0.5, ymax2=2.5)
-        roll.add_vline(tnow, lw=3)
-        title_str = "%s\nCurrent Off-nominal roll: %4.3f degree\nGrating: %s" % (tnow, 
-                                                                                 lr.ds["off_nominal_roll"][tnow].value,
-                                                                                 lr.ds["grating"][tnow])
-        roll.set_title(title_str)
-
-        w3, h3 = roll.fig.get_size_inches()
-        lm = dp.fig.subplotpars.left*w1/w2
-        rm = dp.fig.subplotpars.right*w1/w2
-        roll.fig.subplots_adjust(left=lm, right=rm)
-        roll.savefig(os.path.join(outdir, "current_roll.png"))
-
-        plots = ["fptemp_11", "1dpamzt", "1deamzt", "1pdeaat", "ccd", "roll"]
-
-        if dea_tl_data is not None and ('model', 'tmp_fep1_mong') in lr.ds.field_list:
-
-            plots += ["tmp_fep1_mong", "tmp_fep1_actel", "tmp_bep_pcb"]
-
-            for temp in ["tmp_fep1_mong", "tmp_fep1_actel", "tmp_bep_pcb"]:
-                dp = lr.plot(("model", temp), field2="pitch", color="blue",
+    for temp in ["fptemp_11", "1dpamzt", "1deamzt", "1pdeaat", "tmp_fep1_mong", 
+                 "tmp_fep1_actel", "tmp_bep_pcb"]:
+        fields = [("model", temp), ("msids", temp)]
+        dp = acispy.DatePlot(ds, fields, field2="pitch", color=["blue", "red"],
                              annotations=["belts", "sim_trans", "comms", "perigee", "cti_runs"],
                              tbegin=tbegin, tend=tend, figsize=(10,10), ymin=plot_limits[temp][0],
                              ymax=plot_limits[temp][1])
-                dp.add_vline(tnow, lw=3)
-                title_str = "%s\nCurrent %s prediction: %g $\mathrm{^\circ{C}}$\nCurrent pitch: %g degrees"
-                title_str %= (tnow, temp.upper(), lr.ds["model", temp][tnow].value,
-                              lr.ds["pitch"][tnow].value)
-                title_str += "\nCurrent instrument: %s, Current ObsID: %d" % (lr.ds["states", "instrument"][tnow],
-                                                                              lr.ds["states", "obsid"][tnow])
-                dp.set_title(title_str)
-                dp.add_hline(planning_limits[temp], color='g')
-                dp.add_hline(yellow_limits[temp], color='gold')
-                dp.add_hline(red_limits[temp], color='r')
-                dp.add_hline(low_planning_limits[temp], color='g')
-                dp.add_hline(low_yellow_limits[temp], color='gold')
-                dp.add_hline(low_red_limits[temp], color='r')
-                dpt = acispy.DatePlot(dea_tl_data, ("msids", temp), color='red', plot=dp)
-                dpt.set_ylim(*plot_limits[temp])
-                dp.fig.subplots_adjust(right=0.8)
-                dp.savefig(os.path.join(outdir, "current_%s.png" % temp))
+        dp.add_vline(tnow, lw=3)
+        title_str = "%s\nCurrent %s prediction: %g $\mathrm{^\circ{C}}$\nCurrent pitch: %g degrees"
+        title_str %= (tnow, temp.upper(), ds["model", temp][tnow].value,
+                      ds["pitch"][tnow].value)
+        title_str += "\nCurrent instrument: %s, Current ObsID: %d" % (ds["states", "instrument"][tnow],
+                                                                      ds["states", "obsid"][tnow])
+        if temp == "fptemp_11":
+            dp.annotate_obsids(-111.5, ywidth=1.0, color='dodgerblue',
+                               txtheight=0.25, txtloc=0.1, fontsize=12)
+            dp.add_hline(fp_limits["acis_i"], color='purple')
+            dp.add_hline(fp_limits["acis_s"], color='blue')
+            dp.add_hline(fp_limits["fp_sens"], color='red')
+        else:
+            dp.add_hline(planning_limits[temp], color='g')
+            dp.add_hline(yellow_limits[temp], color='gold')
+            dp.add_hline(red_limits[temp], color='r')
+        if temp.startswith("tmp_"):
+            dp.add_hline(low_planning_limits[temp], color='g')
+            dp.add_hline(low_yellow_limits[temp], color='gold')
+            dp.add_hline(low_red_limits[temp], color='r')
+        dp.set_title(title_str)
+        dp.fig.subplots_adjust(right=0.8)
+        dp.savefig(os.path.join(outdir, "current_%s.png" % temp))
 
-        plt.close("all")
+    w1, h1 = dp.fig.get_size_inches()
 
-        tm_link = "http://cxc.cfa.harvard.edu/acis/Thermal/%s/%s.html" % (load_year, load_dir)
-        footer = ["<a name=\"plots\"><h2><font face=\"times\">Temperature Models</font></h2></a>",
-                  "<a href=\"%s\"><font face=\"times\" color=\"blue\">Full thermal models for %s</font></a>" % (tm_link, load_name)]
+    ccd = acispy.DatePlot(ds, "ccd_count", field2=("states","simpos"), tbegin=tbegin, 
+                          tend=tend, color="blue",
+                          annotations=["belts", "sim_trans", "comms", "perigee", "cti_runs"],
+                          figsize=(10,8))
+    ccd.add_vline(tnow, lw=3)
+    title_str = "%s\nCurrent CCD count: %d\nCurrent SIM-Z: %g" % (tnow, ds["ccd_count"][tnow].value,
+                                                                  ds["states","simpos"][tnow].value)
+    ccd.set_title(title_str)
 
-        for fig in plots:
-            footer.append("<img src=\"current_%s.png\" />" % fig)
-            footer.append("<p />")
+    w2, h2 = ccd.fig.get_size_inches()
+    lm = dp.fig.subplotpars.left*w1/w2
+    rm = dp.fig.subplotpars.right*w1/w2
+    ccd.fig.subplots_adjust(left=lm, right=rm)
+    ccd.savefig(os.path.join(outdir, "current_ccd.png"))
 
-        f = open(outfile, "w")
-        f.write("\n".join(header+newlines+footer))
+    roll = acispy.DatePlot(ds, "off_nominal_roll", field2="grating", tbegin=tbegin,
+                           tend=tend, color="blue", ymin=-20.0, ymax=20.0,
+                           annotations=["belts", "sim_trans", "comms", "perigee", "cti_runs"],
+                           figsize=(10,8), ymin2=-0.5, ymax2=2.5)
+    roll.add_vline(tnow, lw=3)
+    title_str = "%s\nCurrent Off-nominal roll: %4.3f degree\nGrating: %s" % (tnow,
+                                                                             ds["off_nominal_roll"][tnow].value,
+                                                                             ds["grating"][tnow])
+    roll.set_title(title_str)
+
+    w3, h3 = roll.fig.get_size_inches()
+    lm = dp.fig.subplotpars.left*w1/w2
+    rm = dp.fig.subplotpars.right*w1/w2
+    roll.fig.subplots_adjust(left=lm, right=rm)
+    roll.savefig(os.path.join(outdir, "current_roll.png"))
+
+    plots = ["fptemp_11", "1dpamzt", "1deamzt", "1pdeaat", "ccd", "roll", 
+             "tmp_fep1_mong", "tmp_fep1_actel", "tmp_bep_pcb"]
+
+    plt.close("all")
+    """
+    tm_link = "http://cxc.cfa.harvard.edu/acis/Thermal/%s/%s.html" % (load_year, load_dir)
+    footer = ["<a name=\"plots\"><h2><font face=\"times\">Temperature Models</font></h2></a>",
+              "<a href=\"%s\"><font face=\"times\" color=\"blue\">Full thermal models for %s</font></a>" % (tm_link, load_name)]
+
+    """
+    for fig in plots:
+        footer.append("<img src=\"current_%s.png\" />" % fig)
+        footer.append("<p />")
+    """
+
+    f = open(outfile, "w")
+    f.write("\n".join(header+outlines+footer))
+    f.close()
+
+    if not os.path.exists(cssfile):
+        f = open(cssfile, "w")
+        f.write("\n".join(lr_web_css))
         f.close()
-
-        if not os.path.exists(cssfile):
-            f = open(cssfile, "w")
-            f.write("\n".join(lr_web_css))
-            f.close()
