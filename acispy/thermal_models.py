@@ -52,11 +52,15 @@ def find_json(name, model_spec):
             path = "psmc_check"
         else:
             path = name
+        if name == "acisfp":
+            mid = ""
+        else:
+            mid = "model_"
         if "SKA" in os.environ and os.path.exists(os.environ["SKA"]):
             model_spec = os.path.join(os.environ["SKA"],
-                                      "share/%s/%s_model_spec.json" % (path, name))
+                                      "share/%s/%s_%sspec.json" % (path, name, mid))
         else:
-            model_spec = os.path.join(os.getcwd(), "%s_model_spec.json" % name)
+            model_spec = os.path.join(os.getcwd(), "%s_%sspec.json" % (name, mid))
     if not os.path.exists(model_spec):
         raise IOError("The JSON file %s does not exist!" % model_spec)
     return model_spec
