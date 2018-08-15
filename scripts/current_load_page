@@ -159,6 +159,8 @@ def process_commands(now_time_utc, now_time_local, cmds):
             if "EF100" not in cmd["params"]["event_type"] and \
                "GEE" not in cmd["params"]["event_type"]:
                 continue
+        if cmd["type"] == "SIMFOCUS":
+            continue
 
         highlight = None
         param = None
