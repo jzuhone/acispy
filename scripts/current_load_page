@@ -90,6 +90,11 @@ fp_limits = {"acis_i": -114.0,
              "acis_s": -112.0,
              "fp_sens": -118.7}
 
+obsid_link_base = "https://icxc.harvard.edu/cgi-bin/mp/target_param.cgi?"
+mit_link_base = "http://acis.mit.edu/cgi-bin/get-atbls?tag=%s"
+lr_link_base = "http://cxc.cfa.harvard.edu/acis/lr_texts/%s/%s_lr.html"
+tm_link_base = "http://cxc.cfa.harvard.edu/acis/Thermal/%s/%s.html"
+
 
 def get_instr(simpos):
     if 104839 >= simpos >= 82109:
@@ -116,8 +121,6 @@ def process_commands(now_time_utc, now_time_local, cmds):
     now_time_secs = DateTime(now_time_utc).secs
     end_time_secs = now_time_secs + 86400.0
     start_time_secs = now_time_secs - 86400.0
-
-    obsid_link = "https://icxc.harvard.edu/cgi-bin/mp/target_param.cgi?"
 
     outlines = []
     cmdtimes = []
@@ -201,7 +204,10 @@ def process_commands(now_time_utc, now_time_local, cmds):
         if cmd["type"] == "MP_OBSID":
             if param < 40000:
                 line = line.replace(str(param),
-                                    "<a href=\"%s%s\"><font color=\"blue\">%s</font></a>" % (obsid_link, param, param))
+                                    "<a href=\"%s%s\"><font color=\"blue\">%s</font></a>" % (obsid_link_base, param, param))
+
+        if cmd["type"] == "ACISPKT":
+            line = line.replace(param, mit_link_base % param)
 
         outlines.append(line+"\n")
         cmdtimes.append(the_time)
@@ -231,7 +237,7 @@ def find_cti_runs(states):
     return cti_runs
 
 
-def get_comms(begin_time_str, last_time_str):
+def get_comms():
     comms = []
     durations = []
     with open(dsnfile) as f:
@@ -277,7 +283,6 @@ def add_annotations(dp, tmin, tmax, simtrans, comms, cti_runs, radzones):
                     rotation='vertical', color="brown", zorder=100)
     for cti_run in cti_runs:
         dp.add_vline(cti_run, color='darkgreen', ls='--')
-    xmin, xmax = dp.ax.get_xlim()
     ybot, ytop = dp.ax.get_ylim()
     t = np.linspace(tmin, tmax, 1000)
     tplot = cxctime2plotdate(t)
@@ -340,7 +345,7 @@ while True:
         # Fallback so we don't crash
         load_name = old_load_name
         load_year = "20%s" % load_name[-3:-1]
-        lr_link = "http://cxc.cfa.harvard.edu/acis/lr_texts/%s/%s_lr.html" % (load_year, load_name)
+        lr_link = lr_link_base % (load_year, load_name)
         load_dir = load_name[:-1]
 
     outlines = ["<font face=\"times\">This is the <a href=\"%s\"><font style=\"color:blue\">%s</font></a> load.</font>" % (lr_link, load_name),
@@ -358,7 +363,7 @@ while True:
     if reload or cmds is None:
         cmds = commands.get_cmds(begin_time_str, last_time_str)
         cmds.fetch_params()
-        comms, durations = get_comms(begin_time_str, last_time_str)
+        comms, durations = get_comms()
         radzones = events.rad_zones.filter(begin_time_str, last_time_str)
         model_start = now_time_secs - 4.0*86400.0
         model_end = now_time_secs + 4.0*86400.0
@@ -456,7 +461,7 @@ while True:
 
     plt.close("all")
 
-    tm_link = "http://cxc.cfa.harvard.edu/acis/Thermal/%s/%s.html" % (load_year, load_dir)
+    tm_link = tm_link_base % (load_year, load_dir)
     footer = ["<a name=\"plots\"><h2><font face=\"times\">Temperature Models</font></h2></a>",
               "<a href=\"%s\"><font face=\"times\" color=\"blue\">Full thermal models for %s</font></a><p />" % (tm_link, load_name)]
 
