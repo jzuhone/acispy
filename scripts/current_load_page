@@ -452,14 +452,18 @@ while True:
 
     w1, h1 = dp.fig.get_size_inches()
 
-    ccd = acispy.DatePlot(ds_model, "ccd_count", field2=("states", "simpos"), color="blue",
-                          figsize=(10,8))
+    ccd = acispy.DatePlot(ds_model, ["ccd_count", "fep_count"], ls=["-", "--"],
+                          field2=("states", "simpos"), color=["blue"]*2, figsize=(10,8))
     ccd.add_vline(now_time_str, lw=3)
-    title_str = "%s\nCurrent CCD count: %d\nCurrent SIM-Z: %g" % (now_time_str, ds_model["ccd_count"][now_time_str].value,
-                                                                  ds_model["states","simpos"][now_time_str].value)
+    title_str = "%s\nCurrent CCD count: %d, Current FEP count: %d\nCurrent SIM-Z: %g" % (now_time_str,
+                                                                                         ds_model["ccd_count"][now_time_str].value,
+                                                                                         ds_model["fep_count"][now_time_str].value, 
+                                                                                         ds_model["states","simpos"][now_time_str].value)
     ccd.set_title(title_str)
+    ccd.set_ylabel("CCD/FEP Count")
     add_annotations(ccd, begin_time_secs, end_time_secs, simtrans, comms, cti_runs, radzones)
     ccd.set_xlim(begin_time_str, end_time_str)
+    ccd.set_ylim(0, 6.5)
 
     w2, h2 = ccd.fig.get_size_inches()
     lm = dp.fig.subplotpars.left*w1/w2
