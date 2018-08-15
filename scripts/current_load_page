@@ -91,7 +91,7 @@ fp_limits = {"acis_i": -114.0,
              "fp_sens": -118.7}
 
 obsid_link_base = "https://icxc.harvard.edu/cgi-bin/mp/target_param.cgi?"
-mit_link_base = "http://acis.mit.edu/cgi-bin/get-atbls?tag=%s"
+mit_link_base = "http://acis.mit.edu/cgi-bin/get-atbls?tag="
 lr_link_base = "http://cxc.cfa.harvard.edu/acis/lr_texts/%s/%s_lr.html"
 tm_link_base = "http://cxc.cfa.harvard.edu/acis/Thermal/%s/%s.html"
 
@@ -166,7 +166,7 @@ def process_commands(now_time_utc, now_time_local, cmds):
         param = None
 
         if cmd["type"] == "ACISPKT":
-            param = "\t<a href=\"%s%s\">%s</a>" % (mit_link_base, cmd["tlmsid"], cmd["tlmsid"])
+            param = "\t<a href=\"%s%s\"><font color=\"blue\">%s</font></a>" % (mit_link_base, cmd["tlmsid"], cmd["tlmsid"])
             if cmd["tlmsid"].startswith("XCZ") or cmd["tlmsid"].startswith("XTZ"):
                 in_science = True
                 duration = the_time
