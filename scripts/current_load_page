@@ -13,6 +13,7 @@ from kadi import events, commands
 import numpy as np
 from Ska.Matplotlib import cxctime2plotdate
 import bisect
+from Chandra.cmd_states import decode_power
 
 six_hours = 6.0*3600.0
 dsnfile = "/data/acis/dsn_summary.dat"
@@ -108,6 +109,10 @@ def get_instr(simpos):
     return instr
 
 
+def detect_safing_actions(t):
+    pass
+
+
 def find_the_load(t):
     load = None
     ls = events.load_segments.filter(start=t-43200.0, stop=t+43200.0)
@@ -176,7 +181,7 @@ def process_commands(now_time_utc, now_time_local, cmds):
                 duration = the_time
             if cmd["tlmsid"].startswith("AA000") and in_science:
                 in_science = False
-                duration -= the_time
+                duration -= the_time                
         elif cmd["type"] == "SIMTRANS":
             simpos = int(cmd["params"]['pos'])
             instr = get_instr(simpos)
@@ -220,6 +225,24 @@ def process_commands(now_time_utc, now_time_local, cmds):
             outlines.append(line)
             cmdtimes.append(the_time)
             duration = None
+
+        if cmd["type"] == "ACISPKT" and cmd["tlmsid"].startswith("WS"):
+            if cmd["tlmsid"].startswith("WSPOW"):
+                pow_dict = decode_power(cmd["tlmsid"])
+                if pow_dict["fep_count"] == 6:
+                    feps = "All FEPs up"
+                else:
+                    feps = pow_dict["feps"]
+                if pow_dict["ccd_count"] == 6:
+                    vids = "All vids up"
+                else:
+                    vids = pow_dict["ccds"]
+                outcome = "%s; %s" % (feps, vids)
+            elif cmd["tlmsid"] == "WSVIDALLDN":
+                outcome = "All vids down"
+            line = "==> WSPOW COMMAND LOADS: %s\n" % outcome
+            outlines.append(line)
+            outlines.append(the_time)
 
     outlines += ["</pre>", "</body>"]
 
