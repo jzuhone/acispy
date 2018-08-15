@@ -229,20 +229,20 @@ def process_commands(now_time_utc, now_time_local, cmds):
         if cmd["type"] == "ACISPKT" and cmd["tlmsid"].startswith("WS"):
             if cmd["tlmsid"].startswith("WSPOW"):
                 pow_dict = decode_power(cmd["tlmsid"])
-                if pow_dict["fep_count"] == 6:
-                    feps = "All FEPs up"
+                if pow_dict["fep_count"] == 0:
+                    feps = "All FEPs down"
                 else:
-                    feps = pow_dict["feps"]
-                if pow_dict["ccd_count"] == 6:
-                    vids = "All vids up"
+                    feps = "FEPs: %s" % pow_dict["feps"]
+                if pow_dict["ccd_count"] == 0:
+                    vids = "All vids down"
                 else:
-                    vids = pow_dict["ccds"]
+                    vids = "CCDs: %s" % pow_dict["ccds"]
                 outcome = "%s; %s" % (feps, vids)
             elif cmd["tlmsid"] == "WSVIDALLDN":
                 outcome = "All vids down"
             line = "==> WSPOW COMMAND LOADS: %s\n" % outcome
             outlines.append(line)
-            outlines.append(the_time)
+            cmdtimes.append(the_time)
 
     outlines += ["</pre>", "</body>"]
 
