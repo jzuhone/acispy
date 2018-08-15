@@ -109,12 +109,15 @@ def get_instr(simpos):
 
 
 def find_the_load(t):
-    ls = events.load_segments.filter(start=t, stop=t+300.0)
+    load = None
+    ls = events.load_segments.filter(start=t-43200.0, stop=t+43200.0)
     if len(ls) > 0:
-        return ls[0].load_name
-    else:
-        return None
-
+        for l in ls:
+            if t > load.tstop:
+                load = l.load_name
+            else:
+                break
+    return load
 
 def process_commands(now_time_utc, now_time_local, cmds):
 
