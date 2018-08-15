@@ -166,7 +166,7 @@ def process_commands(now_time_utc, now_time_local, cmds):
         param = None
 
         if cmd["type"] == "ACISPKT":
-            param = "\t%s" % cmd["tlmsid"]
+            param = "\t<a href=\"%s%s\">%s</a>" % (mit_link_base, cmd["tlmsid"], cmd["tlmsid"])
             if cmd["tlmsid"].startswith("XCZ") or cmd["tlmsid"].startswith("XTZ"):
                 in_science = True
                 duration = the_time
@@ -207,9 +207,6 @@ def process_commands(now_time_utc, now_time_local, cmds):
             if param < 40000:
                 line = line.replace(str(param),
                                     "<a href=\"%s%s\"><font color=\"blue\">%s</font></a>" % (obsid_link_base, param, param))
-
-        if cmd["type"] == "ACISPKT":
-            line = line.replace(param, mit_link_base % param)
 
         outlines.append(line+"\n")
         cmdtimes.append(the_time)
