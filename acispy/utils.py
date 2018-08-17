@@ -24,12 +24,14 @@ acispyLogger.propagate = False
 
 mylog = acispyLogger
 
+
 def get_time(time, fmt='date'):
     if time is "now":
         time = DateTime()
     else:
         time = DateTime(time)
     return getattr(time, fmt)
+
 
 def ensure_tuple(obj):
     """
@@ -42,7 +44,8 @@ def ensure_tuple(obj):
     elif isinstance(obj, (list, np.ndarray)):
         return tuple(obj)
     else:
-        return (obj,)
+        return obj,
+
 
 def ensure_list(obj):
     """
@@ -55,6 +58,7 @@ def ensure_list(obj):
     if not isinstance(obj, list):
         return [obj]
     return obj
+
 
 def ensure_numpy_array(obj):
     """
@@ -71,11 +75,13 @@ def ensure_numpy_array(obj):
     else:
         return np.asarray([obj])
 
+
 def calc_off_nom_rolls(states):
     times = np.array(0.5*(states['tstart'] + states['tstop']))
     atts = np.array([states["q%d" % x] for x in range(1, 5)]).transpose()
     return np.array([Ska.Sun.off_nominal_roll(att, time)
                      for time, att in zip(times, atts)])
+
 
 default_states = ["ccd_count", "clocking", "ra", "dec", "dither", "fep_count",
                   "hetg", "letg", "obsid", "pcad_mode", "pitch", "power_cmd",
@@ -141,6 +147,7 @@ cti_simodes = ["TE_007AC", "TE_00B26", "TE_007AE",
                "TE_00CA8", "TE_00C60", "TE_007AE",
                "TN_000B4", "TN_000B6"]
 
+
 def get_display_name(type, name):
     if type.startswith("model"):
         display_name = name.upper() + " Model"
@@ -152,17 +159,21 @@ def get_display_name(type, name):
         display_name = name.upper()
     return display_name
 
+
 def bracket_times(times_in, times_out):
     ok = (times_out >= times_in[0]) & (times_out <= times_in[-1])
     return ok
+
 
 def interpolate(times_in, times_out, data_in):
     data_out = Ska.Numpy.interpolate(data_in, times_in, times_out,
                                      method='linear', sorted=True)
     return data_out
 
+
 def moving_average(a, n=5):
     return Ska.Numpy.smooth(a, window_len=n, window='flat')
+
 
 def get_state_codes(msid):
     import Ska.tdb
@@ -179,10 +190,12 @@ def get_state_codes(msid):
                                for state in states)
     return state_codes
 
+
 def convert_state_code(ds, field):
     return np.array([ds.state_codes[field].get(val, -1) for val in ds[field]])
 
 lr_root = "/data/acis/LoadReviews"
+
 
 def find_load(load_name):
     load_week = load_name[:7]
@@ -192,6 +205,7 @@ def find_load(load_name):
     if len(load_name) == 7:
         load_name = load_week + load_letter
     return load_name
+
 
 def find_state_keys(states):
     state_keys = [state for state in states if state in default_states]
