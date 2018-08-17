@@ -115,7 +115,7 @@ def detect_safing_actions(t):
 
 def find_the_load(t):
     load = None
-    ls = events.load_segments.filter(start=t-43200.0, stop=t+43200.0)
+    ls = events.load_segments.filter(start=t-86400.0, stop=t+86400.0)
     if len(ls) > 0:
         for l in ls:
             if t > l.tstop:
@@ -366,8 +366,8 @@ while True:
     load_name = find_the_load(now_time_secs)
 
     if load_name is None:
-        if old_load_name == "":
-            raise RuntimeError("Cannot find any load!!")
+        #if old_load_name == "":
+        #    raise RuntimeError("Cannot find any load!!")
         # Fallback so we don't crash
         load_name = old_load_name
     else:
@@ -413,9 +413,12 @@ while True:
     tl_ts = os.path.getmtime("/data/acis/eng_plots/acis_eng_10day.tl")
     dea_tl_ts = os.path.getmtime("/data/acis/eng_plots/acis_dea_10day.tl")
     if tl_ts != last_tl_ts or dea_tl_ts != last_dea_tl_ts or ds_tlm is None:
-        ds_tlm = acispy.TenDayTracelogData(tbegin=begin_time_str)
-        last_tl_ts = tl_ts
-        last_dea_tl_ts = dea_tl_ts
+        try:
+            ds_tlm = acispy.TenDayTracelogData(tbegin=begin_time_str)
+            last_tl_ts = tl_ts
+            last_dea_tl_ts = dea_tl_ts
+        except:
+            pass
 
     for temp in temps:
         ds_model = ds_models[temp]
