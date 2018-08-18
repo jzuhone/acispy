@@ -1,14 +1,15 @@
 from acispy.utils import get_time, mit_trans_table, ensure_list, \
     get_state_codes
-from acispy.units import get_units
+from acispy.units import get_units, APQuantity, APStringArray, \
+    Quantity
 import Ska.engarchive.fetch_sci as fetch
 from astropy.io import ascii
 import numpy as np
-from acispy.units import APQuantity, APStringArray, Quantity
 from acispy.time_series import TimeSeriesData
 import six
 from Chandra.Time import date2secs, DateTime
 import Ska.Numpy
+from acispy.fields import builtin_deps
 
 if six.PY2:
     str_type = "|S4"
@@ -16,8 +17,21 @@ else:
     str_type = "|U4"
 
 
+def check_depends(msids):
+    output_msids = []
+    derived_msids = []
+    for msid in msids:
+        if ("msids", msid) in builtin_deps:
+            output_msids += [field[1] for field in builtin_deps["msids", msid]]
+            derived_msids.append(msid)
+        else:
+            output_msids.append(msid)
+    return output_msids, derived_msids
+
+
 class MSIDs(TimeSeriesData):
-    def __init__(self, table, times, state_codes=None, masks=None):
+    def __init__(self, table, times, state_codes=None, masks=None,
+                 derived_msids=None):
         super(MSIDs, self).__init__()
         if state_codes is None:
             state_codes = {}
@@ -33,7 +47,7 @@ class MSIDs(TimeSeriesData):
                 self.table[k] = APQuantity(v, t, unit=unit, dtype=v.dtype, 
                                            mask=mask)
         self.state_codes = state_codes
-
+        self.derived_msids = derived_msids
 
     @classmethod
     def from_mit_file(cls, filename, tbegin=None, tend=None):
@@ -136,7 +150,8 @@ class MSIDs(TimeSeriesData):
         idxs = np.logical_and(data['time'] >= tbegin, data['time'] <= tend)
         table = dict((k.lower(), data[k][idxs]) for k in data.dtype.names if k != "time")
         times = dict((k.lower(), data["time"][idxs]) for k in header if k != "time")
-        return cls(table, times, state_codes=state_codes)
+        derived_msids = ["dpa_a_power", "dpa_b_power", "dea_a_power", "dea_b_power"]
+        return cls(table, times, state_codes=state_codes, derived_msids=derived_msids)
 
     @classmethod
     def from_database(cls, msids, tstart, tstop=None, filter_bad=False,
@@ -144,6 +159,7 @@ class MSIDs(TimeSeriesData):
         tstart = get_time(tstart)
         tstop = get_time(tstop)
         msids = ensure_list(msids)
+        msids, derived_msids = check_depends(msids)
         msids = [msid.lower() for msid in msids]
         data = fetch.MSIDset(msids, tstart, stop=tstop, filter_bad=filter_bad,
                              stat=stat)
@@ -174,7 +190,8 @@ class MSIDs(TimeSeriesData):
             if msid.bads is not None:
                 masks[k.lower()] = (~msid.bads)[indexes]
             times[k.lower()] = get_time(data[k].times[indexes], 'secs')
-        return cls(table, times, state_codes=state_codes, masks=masks)
+        return cls(table, times, state_codes=state_codes, masks=masks,
+                   derived_msids=derived_msids)
 
     @classmethod
     def from_maude(cls, msids, tstart, tstop=None, user=None, password=None):
@@ -182,6 +199,7 @@ class MSIDs(TimeSeriesData):
         tstart = get_time(tstart)
         tstop = get_time(tstop)
         msids = ensure_list(msids)
+        msids, derived_msids = check_depends(msids)
         table = {}
         times = {}
         state_codes = {}
@@ -192,18 +210,26 @@ class MSIDs(TimeSeriesData):
             table[k] = msid["values"]
             times[k] = msid['times']
             state_codes[k] = get_state_codes(k)
-        return cls(table, times, state_codes=state_codes)
+        return cls(table, times, state_codes=state_codes, 
+                   derived_msids=derived_msids)
 
 
 class CombinedMSIDs(TimeSeriesData):
     def __init__(self, msid_list):
         super(CombinedMSIDs, self).__init__()
         self.state_codes = {}
+        derived_msids = []
         for msids in msid_list:
             self.table.update(msids.table)
             self.table.update(msids.table)
             self.state_codes.update(msids.state_codes)
             self.state_codes.update(msids.state_codes)
+            if msids.derived_msids is not None:
+                derived_msids += msids.derived_msids
+        if len(derived_msids) > 0:
+            self.derived_msids = derived_msids
+        else:
+            self.derived_msids = None
 
 
 class ConcatenatedMSIDs(TimeSeriesData):

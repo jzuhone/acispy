@@ -2,8 +2,9 @@ from acispy.msids import MSIDs, CombinedMSIDs, ConcatenatedMSIDs
 from acispy.states import States, cmd_state_codes
 from acispy.units import APQuantity, APStringArray
 from Chandra.Time import secs2date
-from acispy.fields import create_derived_fields, \
-    DerivedField, FieldContainer, OutputFieldFunction
+from acispy.fields import create_builtin_derived_msids, \
+    DerivedField, FieldContainer, OutputFieldFunction, \
+    OutputFieldsNotFound, create_builtin_derived_states
 from acispy.time_series import TimeSeriesData, EmptyTimeSeries
 from acispy.utils import get_display_name, moving_average, \
     ensure_list, get_time
@@ -12,6 +13,7 @@ import numpy as np
 import os
 from six import string_types
 import Ska.engarchive.fetch_sci as fetch
+
 
 class Dataset(object):
     def __init__(self, msids, states, model):
@@ -29,7 +31,10 @@ class Dataset(object):
             for key, value in model.items():
                 setattr(self, key, value)
                 self._populate_fields(key, value)
-        create_derived_fields(self)
+        if not isinstance(self.msids, EmptyTimeSeries):
+            create_builtin_derived_msids(self)
+        if not isinstance(self.states, EmptyTimeSeries):
+            create_builtin_derived_states(self)
         self.data = {}
         self.state_codes = {}
         if hasattr(self.msids, "state_codes"):
@@ -89,7 +94,6 @@ class Dataset(object):
                     checked_field = candidates[0]
             else:
                 raise RuntimeError("Invalid field specification {}!".format(field))
-            self._checked_fields.append(checked_field)
         else:
             checked_field = field
         return checked_field
@@ -98,8 +102,17 @@ class Dataset(object):
     def derived_field_list(self):
         return list(self.fields.derived_fields.keys())
 
+    def _check_derived_field(self, field, df):
+        if df.depends is not None:
+            dep_list = []
+            for fd in df.depends:
+                if fd not in self.fields.list_all_fields():
+                    dep_list.append(fd)
+            if len(dep_list) > 0:
+                raise OutputFieldsNotFound(field, dep_list)
+
     def add_derived_field(self, ftype, fname, function, units,
-                          display_name=None):
+                          display_name=None, depends=None):
         """
         Add a new derived field.
 
@@ -129,7 +142,9 @@ class Dataset(object):
         ...                      "W", display_name="DPA-A Power")
         """
         df = DerivedField(ftype, fname, function, units,
-                          display_name=display_name)
+                          display_name=display_name, 
+                          depends=depends)
+        self._check_derived_field((ftype, fname), df)
         self.fields.derived_fields[ftype, fname] = df
         if ftype not in self.fields.types:
             self.fields.types.append(ftype)
@@ -157,7 +172,8 @@ class Dataset(object):
         display_name = "Average %s" % self.fields[ftype, fname].display_name
         units = get_units(ftype, fname)
         self.add_derived_field(ftype, "avg_%s" % fname, _avg, units,
-                               display_name=display_name)
+                               display_name=display_name, 
+                               depends=[(ftype, fname)])
 
     def map_state_to_msid(self, state, msid, ftype="msids"):
         """
@@ -191,7 +207,8 @@ class Dataset(object):
             else:
                 return APQuantity(v, msid_times, unit=units)
         self.add_derived_field(ftype, state, _state, units,
-                               display_name=self.fields["states", state].display_name)
+                               display_name=self.fields["states", state].display_name,
+                               depends=[(ftype, msid)])
 
     def add_diff_data_model_field(self, msid, ftype_model="model"):
         r"""
@@ -214,7 +231,8 @@ class Dataset(object):
             return ds["msids", msid]-ds[ftype_model, msid]
         display_name = self.fields["msids", msid].display_name.replace('_', '\_')
         self.add_derived_field(ftype_model, "diff_%s" % msid, _diff, units,
-                               display_name="$\mathrm{\Delta(%s)}$" % display_name)
+                               display_name="$\mathrm{\Delta(%s)}$" % display_name,
+                               depends=[("msids", msid), (ftype_model, msid)])
 
     def times(self, *args):
         """
@@ -432,17 +450,21 @@ class MaudeData(Dataset):
         DBI server or HDF5 file to grab states from. Default: None, which will
         grab the states from the main commanded states database.
     """
-    def __init__(self, tstart, tstop, msids, user=None, password=None, server=None):
+    def __init__(self, tstart, tstop, msids, user=None, password=None, 
+                 server=None, other_msids=None):
         tstart = get_time(tstart)
         tstop = get_time(tstop)
         msids = MSIDs.from_maude(msids, tstart, tstop=tstop, user=user,
                                  password=password)
+        if other_msids is not None:
+            msids2 = MSIDs.from_database(other_msids, tstart, tstop)
+            msids = CombinedMSIDs([msids, msids2])
         states = States.from_database(tstart, tstop, server=server)
         model = EmptyTimeSeries()
         super(MaudeData, self).__init__(msids, states, model)
 
 
-def _parse_tracelogs(tbegin, tend, filenames):
+def _parse_tracelogs(tbegin, tend, filenames, other_msids):
     filenames = ensure_list(filenames)
     if tbegin is not None:
         tbegin = get_time(tbegin)
@@ -461,6 +483,8 @@ def _parse_tracelogs(tbegin, tend, filenames):
         else:
             raise RuntimeError("I cannot parse this file!")
         msid_objs.append(msids)
+    if other_msids is not None:
+        msid_objs.append(MSIDs.from_database(other_msids, tbegin, tend))
     all_msids = CombinedMSIDs(msid_objs)
     return all_msids
 
@@ -489,8 +513,9 @@ class TracelogData(Dataset):
     >>> from acispy import TracelogData
     >>> ds = TracelogData("acisENG10d_00985114479.70.tl")
     """
-    def __init__(self, filenames, tbegin=None, tend=None, server=None):
-        msids = _parse_tracelogs(tbegin, tend, filenames)
+    def __init__(self, filenames, tbegin=None, tend=None, server=None,
+                 other_msids=None):
+        msids = _parse_tracelogs(tbegin, tend, filenames, other_msids)
         tmin = 1.0e55
         tmax = -1.0e55
         for v in msids.values():
@@ -519,10 +544,11 @@ class EngineeringTracelogData(TracelogData):
         DBI server or HDF5 file to grab states from. Default: None, which will
         grab the states from the main commanded states database.
     """
-    def __init__(self, tbegin=None, tend=None, server=None):
+    def __init__(self, tbegin=None, tend=None, server=None, other_msids=None):
         filename = "/data/acis/eng_plots/acis_eng_10day.tl"
         super(EngineeringTracelogData, self).__init__(filename, tbegin=tbegin, tend=tend,
-                                                      server=server)
+                                                      server=server, 
+                                                      other_msids=other_msids)
 
 
 class DEAHousekeepingTracelogData(TracelogData):
@@ -542,10 +568,11 @@ class DEAHousekeepingTracelogData(TracelogData):
         DBI server or HDF5 file to grab states from. Default: None, which will
         grab the states from the main commanded states database.
     """
-    def __init__(self, tbegin=None, tend=None, server=None):
+    def __init__(self, tbegin=None, tend=None, server=None, other_msids=None):
         filename = "/data/acis/eng_plots/acis_dea_10day.tl"
         super(DEAHousekeepingTracelogData, self).__init__(filename, tbegin=tbegin,
-                                                          tend=tend, server=server)
+                                                          tend=tend, server=server,
+                                                          other_msids=other_msids)
 
 
 class TenDayTracelogData(TracelogData):
@@ -565,11 +592,13 @@ class TenDayTracelogData(TracelogData):
         DBI server or HDF5 file to grab states from. Default: None, which will
         grab the states from the main commanded states database.
     """
-    def __init__(self, tbegin=None, tend=None, server=None):
+    def __init__(self, tbegin=None, tend=None, server=None, other_msids=None):
         filenames = ["/data/acis/eng_plots/acis_eng_10day.tl",
                      "/data/acis/eng_plots/acis_dea_10day.tl"]
         super(TenDayTracelogData, self).__init__(filenames, tbegin=tbegin,
-                                                 tend=tend, server=server)
+                                                 tend=tend, server=server,
+                                                 other_msids=other_msids)
+
 
 class TelemData(Dataset):
     """
