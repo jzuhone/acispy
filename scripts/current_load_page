@@ -485,6 +485,7 @@ while True:
     add_annotations(roll, begin_time_secs, end_time_secs, simtrans, comms, cti_runs, radzones)
     roll.set_xlim(begin_time_str, end_time_str)
     roll.ax2.set_yscale("log")
+    roll.set_ylabel2("Earth Solid Angle (sr)")
 
     w3, h3 = roll.fig.get_size_inches()
     lm = dp.fig.subplotpars.left*w1/w2
