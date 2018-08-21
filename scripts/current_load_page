@@ -258,7 +258,7 @@ def find_cti_runs(states):
         idxs = np.concatenate([[False], where_mode, [False]])
         idxs = np.flatnonzero(idxs[1:] != idxs[:-1]).reshape(-1, 2)
         for ii, jj in idxs:
-            cti_runs += [si_modes.dates[0, ii], si_modes.dates[0, jj]]
+            cti_runs += [si_modes.dates[0, ii], si_modes.dates[0, jj-1]]
     return cti_runs
 
 
@@ -321,7 +321,7 @@ def add_annotations(dp, tmin, tmax, simtrans, comms, cti_runs, radzones):
         tc_end = date2secs(comm[1])
         in_evt = (t >= tc_start) & (t <= tc_end)
         dp.ax.fill_between(tplot, ybot, ytop,
-                           where=in_evt, color="pink")
+                           where=in_evt, color="pink", alpha=0.333333)
 
 
 parser = argparse.ArgumentParser(description='Run script for the "ACIS Current Load Real-Time" page.')
