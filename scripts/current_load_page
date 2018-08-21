@@ -321,7 +321,7 @@ def add_annotations(dp, tmin, tmax, simtrans, comms, cti_runs, radzones):
         tc_end = date2secs(comm[1])
         in_evt = (t >= tc_start) & (t <= tc_end)
         dp.ax.fill_between(tplot, ybot, ytop,
-                           where=in_evt, color="pink", alpha=0.333333)
+                           where=in_evt, color="pink", alpha=0.75)
 
 
 parser = argparse.ArgumentParser(description='Run script for the "ACIS Current Load Real-Time" page.')
@@ -365,9 +365,6 @@ while True:
     load_name = find_the_load(now_time_secs)
 
     if load_name is None:
-        #if old_load_name == "":
-        #    raise RuntimeError("Cannot find any load!!")
-        # Fallback so we don't crash
         load_name = old_load_name
     else:
         old_load_name = load_name
