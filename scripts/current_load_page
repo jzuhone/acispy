@@ -300,7 +300,7 @@ def add_annotations(dp, tmin, tmax, simtrans, comms, cti_runs, radzones):
         dp.add_vline(tran[0], color='brown', ls='-')
         t = date2secs(tran[0])
         tdt = secs2date(t + 1800.0)
-        if t < tmax or t+3600.0 > tmax:
+        if t < tmin or t+3600.0 > tmax:
             continue
         ymin, ymax = dp.ax.get_ylim()
         y = 0.25*ymin + 0.75*ymax
