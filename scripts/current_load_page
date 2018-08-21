@@ -15,7 +15,6 @@ from Ska.Matplotlib import cxctime2plotdate
 import bisect
 from Chandra.cmd_states import decode_power
 
-six_hours = 6.0*3600.0
 dsnfile = "/data/acis/dsn_summary.dat"
 
 header = ['<?xml version="1.0" encoding="UTF-8">',
@@ -514,6 +513,6 @@ while True:
         f.write("\n".join(lr_web_css))
         f.close()
 
-    if now_time_secs - last_reload_time > six_hours:
+    if now_time_secs - last_reload_time > 3600.0:
         reload = True
 
