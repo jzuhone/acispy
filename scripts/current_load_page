@@ -180,7 +180,7 @@ def process_commands(now_time_utc, now_time_local, cmds):
                 duration = the_time
             if cmd["tlmsid"].startswith("AA000") and in_science:
                 in_science = False
-                duration -= the_time                
+                duration -= the_time
         elif cmd["type"] == "SIMTRANS":
             simpos = int(cmd["params"]['pos'])
             instr = get_instr(simpos)
@@ -375,7 +375,7 @@ while True:
     load_year = "20%s" % load_name[-3:-1]
     lr_link = lr_link_base % (load_year, load_name)
     load_dir = load_name[:-1]
-    
+
     outlines = ["<font face=\"times\">This is the <a href=\"%s\"><font style=\"color:blue\">%s</font></a> load.</font>" % (lr_link, load_name),
                 " ", " "]
 
@@ -473,15 +473,15 @@ while True:
     ccd.fig.subplots_adjust(left=lm, right=rm)
     ccd.savefig(os.path.join(outdir, "current_ccd.png"))
 
-    roll = acispy.DatePlot(ds_model, "off_nominal_roll", field2="grating", color="blue",
+    roll = acispy.DatePlot(ds_model, "off_nominal_roll", field2="earth_solid_angle", color="blue",
                            figsize=(10, 8))
     roll.add_vline(now_time_str, lw=3)
-    title_str = "%s\nCurrent Off-nominal roll: %.2f degree\nGrating: %s" % (now_time_str,
+    title_str = "%s\nCurrent Off-nominal roll: %.2f degree\nEarth Solid Angle: %s sr" % (now_time_str,
                                                                              ds_model["off_nominal_roll"][now_time_str].value,
-                                                                             ds_model["grating"][now_time_str])
+                                                                             ds_model["earth_solid_angle"][now_time_str])
     roll.set_title(title_str)
     roll.set_ylim(-20.0, 20.0)
-    roll.set_ylim2(-0.5, 2.5)
+    roll.set_ylim2(1.0e-3, 1.0)
     add_annotations(roll, begin_time_secs, end_time_secs, simtrans, comms, cti_runs, radzones)
     roll.set_xlim(begin_time_str, end_time_str)
 
