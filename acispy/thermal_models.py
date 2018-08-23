@@ -234,6 +234,8 @@ class ThermalModelFromLoad(ModelDataset):
                 times = model[comps[0]].times.value
                 tstart = secs2date(times[0]-700.0)
                 tstop = secs2date(times[-1]+700.0)
+                if "earth_solid_angle" in comps:
+                    comps.remove("earth_solid_angle")
                 msids = MSIDs.from_database(comps, tstart, tstop=tstop,
                                             interpolate=True, interpolate_times=times)
                 if msids[comps[0]].times.size != times.size:

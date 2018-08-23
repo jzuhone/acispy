@@ -657,7 +657,8 @@ class TelemData(Dataset):
             elif recent_source == "tracelog":
                 msids2 = _parse_tracelogs(tmid, tstop,
                                           ["/data/acis/eng_plots/acis_eng_10day.tl",
-                                           "/data/acis/eng_plots/acis_dea_10day.tl"])
+                                           "/data/acis/eng_plots/acis_dea_10day.tl"],
+                                          None)
             msids = ConcatenatedMSIDs(msids1, msids2)
         else:
             msids = MSIDs.from_database(msids, tstart, tstop=tstop,
