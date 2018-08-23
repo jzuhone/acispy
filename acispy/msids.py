@@ -247,3 +247,4 @@ class ConcatenatedMSIDs(TimeSeriesData):
             else:
                 self.table[key] = APQuantity(v, t, unit=v1.unit, dtype=v.dtype,
                                              mask=mask)
+        self.derived_msids = msids1.derived_msids
