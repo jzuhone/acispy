@@ -218,6 +218,7 @@ class ThermalModelFromLoad(ModelDataset):
         if comps is None:
             comps = ["1deamzt","1dpamzt","1pdeaat","fptemp_11",
                      "tmp_fep1_mong", "tmp_fep1_actel", "tmp_bep_pcb"]
+        comps = ensure_list(comps)
         if time_range is not None:
             time_range = [date2secs(t) for t in time_range]
         model = Model.from_load_page(load, comps, time_range=time_range)
