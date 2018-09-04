@@ -293,8 +293,9 @@ def insert_comms(cmdtimes, cmdlines, comms, durations, tmin, tmax):
         idx = bisect.bisect_right(cmdtimes, tend)
         cmdtimes.insert(idx, tend)
         cmdlines.insert(idx, "<commline>%s   REAL-TIME COMM ENDS     %s  EDT             </commline>\n" % (comm[1], tend_loc.strftime("%Y:%j:%H:%M:%S")))
-        cmdtimes.insert(idx+1, tend)
-        cmdlines.insert(idx+1, "==> COMM DURATION:  %.2f mins.\n" % durations[i])
+        idx = bisect.bisect_right(cmdtimes, tend)
+        cmdtimes.insert(idx, tend)
+        cmdlines.insert(idx, "==> COMM DURATION:  %.2f mins.\n" % durations[i])
 
 
 def add_annotations(dp, tmin, tmax, simtrans, comms, cti_runs, radzones):
