@@ -512,6 +512,6 @@ while True:
         f.write("\n".join(lr_web_css))
         f.close()
 
-    if now_time_secs - last_reload_time > 3600.0:
+    if now_time_secs - last_reload_time > 600.0:
         reload = True
 
