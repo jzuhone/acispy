@@ -174,7 +174,9 @@ def process_commands(now_time_utc, now_time_local, cmds):
         param = None
 
         if cmd["type"] == "ACISPKT":
-            param = "\t<a href=\"%s%s\"><font color=\"blue\">%s</font></a>" % (mit_link_base, cmd["tlmsid"], cmd["tlmsid"])
+            param = "\t<a href=\"%s%s\"><font color=\"blue\">%s</font></a>" % (mit_link_base, 
+                                                                               cmd["tlmsid"], 
+                                                                               cmd["tlmsid"])
             if cmd["tlmsid"].startswith("XCZ") or cmd["tlmsid"].startswith("XTZ"):
                 in_science = True
                 duration = the_time
@@ -417,16 +419,16 @@ while True:
             pass
 
     for temp in temps:
-        ds_model = ds_models[temp]
-        dp = acispy.DatePlot(ds_model, ("model", temp), field2="pitch", color="blue",
+        ds_m = ds_models[temp]
+        dp = acispy.DatePlot(ds_m, ("model", temp), field2="pitch", color="blue",
                              figsize=(10, 10))
         dp2 = acispy.DatePlot(ds_tlm, ("msids", temp), color="red", plot=dp)
         dp.add_vline(now_time_str, lw=3)
         title_str = "%s\nCurrent %s prediction: %.2f $\mathrm{^\circ{C}}$\nCurrent pitch: %.2f degrees"
-        title_str %= (now_time_str, temp.upper(), ds_model["model", temp][now_time_str].value,
-                      ds_model["pitch"][now_time_str].value)
-        title_str += "\nCurrent instrument: %s, Current ObsID: %d" % (ds_model["states", "instrument"][now_time_str],
-                                                                      ds_model["states", "obsid"][now_time_str])
+        title_str %= (now_time_str, temp.upper(), ds_m["model", temp][now_time_str].value,
+                      ds_m["pitch"][now_time_str].value)
+        title_str += "\nCurrent instrument: %s, Current ObsID: %d" % (ds_m["states", "instrument"][now_time_str],
+                                                                      ds_m["states", "obsid"][now_time_str])
         if temp == "fptemp_11":
             dp.add_hline(fp_limits["acis_i"], color='purple')
             dp.add_hline(fp_limits["acis_s"], color='blue')
@@ -451,13 +453,13 @@ while True:
 
     w1, h1 = dp.fig.get_size_inches()
 
-    ccd = acispy.DatePlot(ds_model, ["ccd_count", "fep_count"], ls=["-", "--"],
+    ccd = acispy.DatePlot(ds_m, ["ccd_count", "fep_count"], ls=["-", "--"],
                           field2=("states", "simpos"), color=["blue"]*2, figsize=(10,8))
     ccd.add_vline(now_time_str, lw=3)
     title_str = "%s\nCurrent CCD count: %d, Current FEP count: %d\nCurrent SIM-Z: %g" % (now_time_str,
-                                                                                         ds_model["ccd_count"][now_time_str].value,
-                                                                                         ds_model["fep_count"][now_time_str].value, 
-                                                                                         ds_model["states","simpos"][now_time_str].value)
+                                                                                         ds_m["ccd_count"][now_time_str].value,
+                                                                                         ds_m["fep_count"][now_time_str].value, 
+                                                                                         ds_m["states","simpos"][now_time_str].value)
     ccd.set_title(title_str)
     ccd.set_ylabel("CCD/FEP Count")
     add_annotations(ccd, begin_time_secs, end_time_secs, simtrans, comms, cti_runs, radzones)
@@ -470,12 +472,12 @@ while True:
     ccd.fig.subplots_adjust(left=lm, right=rm)
     ccd.savefig(os.path.join(outdir, "current_ccd.png"))
 
-    roll = acispy.DatePlot(ds_models["fptemp_11"], "off_nominal_roll", field2="earth_solid_angle", color="blue",
+    roll = acispy.DatePlot(ds_m["fptemp_11"], "off_nominal_roll", field2="earth_solid_angle", color="blue",
                            figsize=(10, 8))
     roll.add_vline(now_time_str, lw=3)
     title_str = "%s\nCurrent Off-nominal roll: %.2f degree\nEarth Solid Angle: %s sr" % (now_time_str,
-        ds_models["fptemp_11"]["off_nominal_roll"][now_time_str].value,
-        ds_models["fptemp_11"]["earth_solid_angle"][now_time_str].value)
+        ds_m["fptemp_11"]["off_nominal_roll"][now_time_str].value,
+        ds_m["fptemp_11"]["earth_solid_angle"][now_time_str].value)
     roll.set_title(title_str)
     roll.set_ylim(-20.0, 20.0)
     roll.set_ylim2(1.0e-3, 1.0)
