@@ -124,17 +124,15 @@ def find_the_load(t):
     return load
 
 
-def process_commands(now_time_utc, now_time_local, cmds):
+def process_commands(now_time_utc, cmds):
 
     now_time_secs = DateTime(now_time_utc).secs
     end_time_secs = now_time_secs + 86400.0
     start_time_secs = now_time_secs - 86400.0
 
-    outlines = []
+    cmdlines = []
     cmdtimes = []
     simtrans = []
-
-    find_time = True
 
     in_science = False
 
@@ -146,15 +144,6 @@ def process_commands(now_time_utc, now_time_local, cmds):
 
         if the_time < start_time_secs or the_time > end_time_secs:
             continue
-
-        if the_time > now_time_secs and find_time:
-            new_line = '<a name="now"></a>NOW: %s (%s)' % (now_time_utc.strftime("%Y:%j:%H:%M:%S"),
-                                                           now_time_local.strftime("%D %H:%M:%S"))
-            new_line += ' ' * (100 - len(new_line))
-            new_line = '<font style="background-color:#5AC831"><b>%s</b></font>\n' % new_line
-            outlines.append(new_line)
-            cmdtimes.append(the_time)
-            find_time = False
 
         if cmd["type"] == "COMMAND_SW":
             if "OORM" not in cmd["params"]["msid"] and "ETG" not in cmd["params"]["msid"]:
@@ -218,12 +207,12 @@ def process_commands(now_time_utc, now_time_local, cmds):
                 line = line.replace(str(param),
                                     "<a href=\"%s%s\"><font color=\"blue\">%s</font></a>" % (obsid_link_base, param, param))
 
-        outlines.append(line+"\n")
+        cmdlines.append(line+"\n")
         cmdtimes.append(the_time)
 
         if duration is not None and not in_science:
             line = "==> ACIS integration time is %.2f ks.\n" % (-duration*1.0e-3)
-            outlines.append(line)
+            cmdlines.append(line)
             cmdtimes.append(the_time)
             duration = None
 
@@ -242,12 +231,12 @@ def process_commands(now_time_utc, now_time_local, cmds):
             elif cmd["tlmsid"] == "WSVIDALLDN":
                 outcome = "All vids down"
             line = "==> WSPOW COMMAND LOADS: %s\n" % outcome
-            outlines.append(line)
+            cmdlines.append(line)
             cmdtimes.append(the_time)
 
-    outlines += ["</pre>", "</body>"]
+    cmdlines += ["</pre>", "</body>"]
 
-    return cmdtimes, outlines, simtrans
+    return cmdtimes, cmdlines, simtrans
 
 
 def find_cti_runs(states):
@@ -296,6 +285,16 @@ def insert_comms(cmdtimes, cmdlines, comms, durations, tmin, tmax):
         idx = bisect.bisect_right(cmdtimes, tend)
         cmdtimes.insert(idx, tend)
         cmdlines.insert(idx, "==> COMM DURATION:  %.2f mins.\n" % durations[i])
+
+
+def insert_now_time(cmdtimes, cmdlines, now_time_secs, now_time_utc, now_time_local):
+    new_line = '<a name="now"></a>NOW: %s (%s)' % (now_time_utc.strftime("%Y:%j:%H:%M:%S"),
+                                                   now_time_local.strftime("%D %H:%M:%S"))
+    new_line += ' ' * (100 - len(new_line))
+    new_line = '<font style="background-color:#5AC831"><b>%s</b></font>\n' % new_line
+    idx = bisect.bisect_right(cmdtimes, now_time_secs)
+    cmdtimes.insert(idx, now_time_secs)
+    cmdlines.insert(idx, new_line)
 
 
 def add_annotations(dp, tmin, tmax, simtrans, comms, cti_runs, radzones):
@@ -376,9 +375,6 @@ while True:
     lr_link = lr_link_base % (load_year, load_name)
     load_dir = load_name[:-1]
 
-    outlines = ["<font face=\"times\">This is the <a href=\"%s\"><font style=\"color:blue\">%s</font></a> load.</font>" % (lr_link, load_name),
-                " ", " "]
-
     begin_time = now_time_utc - timedelta(days=1)
     end_time = begin_time + timedelta(days=2)
     last_time = begin_time + timedelta(days=4)
@@ -401,11 +397,17 @@ while True:
                                                                   use_msids=True)
         cti_runs = find_cti_runs(ds_models["1dpamzt"].states)
         reload = False
-        last_reload_time = DateTime(now_time_utc).secs
+        last_reload_time = now_time_secs
 
-    cmdtimes, cmdlines, simtrans = process_commands(now_time_utc,
-                                                    now_time_local, cmds)
+    outlines = ["<font face=\"times\">This is the <a href=\"%s\"><font style=\"color:blue\">%s</font></a> load.</font>" % (lr_link, load_name),
+                " ", " ", 
+                "<font face=\"times\">The last data update was at %s.</font>" % secs2date(last_reload_time),
+                " ", " "]
+
+    cmdtimes, cmdlines, simtrans = process_commands(now_time_utc, cmds)
     insert_comms(cmdtimes, cmdlines, comms, durations, begin_time_secs, end_time_secs)
+
+    insert_now_time(cmdtimes, cmdlines, now_time_secs, now_time_utc, now_time_local)
 
     outlines += cmdlines
 
