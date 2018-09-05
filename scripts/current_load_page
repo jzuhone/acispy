@@ -335,8 +335,6 @@ outfile = os.path.abspath(args.page_path)
 outdir = os.path.dirname(outfile)
 cssfile = os.path.join(outdir, "lr_web.css")
 
-find_load = True
-lr = None
 lr_link = None
 ds_models = {}
 ds_tlm = None
