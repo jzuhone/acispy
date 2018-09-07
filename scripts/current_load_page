@@ -216,7 +216,7 @@ def process_commands(now_time_utc, cmds):
             cmdtimes.append(the_time)
             duration = None
 
-        if cmd["type"] == "ACISPKT" and cmd["tlmsid"].startswith("WS"):
+        if cmd["type"] == "ACISPKT" and (cmd["tlmsid"].startswith("WSPOW") or cmd["tlmsid"] == "WSVIDALLDN"):
             if cmd["tlmsid"].startswith("WSPOW"):
                 pow_dict = decode_power(cmd["tlmsid"])
                 if pow_dict["fep_count"] == 0:
