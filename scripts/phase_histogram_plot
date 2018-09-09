@@ -23,23 +23,19 @@ states = []
 
 if args.x_field in state_labels:
     x_field = ("states", args.x_field)
-    states.append(args.x_field)
 else:
     msids.append(args.x_field)
     x_field = ("msids", args.x_field)
 
 if args.y_field in state_labels:
     y_field = ("states", args.y_field)
-    states.append(args.y_field)
 else:
     msids.append(args.y_field)
     y_field = ("msids", args.y_field)
 
-state_keys = find_state_keys(states)
-
 ds = acispy.ArchiveData(args.tstart, args.tstop,
-                        msid_keys=msids, state_keys=state_keys,
-                        interpolate_msids=True, filter_bad=True)
+                        msids, interpolate_msids=True, 
+                        filter_bad=True)
 
 if x_field[0] == "states" and y_field[0] != "states":
     ds.map_state_to_msid(x_field[1], y_field[1])

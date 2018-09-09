@@ -5,7 +5,7 @@ matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 import argparse
 import acispy
-from acispy.utils import state_labels, find_state_keys
+from acispy.utils import state_labels
 
 parser = argparse.ArgumentParser(description='Make plots of MSIDs and commanded states from the engineering archive')
 parser.add_argument("tstart", type=str, help='The start time in YYYY:DOY:HH:MM:SS format')
@@ -28,11 +28,9 @@ fields = [("msids", m) for m in msids] + [("states", s) for s in states]
 
 if len(msids) == 0:
     msids = None
-state_keys = find_state_keys(states)
 
 ds = acispy.ArchiveData(args.tstart, args.tstop,
-                        msid_keys=msids, state_keys=state_keys,
-                        filter_bad=True)
+                        msids, filter_bad=True)
 if args.one_panel:
     cp = acispy.DatePlot(ds, fields)
 else:

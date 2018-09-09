@@ -27,7 +27,7 @@ fields = [("msids", m) for m in msids] + [("states", s) for s in states]
 
 state_keys = find_state_keys(states)
 
-ds = acispy.TracelogData(args.tracelog, state_keys=state_keys)
+ds = acispy.TracelogData(args.tracelog)
 if args.one_panel:
     cp = acispy.DatePlot(ds, fields)
 else:

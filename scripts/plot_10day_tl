@@ -5,7 +5,7 @@ matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 import argparse
 import acispy
-from acispy.utils import state_labels, find_state_keys, mylog
+from acispy.utils import state_labels, mylog
 from Chandra.Time import date2secs, secs2date
 
 parser = argparse.ArgumentParser(description='Plot one or more MSIDs or states from the ACIS 10-day tracelog files.')
@@ -26,9 +26,7 @@ for p in args.fields.split(','):
 
 fields = [("msids", m) for m in msids] + [("states", s) for s in states]
 
-state_keys = find_state_keys(states)
-
-ds = acispy.TenDayTracelogData(state_keys=state_keys)
+ds = acispy.TenDayTracelogData()
 dates = ds["1dpamzt"].dates
 
 datestop = dates[-1]
