@@ -94,13 +94,14 @@ def create_builtin_derived_states(dset):
 
     # Off-nominal roll
 
-    def _off_nominal_roll(ds):
-        return APQuantity(calc_off_nom_rolls(ds.states),
-                          ds.states["q1"].times, "deg")
+    if "off_nominal_roll" not in dset.states:
+        def _off_nominal_roll(ds):
+            return APQuantity(calc_off_nom_rolls(ds.states),
+                              ds.states["q1"].times, "deg")
 
-    dset.add_derived_field("states", "off_nominal_roll", _off_nominal_roll,
-                           "deg", display_name="Off-Nominal Roll",
-                           depends=builtin_deps[("states", "off_nominal_roll")])
+        dset.add_derived_field("states", "off_nominal_roll", _off_nominal_roll,
+                               "deg", display_name="Off-Nominal Roll",
+                               depends=builtin_deps[("states", "off_nominal_roll")])
 
     # Grating
 
