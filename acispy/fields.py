@@ -38,8 +38,8 @@ class OutputFieldsNotFound(Exception):
         self.ofields = ofields
 
     def __str__(self):
-        return ("Derived field %s depends on the following " % self.dfield + 
-                "fields which are not found in this Dataset: %s " % self.ofields)
+        return ("Derived field {} depends on the following ".format(self.dfield) +
+                "fields which are not found in this Dataset: {} ".format(self.ofields))
 
 
 class OutputFieldFunction(object):
