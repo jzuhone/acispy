@@ -648,6 +648,8 @@ class SimulateCTIRun(ThermalModelRunner):
                       "datestop": np.array([self.dateend]),
                       "tstart": np.array([self.tstart.value]),
                       "tstop": np.array([tend]),
+                      "hetg": np.array(["RETR"]),
+                      "letg": np.array(["RETR"]),
                       "off_nominal_roll": np.array([off_nominal_roll]),
                       "dh_heater": np.array([dh_heater], dtype='int')}
         else:
