@@ -14,7 +14,7 @@ setup(name='acispy',
       author_email='john.zuhone@cfa.harvard.edu',
       url='http://github.com/jzuhone/acispy',
       download_url='https://github.com/jzuhone/acispy/tarball/0.8.2',
-      install_requires=["numpy>=1.13.1","six","requests","astropy"],
+      install_requires=["numpy>=1.12.1","six","requests","astropy"],
       scripts=scripts,
       classifiers=[
           'Intended Audience :: Science/Research',
