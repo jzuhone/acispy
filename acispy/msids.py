@@ -47,6 +47,8 @@ class MSIDs(TimeSeriesData):
                 self.table[k] = APQuantity(v, t, unit=unit, dtype=v.dtype, 
                                            mask=mask)
         self.state_codes = state_codes
+        if derived_msids is None:
+            derived_msids = []
         self.derived_msids = derived_msids
 
     @classmethod
@@ -224,12 +226,8 @@ class CombinedMSIDs(TimeSeriesData):
             self.table.update(msids.table)
             self.state_codes.update(msids.state_codes)
             self.state_codes.update(msids.state_codes)
-            if msids.derived_msids is not None:
-                derived_msids += msids.derived_msids
-        if len(derived_msids) > 0:
-            self.derived_msids = derived_msids
-        else:
-            self.derived_msids = None
+            derived_msids += msids.derived_msids
+        self.derived_msids = derived_msids
 
 
 class ConcatenatedMSIDs(TimeSeriesData):
