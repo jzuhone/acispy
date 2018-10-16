@@ -664,7 +664,8 @@ class SimulateCTIRun(ThermalModelRunner):
             states["clocking"][cti_run_idxs] = 1
             states["vid_board"][cti_run_idxs] = 1
         super(SimulateCTIRun, self).__init__(name, datestart, dateend, states,
-                                             T_init, model_spec=model_spec)
+                                             T_init, model_spec=model_spec, 
+                                             use_msids=False)
 
         mylog.info("Run Parameters")
         mylog.info("--------------")
