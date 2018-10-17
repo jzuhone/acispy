@@ -8,5 +8,5 @@ from acispy.plots import DatePlot, MultiDatePlot, \
     PhaseScatterPlot, PhaseHistogramPlot, CustomDatePlot
 from acispy.thermal_models import SimulateCTIRun, \
     ThermalModelRunner, ThermalModelFromLoad, \
-    ThermalModelFromFiles
+    ThermalModelFromFiles, SimulateSingleObs
 from acispy.load_review import ACISLoadReview

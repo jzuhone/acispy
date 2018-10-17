@@ -37,7 +37,8 @@ limits = {'1deamzt': 35.5,
           '1pdeaat': 52.5,
           'tmp_fep1_mong': 43.0,
           'tmp_fep1_actel': 43.0,
-          'tmp_bep_pcb': 43.0}
+          'tmp_bep_pcb': 43.0,
+          'fptemp_11': {"ACIS-I": -114.0, "ACIS-S": -112.0}}
 
 margins = {'1deamzt': 2.0,
            '1dpamzt': 2.0,
@@ -575,7 +576,7 @@ def find_text_time(time, hours=1.0):
     return secs2date(date2secs(time)+hours*3600.0)
 
 
-class SimulateCTIRun(ThermalModelRunner):
+class SimulateSingleObs(ThermalModelRunner):
     """
     Class for simulating thermal models during CTI runs under constant conditions.
 
@@ -615,16 +616,24 @@ class SimulateCTIRun(ThermalModelRunner):
 
     Examples
     --------
-    >>> dea_run = SimulateCTIRun("dea", "2016:201:05:12:03", "2016:201:05:12:03",
-    ...                          14.0, 150., ccd_count=5, off_nominal_roll=-6.0, 
-    ...                          dh_heater=1)
+    >>> dea_run = SimulateSingleObs("1deamzt", "2016:201:05:12:03", "2016:201:05:12:03",
+    ...                             14.0, 150., ccd_count=5, off_nominal_roll=-6.0,
+    ...                             dh_heater=1)
     """
     def __init__(self, name, tstart, tstop, T_init, pitch, ccd_count,
                  vehicle_load=None, simpos=-99616.0, off_nominal_roll=0.0, 
-                 dh_heater=0, clocking=1, model_spec=None):
+                 dh_heater=0, clocking=1, q=None, instrument=None,
+                 model_spec=None, no_limit=False):
+        if name == "fptemp_11" and instrument is None:
+            raise RuntimeError("Must specify either 'ACIS-I' or 'ACIS-S' in "
+                               "'instrument' if you want to test a focal plane " 
+                               "temperature prediction!")
         tstart = get_time(tstart)
         tstop = get_time(tstop)
+        if q is None and name == "fptemp_11":
+            raise RuntimeError("Please supply an attitude quaternion for the focal plane model!")
         self.vehicle_load = vehicle_load
+        self.no_limit = no_limit
         datestart = tstart
         tstart = DateTime(tstart).secs
         tstop = DateTime(tstop).secs
@@ -652,8 +661,12 @@ class SimulateCTIRun(ThermalModelRunner):
                       "letg": np.array(["RETR"]),
                       "off_nominal_roll": np.array([off_nominal_roll]),
                       "dh_heater": np.array([dh_heater], dtype='int')}
+            # For the focal plane model we need a quaternion.
+            if name == "fptemp_11":
+                for i in range(4):
+                    states["q%d" % (i+1)] = q[i]
         else:
-            mylog.info("Modeling a %d-chip CTI run concurrent with " % ccd_count +
+            mylog.info("Modeling a %d-chip observation concurrent with " % ccd_count +
                        "the %s vehicle loads." % vehicle_load)
             states = dict((k, state.value) for (k, state) in
                           States.from_load_page(vehicle_load).table.items())
@@ -663,9 +676,9 @@ class SimulateCTIRun(ThermalModelRunner):
             states["fep_count"][cti_run_idxs] = ccd_count
             states["clocking"][cti_run_idxs] = 1
             states["vid_board"][cti_run_idxs] = 1
-        super(SimulateCTIRun, self).__init__(name, datestart, dateend, states,
-                                             T_init, model_spec=model_spec, 
-                                             use_msids=False)
+        super(SimulateSingleObs, self).__init__(name, datestart, dateend, states,
+                                                T_init, model_spec=model_spec,
+                                                use_msids=False)
 
         mylog.info("Run Parameters")
         mylog.info("--------------")
@@ -689,7 +702,17 @@ class SimulateCTIRun(ThermalModelRunner):
         mylog.info("Model Result")
         mylog.info("------------")
 
-        self.limit = Quantity(limits[self.name], "deg_C")
+        if name == "fptemp_11":
+            limit = limits[self.name][instrument]
+        else:
+            limit = limits[self.name]
+        self.limit = Quantity(limit, "deg_C")
+        self.limit_time = None
+        self.limit_date = None
+        self.duration = None
+        self.violate = False
+        if self.no_limit:
+            return
         viols = self.mvals.value > self.limit.value
         if np.any(viols):
             idx = np.where(viols)[0][0]
@@ -705,18 +728,14 @@ class SimulateCTIRun(ThermalModelRunner):
             else:
                 self.violate = False
                 viol_time = "after"
-            mylog.info("The limit is reached %s the end of the CTI run." % viol_time)
+            mylog.info("The limit is reached %s the end of the observation." % viol_time)
         else:
-            self.limit_time = None
-            self.limit_date = None
-            self.duration = None
-            self.violate = False
             mylog.info("The limit of %g degrees C is never reached." % self.limit.value)
 
         if self.violate:
-            mylog.warning("This CTI run is NOT safe from a thermal perspective.")
+            mylog.warning("This observation is NOT safe from a thermal perspective.")
         else:
-            mylog.info("This CTI run is safe from a thermal perspective.")
+            mylog.info("This observation is safe from a thermal perspective.")
 
     def plot_model(self, no_annotations=False):
         """
@@ -736,15 +755,16 @@ class SimulateCTIRun(ThermalModelRunner):
         viol_text = "NOT SAFE" if self.violate else "SAFE"
         dp = DatePlot(self, [("model", self.name)], field2=field2)
         if not no_annotations:
-            dp.add_hline(self.limit.value, ls='--', lw=2, color='g')
+            if not self.no_limit:
+                dp.add_hline(self.limit.value, ls='--', lw=2, color='g')
+                dp.add_text(find_text_time(self.datestop, hours=4.0), self.T_init.value + 2.0,
+                            viol_text, fontsize=22, color='black')
             dp.add_vline(self.datestart, ls='--', lw=2, color='b')
             dp.add_text(find_text_time(self.datestart), self.limit.value - 2.0,
-                        "START CTI RUN", color='blue', rotation="vertical")
+                        "START", color='blue', rotation="vertical")
             dp.add_vline(self.datestop, ls='--', lw=2, color='b')
             dp.add_text(find_text_time(self.datestop), self.limit.value - 12.0,
-                        "END CTI RUN", color='blue', rotation="vertical")
-            dp.add_text(find_text_time(self.datestop, hours=4.0), self.T_init.value+2.0,
-                        viol_text, fontsize=22, color='black')
+                        "END", color='blue', rotation="vertical")
             if self.limit_date is not None:
                 dp.add_vline(self.limit_date, ls='--', lw=2, color='r')
                 dp.add_text(find_text_time(self.limit_date), self.limit.value-2.0,
@@ -781,3 +801,7 @@ class SimulateCTIRun(ThermalModelRunner):
 
     def write_model_and_data(self, filename, overwrite=False):
         raise NotImplementedError
+
+
+class SimulateCTIRun(SimulateSingleObs):
+    pass
