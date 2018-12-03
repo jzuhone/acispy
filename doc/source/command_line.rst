@@ -90,19 +90,20 @@ Examples
 
 .. code-block:: text
 
-    usage: multiplot_archive [-h] [--one-panel] tstart tstop plots
-
+    usage: multiplot_archive [-h] [--one-panel] [--maude] tstart tstop plots
+    
     Make plots of MSIDs and commanded states from the engineering archive
-
+    
     positional arguments:
-      tstart      The start time in YYYY:DOY:HH:MM:SS format
-      tstop       The stop time in YYYY:DOY:HH:MM:SS format
-      plots       The MSIDs and states to plot, comma-separated
-
+      tstart       The start time in YYYY:DOY:HH:MM:SS format
+      tstop        The stop time in YYYY:DOY:HH:MM:SS format
+      plots        The MSIDs and states to plot, comma-separated
+    
     optional arguments:
-      -h, --help  show this help message and exit
+      -h, --help   show this help message and exit
       --one-panel  Whether to make a multi-panel plot or a single-panel plot. The
                    latter is only valid if the quantities have the same units.
+      --maude      Use MAUDE to get telemetry data.
 
 Example 1
 +++++++++
@@ -244,7 +245,7 @@ Returns:
 
 .. code-block:: text
 
-    usage: plot_msid [-h] [--y2_axis Y2_AXIS] tstart tstop y_axis
+    usage: plot_msid [-h] [--y2_axis Y2_AXIS] [--maude] tstart tstop y_axis
     
     Plot a single MSID with another MSID or state
     
@@ -257,9 +258,13 @@ Returns:
       -h, --help         show this help message and exit
       --y2_axis Y2_AXIS  The MSID or state to be plotted on the right y-axis
                          (default: none)
+      --maude            Use MAUDE to get telemetry data.
+
 
 Example
 +++++++
+
+Plot 1PIN1AT and pitch. 
 
 .. code-block:: bash
 
@@ -424,22 +429,23 @@ Returns:
 
 .. code-block:: text
 
-    usage: phase_scatter_plot [-h] [--c_field C_FIELD] [--cmap CMAP]
+    usage: phase_scatter_plot [-h] [--c_field C_FIELD] [--cmap CMAP] [--maude]
                               tstart tstop x_field y_field
-
+    
     Make a phase scatter plot of one MSID or state versus another within a certain
     time frame.
-
+    
     positional arguments:
       tstart             The start time in YYYY:DOY:HH:MM:SS format
       tstop              The stop time in YYYY:DOY:HH:MM:SS format
       x_field            The MSID or state to plot on the x-axis
       y_field            The MSID or state to plot on the y-axis
-
+    
     optional arguments:
       -h, --help         show this help message and exit
       --c_field C_FIELD  The MSID or state to plot using colors
       --cmap CMAP        The colormap to use if plotting colors
+      --maude            Use MAUDE to get telemetry data.
 
 Example 1
 +++++++++
@@ -468,12 +474,12 @@ Returns:
 
 .. code-block:: text
 
-    usage: phase_histogram_plot [-h] [--scale SCALE] [--cmap CMAP]
+    usage: phase_histogram_plot [-h] [--scale SCALE] [--cmap CMAP] [--maude]
                                 tstart tstop x_field y_field x_bins y_bins
-
+    
     Make a phase plot of one MSID or state versus another within a certain time
     frame.
-
+    
     positional arguments:
       tstart         The start time in YYYY:DOY:HH:MM:SS format
       tstop          The stop time in YYYY:DOY:HH:MM:SS format
@@ -481,11 +487,12 @@ Returns:
       y_field        The MSID or state to plot on the y-axis
       x_bins         The number of bins on the x-axis
       y_bins         The number of bins on the y-axis
-
+    
     optional arguments:
       -h, --help     show this help message and exit
       --scale SCALE  Use linear or log scaling for the histogram, default 'linear'
       --cmap CMAP    The colormap for the histogram, default 'hot'
+      --maude        Use MAUDE to get telemetry data.
 
 Example
 +++++++
