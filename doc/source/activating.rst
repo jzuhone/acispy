@@ -10,10 +10,10 @@ Activating ACISpy
     environment and its associated packages should be used for conducting
     load reviews, etc.
 
-On the HEAD LAN, ACISpy is installed into the ACIS Ops Ska3 Python stack at
-``/data/acis/ska3``. If you are logged on as ``acisdude``, all you need to
-do is issue the command ``setska3`` and this Python stack and ACISpy will be
-loaded into your environment. 
+On the HEAD LAN, ACISpy is installed into the ACIS Ops Ska3 Python stack. 
+If you are logged on as ``acisdude``, all you need to do is issue the 
+command ``setska3`` and this Python stack and ACISpy will be loaded into 
+your environment. 
 
 However, if you would like activate this stack and ACISpy from your own user
 account, add the following alias to your ``.bashrc`` if you are using the Bash
@@ -22,8 +22,9 @@ shell (or a variant):
 .. code-block:: bash
 
     ska3 () {
-        PATH=/data/acis/ska3/bin:${PATH}
+        source /data/acis/miniconda3/etc/profile.d/conda.sh
         export SKA=/proj/sot/ska
+        conda activate ska3
         PS1="[ska3:\u@\h \W]\$ "
     }
 
@@ -31,10 +32,10 @@ Or, if you are a mascohist or are otherwise compelled to use the C shell or a
 variant of it, add this alias to your ``.cshrc.user``:
 
 .. code-block:: bash
-   
-    alias ska3 'set path = (/data/acis/ska3/bin $path); \
-      	        setenv SKA /proj/sot/ska; \
-	            set prompt = "(ska3) %m.%n:%c[%h]> "' 
+
+    alias ska3 'source /data/acis/miniconda3/etc/profile.d/conda.csh; \
+                setenv SKA /proj/sot/ska; \
+                conda activate ska3'
 
 .. warning::
 
