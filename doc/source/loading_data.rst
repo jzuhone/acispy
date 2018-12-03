@@ -37,7 +37,7 @@ argument ``interpolate_msids=True``:
 
 Additional options are provided for filtering out bad data and choosing the
 time cadence for MSIDs; for details see the API doc entry for 
-:class:`~acispy.dataset.EngArchiveData.
+:class:`~acispy.dataset.EngArchiveData`.
 
 Fetching MSID Data From a Tracelog File
 ---------------------------------------
