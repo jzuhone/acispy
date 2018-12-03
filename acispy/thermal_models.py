@@ -47,6 +47,7 @@ margins = {'1deamzt': 2.0,
            'tmp_fep1_actel': 2.0,
            'tmp_bep_pcb': 2.0}
 
+
 def find_json(name, model_spec):
     name = short_name[name]
     if model_spec is None:
@@ -314,8 +315,12 @@ class ThermalModelRunner(ModelDataset):
             if "tstart" not in states:
                 states["tstart"] = DateTime(states["datestart"]).secs
                 states["tstop"] = DateTime(states["datestop"]).secs
+            num_states = states["tstart"].size
+            if "letg" not in states:
+                states["letg"] = np.array(["RETR"]*num_states)
+            if "hetg" not in states:
+                states["hetg"] = np.array(["RETR"]*num_states)
             states_obj = States(states)
-
         if T_init is None:
             if not use_msids:
                 raise RuntimeError("Set 'use_msids=True' if you want to use telemetry "
@@ -569,7 +574,8 @@ class ThermalModelRunner(ModelDataset):
         dash.dashboard(pred.value[mask], telem.value[mask], times, mylimits,
                        msid=self.name, modelname=full_name[self.name],
                        errorplotlimits=errorplotlimits, yplotlimits=yplotlimits,
-                       fig=fig, figfile=figfile)
+                       fig=fig)
+        fig.savefig(figfile)
 
 
 def find_text_time(time, hours=1.0):
