@@ -5,7 +5,7 @@ matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 import argparse
 import acispy
-from acispy.utils import state_labels
+from acispy.utils import state_labels, mylog
 
 parser = argparse.ArgumentParser(description='Make a phase scatter plot of one MSID or state versus another within a certain time frame.')
 parser.add_argument("tstart", type=str, help='The start time in YYYY:DOY:HH:MM:SS format')
@@ -14,21 +14,19 @@ parser.add_argument("x_field", type=str, help='The MSID or state to plot on the 
 parser.add_argument("y_field", type=str, help='The MSID or state to plot on the y-axis')
 parser.add_argument("--c_field", type=str, help='The MSID or state to plot using colors')
 parser.add_argument("--cmap", type=str, help='The colormap to use if plotting colors')
+parser.add_argument("--maude", action="store_true", help="Use MAUDE to get telemetry data.")
 args = parser.parse_args()
 
 msids = []
-states = []
 
 if args.x_field in state_labels:
     x_field = ("states", args.x_field)
-    states.append(args.x_field)
 else:
     msids.append(args.x_field)
     x_field = ("msids", args.x_field)
 
 if args.y_field in state_labels:
     y_field = ("states", args.y_field)
-    states.append(args.y_field)
 else:
     msids.append(args.y_field)
     y_field = ("msids", args.y_field)
@@ -36,14 +34,17 @@ else:
 if args.c_field is not None:
     if args.c_field in state_labels:
         c_field = ("states", args.c_field)
-        states.append(args.c_field)
     else:
         msids.append(args.c_field)
         c_field = ("msids", args.c_field)
 
-ds = acispy.ArchiveData(args.tstart, args.tstop,
-                        msids, interpolate_msids=True, 
-                        filter_bad=True)
+if args.maude:
+    mylog.info("Using MAUDE to retrieve MSID data.")
+    ds = acispy.MaudeData(args.tstart, args.tstop, msids)
+else:
+    ds = acispy.EngArchiveData(args.tstart, args.tstop,
+                               msids, interpolate_msids=True,
+                               filter_bad=True)
 
 if x_field[0] == "states" and y_field[0] != "states":
     ds.map_state_to_msid(x_field[1], y_field[1])

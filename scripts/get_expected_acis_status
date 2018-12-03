@@ -19,7 +19,7 @@ parser.add_argument("--time", type=str, default="now",
                     help='The time to check the status at (default: current time)')
 args = parser.parse_args()
 
-ds = acispy.ModelDataFromLoad(args.load, comps)
+ds = acispy.ThermalModelFromLoad(args.load, comps)
 t = DateTime(args.time)
 states = ds.states.get_states(t.date)
 values = ds.model.get_values(t.date)

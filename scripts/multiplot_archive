@@ -13,6 +13,7 @@ parser.add_argument("tstop", type=str, help='The stop time in YYYY:DOY:HH:MM:SS 
 parser.add_argument("plots", type=str, help="The MSIDs and states to plot, comma-separated")
 parser.add_argument("--one-panel", action='store_true', 
                     help="Whether to make a multi-panel plot or a single-panel plot. The latter is only valid if the quantities have the same units.")
+parser.add_argument("--maude", action="store_true", help="Use MAUDE to get telemetry data.")
 args = parser.parse_args()
 
 states = []
@@ -29,8 +30,12 @@ fields = [("msids", m) for m in msids] + [("states", s) for s in states]
 if len(msids) == 0:
     msids = None
 
-ds = acispy.ArchiveData(args.tstart, args.tstop,
-                        msids, filter_bad=True)
+if args.maude:
+    ds = acispy.MaudeData(args.tstart, args.tstop, msids)
+else:
+    ds = acispy.EngArchiveData(args.tstart, args.tstop,
+                               msids, filter_bad=True)
+
 if args.one_panel:
     cp = acispy.DatePlot(ds, fields)
 else:

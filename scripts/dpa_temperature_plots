@@ -24,8 +24,8 @@ if len(sys.argv) > 1:
 else:
     outpath = os.getcwd()
 
-dc = acispy.ArchiveData(tstart, tstop, ["1dpamzt", "ccsdstmf"]+board_temps,
-                        interpolate_msids=True)
+dc = acispy.EngArchiveData(tstart, tstop, ["1dpamzt", "ccsdstmf"]+board_temps,
+                           interpolate_msids=True)
 
 unit_line = np.linspace(-10, 60, 200)
 
