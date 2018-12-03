@@ -146,6 +146,8 @@ def process_commands(now_time_utc, cmds):
             continue
 
         if cmd["type"] == "COMMAND_SW":
+            if "msid" not in cmd["params"]:
+                continue
             if "OORM" not in cmd["params"]["msid"] and "ETG" not in cmd["params"]["msid"]:
                 continue
         if cmd["type"] == "COMMAND_HW" and "CSELFMT" not in cmd["params"]:
