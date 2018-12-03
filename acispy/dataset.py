@@ -297,12 +297,10 @@ class Dataset(object):
                     raise RuntimeError("To write MSIDs, all of the times should be the same," +
                                        "but '%s', '%s' does not have the same " % field +
                                        "set of times as '%s', '%s'!" % (fields[0][0], fields[0][1]))
-        if os.path.exists(filename) and not overwrite:
-            raise IOError("File %s already exists, but overwrite=False!" % filename)
         data = dict(("_".join(k), self[k].value[mask]) for k in fields)
         data["times"] = self.times(*fields[0]).value[mask]
         data["dates"] = self.dates(*fields[0])[mask]
-        Table(data).write(filename, format='ascii')
+        Table(data).write(filename, format='ascii', overwrite=overwrite)
 
     def write_states(self, filename, overwrite=False):
         """
@@ -319,9 +317,9 @@ class Dataset(object):
         from astropy.table import Table
         if isinstance(self.states, EmptyTimeSeries):
             raise RuntimeError("There are no commanded states to be written!")
-        if os.path.exists(filename) and not overwrite:
-            raise IOError("File %s already exists, but overwrite=False!" % filename)
-        Table(dict((k,v.value) for k, v in self.states.items())).write(filename, format='ascii')
+        Table(dict((k,v.value) for k, v in self.states.items())).write(filename, 
+                                                                       format='ascii',
+                                                                       overwrite=overwrite)
 
     def plot(self, fields, field2=None, lw=2, ls='-', ls2='-', lw2=2,
              fontsize=18, color=None, color2='magenta', figsize=(10, 8),
