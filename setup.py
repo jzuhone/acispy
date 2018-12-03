@@ -2,19 +2,15 @@
 from setuptools import setup
 import glob
 import versioneer
-    
-scripts = glob.glob("scripts/*")
 
-from acispy import __version__
+scripts = glob.glob("scripts/*")
 
 setup(name='acispy',
       packages=['acispy'],
-      version=__version__,
       description='Python tools for ACIS Ops',
       author='John ZuHone',
       author_email='john.zuhone@cfa.harvard.edu',
       url='http://github.com/jzuhone/acispy',
-      download_url='https://github.com/jzuhone/acispy/tarball/0.8.2',
       install_requires=["numpy>=1.12.1","six","requests","astropy"],
       scripts=scripts,
       classifiers=[
