@@ -10,24 +10,22 @@ plotted is to ingest the data in a :class:`~acispy.dataset.Dataset`
 object. :class:`~acispy.dataset.Dataset` objects can be created by a
 number of methods, which are documented here.
 
-Fetching Data from the Online Database
---------------------------------------
+Fetching MSID Data from the Engineering Archive
+-----------------------------------------------
 
 Often, one will want to fetch data directly from the Chandra engineering
 archive and the commanded states database within a particular date and time 
-range. The :class:`~acispy.dataset.ArchiveData` class enables this
-functionality. The MSIDs you want to extract must be specified. You may
-either specify a set of states using the ``state_keys`` keyword argument;
-otherwise the full default set will be loaded.
+range. The :class:`~acispy.dataset.EngArchiveData` class enables this
+functionality. The MSIDs you want to extract must be specified. The full set
+of commanded states are also loaded. 
 
 .. code-block:: python
 
-    from acispy import ArchiveData
+    from acispy import EngArchiveData
     tstart = "2016:091:01:00:00.000" 
     tstop = "2016:097:03:30:57.231"
     msids = ["1deamzt", "1dpamzt"]
-    states = ["pitch", "ccd_count"]
-    ds = ArchiveData(tstart, tstop, msid_keys=msids, state_keys=states)
+    ds = EngArchiveData(tstart, tstop, msids)
 
 By default, the MSIDs are not at identical time values. You can enforce that
 the MSID data is interpolated to a common set of times by passing in the keyword
@@ -35,14 +33,14 @@ argument ``interpolate_msids=True``:
 
 .. code-block:: python
 
-    ds = ArchiveData(tstart, tstop, msid_keys=msids, interpolate_msids=True)
+    ds = EngArchiveData(tstart, tstop, msids, interpolate_msids=True)
 
 Additional options are provided for filtering out bad data and choosing the
 time cadence for MSIDs; for details see the API doc entry for 
-:class:`~acispy.dataset.ArchiveData.
+:class:`~acispy.dataset.EngArchiveData.
 
-Reading MSID Data From a Tracelog File
---------------------------------------
+Fetching MSID Data From a Tracelog File
+---------------------------------------
 
 If you have a real-time tracelog file or one that has been extracted from a 
 dump, you can also read MSID data from this file, using
@@ -53,21 +51,17 @@ from the commanded states database.
 .. code-block:: python
 
     from acispy import TracelogData
-    states = ["pitch", "ccd_count"]
-    ds = TracelogData("acisENG10d_00985114479.70.tl", state_keys=states)
+    ds = TracelogData("acisENG10d_00985114479.70.tl")
     
 In this case, all of the MSIDs in the tracelog are ingested into the 
-:class:`~acispy.dataset.TracelogData` dataset. You may either specify
-a set of states using the ``state_keys`` keyword argument; otherwise 
-the full default set will be loaded. You can also specify a subset of
-the time range in the tracelog using the ``tbegin`` and ``tend`` arguments:
+:class:`~acispy.dataset.TracelogData` dataset. The full set of commanded 
+states are also loaded. You can also specify a subset of the time range in 
+the tracelog using the ``tbegin`` and ``tend`` arguments:
 
 .. code-block:: python
 
     from acispy import TracelogData
-    states = ["pitch", "ccd_count"]
-    ds = TracelogData("some_data.tl", tbegin="2017:100", tend="2017:110:01:45:45",
-                      state_keys=states)
+    ds = TracelogData("some_data.tl", tbegin="2017:100", tend="2017:110:01:45:45")
 
 Special Tracelog Files
 ++++++++++++++++++++++
@@ -86,8 +80,26 @@ accept any other arguments also accepted by :class:`~acispy.dataset.TracelogData
 .. code-block:: python
 
     from acispy import EngineeringTracelogData
-    ds = EngineeringTracelogData(tbegin="2018:060:00:00:00", tend="2018:061:02:30:00",
-                                 state_keys=["fep_count", "vid_board"])
+    ds = EngineeringTracelogData(tbegin="2018:060:00:00:00", tend="2018:061:02:30:00")
+
+Fetching MSID Data from MAUDE
+-----------------------------
+
+ACISPy can also access data from the MAUDE telemetry server. You must set up authentication 
+to OCCWEB, for which there is some documentation
+`here <http://cxc.cfa.harvard.edu/mta/ASPECT/tool_doc/maude/#setup-for-authentication>`_.
+
+To access data from MAUDE, simply use the :class:`~acispy.dataset.MaudeData` class and 
+provide a starting time, stopping time, and the list of MSIDs that you want. State data
+will be accessed using the commanded states database automatically. 
+
+.. code-block:: python
+
+    from acispy import MaudeData
+    datestart = "2017:336:12:00:00"
+    datestop = "2017:337:12:00:00"
+    msids = ["1dpamzt", "1deamzt"]
+    ds = MaudeData(datestart, datestop, msids)
 
 Reading Model Data from a Load
 ------------------------------
@@ -179,12 +191,11 @@ We'll use our example from before to fill up a :class:`~acispy.dataset.Dataset`:
 
 .. code-block:: python
 
-    from acispy import ArchiveData
+    from acispy import EngArchiveData
     tstart = "2016:091:01:00:00.000" 
     tstop = "2016:097:03:30:57.231"
     msids = ["1deamzt", "1dpamzt"]
-    states = ["pitch", "ccd_count"]
-    ds = ArchiveData(tstart, tstop, msid_keys=msids, state_keys=states)
+    ds = EngArchiveData(tstart, tstop, msids)
 
 To see what fields are available from the :class:`~acispy.dataset.Dataset`,
 check the `field_list` attribute:
@@ -202,6 +213,7 @@ check the `field_list` attribute:
      ('states', 'tstart'),
      ('states', 'tstop'),
      ('states', 'q1'),
+     ...
      ('states', 'q3'),
      ('states', 'q2'),
      ('states', 'q4'),
@@ -214,9 +226,9 @@ of the form ``"model[n]"``, where ``n`` is a a zero-based integer:
 
 .. code-block:: python
 
-    from acispy import ModelDataFromFiles
+    from acispy import ThermalModelFromFiles
     model_files = ["old_model/temperatures.dat", "new_model/temperatures.dat"]
-    ds = ModelDataFromFiles(model_files, "old_model/states.dat", get_msids=True)
+    ds = ThermalModelFromFiles(model_files, "old_model/states.dat", get_msids=True)
     print(ds.field_list)
 
 gives:
@@ -314,8 +326,8 @@ prints something like:
         5.76286168e+08   5.76286301e+08   5.76286325e+08   5.76286469e+08
         5.76286769e+08   5.76287070e+08   5.76287370e+08   5.76330630e+08]] s
 
-    [  5.75773267e+08   5.75773300e+08   5.75773333e+08 ...,   5.76300659e+08
-       5.76300691e+08   5.76300724e+08] s
+     [  5.75773267e+08   5.75773300e+08   5.75773333e+08 ...,   5.76300659e+08
+        5.76300691e+08   5.76300724e+08] s
 
 Note that state times are two-dimensional arrays, of shape ``(2, n)``, since
 each state spans a ``tstart`` and a ``tstop``. 
