@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 from setuptools import setup
 import glob
-
+import versioneer
+    
 scripts = glob.glob("scripts/*")
 
 from acispy import __version__
@@ -21,4 +22,6 @@ setup(name='acispy',
           'Operating System :: OS Independent',
           'Programming Language :: Python :: 3.6'
       ],
+      version=versioneer.get_version(),
+      cmdclass=versioneer.get_cmdclass(),
       )
