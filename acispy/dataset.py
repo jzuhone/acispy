@@ -383,7 +383,7 @@ class Dataset(object):
         return dp
 
 
-class ArchiveData(Dataset):
+class EngArchiveData(Dataset):
     """
     Fetch MSIDs from the engineering archive and states from the commanded
     states database.
@@ -410,11 +410,11 @@ class ArchiveData(Dataset):
 
     Examples
     --------
-    >>> from acispy import ArchiveData
+    >>> from acispy import EngArchiveData
     >>> tstart = "2016:091:12:05:00.100"
     >>> tstop = "2016:100:13:07:45.234"
     >>> msids = ["1deamzt", "1pin1at"]
-    >>> ds = ArchiveData(tstart, tstop, msids)
+    >>> ds = EngArchiveData(tstart, tstop, msids)
     """
     def __init__(self, tstart, tstop, msids, filter_bad=False, stat=None,
                  interpolate_msids=False, server=None):
@@ -425,7 +425,7 @@ class ArchiveData(Dataset):
                                     interpolate=interpolate_msids)
         states = States.from_database(tstart, tstop, server=server)
         model = EmptyTimeSeries()
-        super(ArchiveData, self).__init__(msids, states, model)
+        super(EngArchiveData, self).__init__(msids, states, model)
 
 
 class MaudeData(Dataset):

@@ -1,6 +1,6 @@
 __version__ = "1.7.0"
 
-from acispy.dataset import ArchiveData, \
+from acispy.dataset import EngArchiveData, \
     TracelogData, EngineeringTracelogData, \
     DEAHousekeepingTracelogData, \
     TenDayTracelogData, MaudeData, TelemData
