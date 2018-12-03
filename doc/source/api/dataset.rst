@@ -5,7 +5,7 @@
     :members:
     :exclude-members: keys
 
-.. autoclass:: acispy.dataset.ArchiveData
+.. autoclass:: acispy.dataset.EngArchiveData
     :members:
     :inherited-members:
     :exclude-members: keys
@@ -26,6 +26,11 @@
     :exclude-members: keys
 
 .. autoclass:: acispy.dataset.TenDayTracelogData
+    :members:
+    :inherited-members:
+    :exclude-members: keys
+
+.. autoclass:: acispy.dataset.MaudeData
     :members:
     :inherited-members:
     :exclude-members: keys
