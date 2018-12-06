@@ -388,6 +388,16 @@ while True:
     begin_time_secs = date2secs(begin_time_str)
     end_time_secs = date2secs(end_time_str)
 
+    tl_ts = os.path.getmtime("/data/acis/eng_plots/acis_eng_10day.tl")
+    dea_tl_ts = os.path.getmtime("/data/acis/eng_plots/acis_dea_10day.tl")
+    if tl_ts != last_tl_ts or dea_tl_ts != last_dea_tl_ts or ds_tlm is None:
+        try:
+            ds_tlm = acispy.TenDayTracelogData(tbegin=begin_time_str)
+            last_tl_ts = tl_ts
+            last_dea_tl_ts = dea_tl_ts
+        except:
+            pass
+
     if reload or cmds is None:
         cmds = commands.get_cmds(begin_time_str, last_time_str)
         cmds.fetch_params()
@@ -396,9 +406,10 @@ while True:
         model_start = now_time_secs - 4.0*86400.0
         model_end = now_time_secs + 4.0*86400.0
         for temp in temps:
+            T_init = ds_tlm["msids", temp][model_start-700.0:model_start+700.0].value.mean()
             ds_models[temp] = acispy.ThermalModelRunner.from_kadi(temp, model_start,
-                                                                  model_end, None,
-                                                                  use_msids=True)
+                                                                  model_end, T_init,
+                                                                  use_msids=False)
         cti_runs = find_cti_runs(ds_models["1dpamzt"].states)
         reload = False
         last_reload_time = now_time_secs
@@ -415,16 +426,6 @@ while True:
     insert_now_time(cmdtimes, cmdlines, now_time_secs, now_time_utc, now_time_local)
 
     outlines += cmdlines
-
-    tl_ts = os.path.getmtime("/data/acis/eng_plots/acis_eng_10day.tl")
-    dea_tl_ts = os.path.getmtime("/data/acis/eng_plots/acis_dea_10day.tl")
-    if tl_ts != last_tl_ts or dea_tl_ts != last_dea_tl_ts or ds_tlm is None:
-        try:
-            ds_tlm = acispy.TenDayTracelogData(tbegin=begin_time_str)
-            last_tl_ts = tl_ts
-            last_dea_tl_ts = dea_tl_ts
-        except:
-            pass
 
     for temp in temps:
         ds_m = ds_models[temp]
