@@ -392,7 +392,7 @@ while True:
     dea_tl_ts = os.path.getmtime("/data/acis/eng_plots/acis_dea_10day.tl")
     if tl_ts != last_tl_ts or dea_tl_ts != last_dea_tl_ts or ds_tlm is None:
         try:
-            ds_tlm = acispy.TenDayTracelogData(tbegin=begin_time_str)
+            ds_tlm = acispy.TenDayTracelogData(tbegin=now_time_secs-5.0*86400.0)
             last_tl_ts = tl_ts
             last_dea_tl_ts = dea_tl_ts
         except:
