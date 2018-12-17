@@ -115,12 +115,16 @@ def detect_safing_actions(t):
 def find_the_load(t):
     load = None
     ls = events.load_segments.filter(start=t-86400.0, stop=t+86400.0)
-    if len(ls) > 0:
-        for l in ls:
-            if t > l.tstart:
-                load = l.load_name
-            else:
-                break
+    try:
+        if len(ls) > 0:
+            for l in ls:
+                if t > l.tstart:
+                    load = l.load_name
+                else:
+                    break
+    except:
+        pass
+    del ls
     return load
 
 
