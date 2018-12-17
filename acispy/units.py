@@ -135,6 +135,7 @@ binary_operators = (
     fmax, fmin, copysign, nextafter, ldexp, fmod,
 )
 
+
 def parse_index(idx, times): 
     if isinstance(idx, (int, np.ndarray)) or idx is None:
         return idx
@@ -146,6 +147,7 @@ def parse_index(idx, times):
             raise RuntimeError("The time %s is outside the bounds of this dataset!" % orig_idx)
         idx = np.searchsorted(times, idx)-1
     return idx
+
 
 def find_indices(item, times):
     if getattr(times, "ndim", None) == 2:
@@ -168,6 +170,7 @@ def find_indices(item, times):
     else:
         t = times[idxs]
     return idxs, Quantity(t, "s")
+
 
 class APStringArray(object):
     def __init__(self, value, times, mask=None):
@@ -210,6 +213,7 @@ class APStringArray(object):
 
     def __ne__(self, other):
         return self.value.__eq__(other)
+
 
 class APQuantity(Quantity):
     def __new__(cls, value, times, unit=None, mask=None, dtype=None, copy=True,
@@ -291,11 +295,17 @@ class APQuantity(Quantity):
         else:
             return self.times[idx]
 
+
 units_trans = {"DEGC": "deg_C",
                "STEP": "",
                "0": "",
                "DEGF": "deg_F",
                "RADPS": "rad/s"}
+
+
+mit_fields = ["beptic", "blockid", "bepint",
+              "relay", "rad_pcb_a", "rad_pcb_b"]
+
 
 def get_units(ftype, fname):
     import Ska.tdb
@@ -309,8 +319,9 @@ def get_units(ftype, fname):
                 unit = units_trans.get(unit, unit)
                 msid_units[fname] = unit
             except KeyError:
-                mylog.warning("Cannot find a unit for MSID %s. " % fname +
-                              "Setting to dimensionless.")
+                if fname not in mit_fields:
+                    mylog.warning("Cannot find a unit for MSID %s. " % fname +
+                                  "Setting to dimensionless.")
                 unit = ''
     if unit == "DEG":
         unit = 'deg'
