@@ -37,10 +37,6 @@ lr_web_css = [
     "padtime {",
     "    background-color: yellow;",
     "}\n",
-    "errline {",
-    "    background-color: #E0E0E0;",
-    "    color: firebrick;",
-    "}\n",
     "mechline {",
     "    background-color: orange;",
     "}"
