@@ -44,7 +44,7 @@ class MSIDs(TimeSeriesData):
                 self.table[k] = APStringArray(v, t, mask=mask)
             else:
                 unit = get_units("msids", k)
-                self.table[k] = APQuantity(v, t, unit=unit, dtype=v.dtype, 
+                self.table[k] = APQuantity(v, t, unit=unit, dtype=v.dtype,
                                            mask=mask)
         self.state_codes = state_codes
         if derived_msids is None:
@@ -97,12 +97,12 @@ class MSIDs(TimeSeriesData):
                     key = mit_trans_table[k]
                 else:
                     key = k.lower()
-                table[key] = data[k].data[idxs]
+                table[key] = np.array(data[k].data[idxs])
                 times[key] = tsecs[idxs]
                 if key == "bilevels":
-                    masks[key] = table[key] != "0"
+                    masks[key] = np.array(table[key] != "0")
                 else:
-                    masks[key] = ~np.isnan(table[key]) 
+                    masks[key] = ~data[k].data[idxs].mask
                 state_codes[key] = get_state_codes(key)
         # Now we split the bilevel into its components
         bmask = masks["bilevels"]
