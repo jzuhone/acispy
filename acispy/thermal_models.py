@@ -574,7 +574,7 @@ class ThermalModelRunner(ModelDataset):
         dash.dashboard(pred.value[mask], telem.value[mask], times, mylimits,
                        msid=self.name, modelname=full_name[self.name],
                        errorplotlimits=errorplotlimits, yplotlimits=yplotlimits,
-                       fig=fig)
+                       fig=fig, savefig=False)
         fig.savefig(figfile)
 
 
