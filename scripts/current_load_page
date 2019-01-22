@@ -379,8 +379,8 @@ while True:
     lr_link = lr_link_base % (load_year, load_name)
     load_dir = load_name[:-1]
 
-    begin_time = now_time_utc - timedelta(days=1)
-    end_time = begin_time + timedelta(days=2)
+    begin_time = now_time_utc - timedelta(days=2)
+    end_time = begin_time + timedelta(days=3)
     last_time = begin_time + timedelta(days=4)
     begin_time_str = begin_time.strftime("%Y:%j:%H:%M:%S")
     end_time_str = end_time.strftime("%Y:%j:%H:%M:%S")
@@ -430,7 +430,7 @@ while True:
     for temp in temps:
         ds_m = ds_models[temp]
         dp = acispy.DatePlot(ds_m, ("model", temp), field2="pitch", color="blue",
-                             figsize=(10, 10))
+                             figsize=(15, 10))
         dp2 = acispy.DatePlot(ds_tlm, ("msids", temp), color="red", plot=dp)
         dp.add_vline(now_time_str, lw=3)
         title_str = "%s\nCurrent %s prediction: %.2f $\mathrm{^\circ{C}}$\nCurrent pitch: %.2f degrees"
@@ -463,7 +463,7 @@ while True:
     w1, h1 = dp.fig.get_size_inches()
 
     ccd = acispy.DatePlot(ds_m, ["ccd_count", "fep_count"], ls=["-", "--"],
-                          field2=("states", "simpos"), color=["blue"]*2, figsize=(10,8))
+                          field2=("states", "simpos"), color=["blue"]*2, figsize=(15,8))
     ccd.add_vline(now_time_str, lw=3)
     title_str = "%s\nCurrent CCD count: %d, Current FEP count: %d\nCurrent SIM-Z: %g" % (now_time_str,
                                                                                          ds_m["ccd_count"][now_time_str].value,
@@ -482,7 +482,7 @@ while True:
     ccd.savefig(os.path.join(outdir, "current_ccd.png"))
 
     roll = acispy.DatePlot(ds_models["fptemp_11"], "off_nominal_roll", field2="earth_solid_angle", 
-                           color="blue", figsize=(10, 8))
+                           color="blue", figsize=(15, 8))
     roll.add_vline(now_time_str, lw=3)
     title_str = "%s\nCurrent Off-nominal roll: %.2f degree\nEarth Solid Angle: %s sr" % (now_time_str,
         ds_models["fptemp_11"]["off_nominal_roll"][now_time_str].value,
