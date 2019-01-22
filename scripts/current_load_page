@@ -128,7 +128,7 @@ def process_commands(now_time_utc, cmds):
 
     now_time_secs = DateTime(now_time_utc).secs
     end_time_secs = now_time_secs + 86400.0
-    start_time_secs = now_time_secs - 86400.0
+    start_time_secs = now_time_secs - 2.0*86400.0
 
     cmdlines = []
     cmdtimes = []
