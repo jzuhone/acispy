@@ -560,17 +560,14 @@ class ThermalModelRunner(ModelDataset):
             yplotlimits = [ymin, ymax]
         if errorplotlimits is None:
             errorplotlimits = [-15, 15]
-        if msid == "fptemp_11":
-            caution = None
-            planning = None
-        else:
-            caution = limits[self.name]+margins[self.name]
-            planning = limits[self.name]
-        mylimits = {"units": "C", "caution_high": caution, "planning_limit": planning}
+        mylimits = {"units": "C"}
         if msid == "fptemp_11":
             mylimits["acisi_limit"] = -114.0
             mylimits["aciss_limit"] = -112.0
             mylimits["fp_sens_limit"] = -118.7
+        else:
+            mylimits["caution_high"] = limits[self.name]+margins[self.name]
+            mylimits["planning_limit"] = limits[self.name]
         dash.dashboard(pred.value[mask], telem.value[mask], times, mylimits,
                        msid=self.name, modelname=full_name[self.name],
                        errorplotlimits=errorplotlimits, yplotlimits=yplotlimits,
