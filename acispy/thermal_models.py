@@ -511,13 +511,20 @@ class ThermalModelRunner(ModelDataset):
                                  include_bad_times=include_bad_times,
                                  ephemeris=ephemeris)
 
-    def make_dashboard_plots(self, yplotlimits=None, errorplotlimits=None, fig=None,
-                             figfile=None, bad_times=None):
+    def make_dashboard_plots(self, tstart=None, tstop=None, yplotlimits=None,
+                             errorplotlimits=None, fig=None, figfile=None,
+                             bad_times=None, mask_radzones=False):
         """
         Make dashboard plots for the particular thermal model.
 
         Parameters
         ----------
+        tstart : string, optional
+            The start time of the data for the dashboard plot. If not specified,
+            the beginning of the thermal model run is used.
+        tstop : string, optional
+            The stop time of the data for the dashboard plot. If not specified,
+            the end of the thermal model run is used.
         yplotlimits : two-element array_like, optional
             The (min, max) bounds on the temperature to use for the
             temperature vs. time plot. Default: Determine the min/max
@@ -535,8 +542,12 @@ class ThermalModelRunner(ModelDataset):
         bad_times : list of tuples, optional
             Provide a set of times to exclude from the creation of the
             dashboard plot.
+        mask_radzones : boolean, optional
+            If True, mask out radzone periods for dashboard plots of the
+            focal plane model. Default: False
         """
         from xijafit import dashboard as dash
+        from kadi import events
         import matplotlib.pyplot as plt
         if fig is None:
             fig = plt.figure(figsize=(20,10))
@@ -548,10 +559,23 @@ class ThermalModelRunner(ModelDataset):
         telem = self["msids", msid]
         pred = self["model", msid]
         mask = np.logical_and(telem.mask, pred.mask)
+        if tstart is not None:
+            tstart = DateTime(tstart).secs
+            mask[telem.times.value < tstart] = False
+        if tstop is not None:
+            tstop = DateTime(tstop).secs
+            mask[telem.times.value > tstop] = False
         if bad_times is not None:
             for (left, right) in bad_times:
                 idxs = np.logical_and(telem.times.value >= date2secs(left),
                                       telem.times.value <= date2secs(right))
+                mask[idxs] = False
+        if msid == "fptemp_11" and mask_radzones:
+            rad_zones = events.rad_zones.filter(start=telem.dates.value[0],
+                                                stop=telem.dates.value[-1])
+            for rz in rad_zones:
+                idxs = np.logical_and(telem.times.value >= rz.tstart,
+                                      telem.times.value <= rz.tstop)
                 mask[idxs] = False
         times = telem.times.value[mask]
         if yplotlimits is None:
