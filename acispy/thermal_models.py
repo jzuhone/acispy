@@ -548,7 +548,6 @@ class ThermalModelRunner(ModelDataset):
         """
         from xijafit import dashboard as dash
         from kadi import events
-        import matplotlib.pyplot as plt
         if fig is None:
             fig = plt.figure(figsize=(20,10))
         msid = self.name
@@ -596,7 +595,39 @@ class ThermalModelRunner(ModelDataset):
                        msid=self.name, modelname=full_name[self.name],
                        errorplotlimits=errorplotlimits, yplotlimits=yplotlimits,
                        fig=fig, savefig=False)
-        fig.savefig(figfile)
+        if figfile is not None:
+            fig.savefig(figfile)
+        return fig
+
+    def make_solarheat_plot(self, node, figfile=None, fig=None):
+        """
+        Make a plot which shows the solar heat value vs. pitch.
+
+        Parameters
+        ----------
+        node : string
+            The xija node which has the solar heating applied to it
+            in the model. Can be an real node on the spacecraft like
+            1DEAMZT or a pseudo-node like "dpa0" in the 1DPAMZT model.
+        figfile : string, optional
+            The file to write the dashboard plot to. One will be created
+            if not provided.
+        fig : :class:`~matplotlib.figure.Figure`, optional
+            A Figure instance to plot in. Default: None, one will be
+            created if not provided.
+        """
+        if fig is None:
+            fig, ax = plt.subplots(figsize=(15, 10))
+        else:
+            ax = fig.add_subplot(111)
+        try:
+            comp = self.xija_model.com["solarheat__%s" % node]
+        except KeyError:
+            raise KeyError("%s does not have a SolarHeat component!" % node)
+        comp.plot_solar_heat__pitch(fig, ax)
+        if figfile is not None:
+            fig.savefig(figfile)
+        return fig
 
 
 def find_text_time(time, hours=1.0):
@@ -828,7 +859,6 @@ class SimulateSingleObs(ThermalModelRunner):
 
     def write_model_and_data(self, filename, overwrite=False):
         raise NotImplementedError
-
 
 class SimulateECSRun(SimulateSingleObs):
     pass
