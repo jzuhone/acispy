@@ -605,16 +605,16 @@ def find_text_time(time, hours=1.0):
 
 class SimulateSingleObs(ThermalModelRunner):
     """
-    Class for simulating thermal models during CTI runs under constant conditions.
+    Class for simulating thermal models during ECS runs under constant conditions.
 
     Parameters
     ----------
     name : string
         The name of the model to simulate. Can be "dea", "dpa", "psmc", or "fep1mong".
     tstart : string
-        The start time of the CTI run in YYYY:DOY:HH:MM:SS format.
+        The start time of the ECS run in YYYY:DOY:HH:MM:SS format.
     tstop : string
-        The stop time of the CTI run in YYYY:DOY:HH:MM:SS format.
+        The stop time of the ECS run in YYYY:DOY:HH:MM:SS format.
     T_init : float
         The starting temperature for the model in degrees C.
     pitch : float
@@ -634,9 +634,9 @@ class SimulateSingleObs(ThermalModelRunner):
         Flag to set whether (1) or not (0) the detector housing heater is on. 
         Default: 0
     clocking : integer, optional
-        Set to 0 if you want to simulate a CTI run which doesn't clock, which
+        Set to 0 if you want to simulate a ECS run which doesn't clock, which
         you probably don't want to do if you're going to simulate an actual
-        CTI run. Default: 1
+        ECS run. Default: 1
     model_spec : string, optional
         Path to the model spec JSON file for the model. Default: None, the 
         standard model path will be used. 
@@ -698,11 +698,11 @@ class SimulateSingleObs(ThermalModelRunner):
             states = dict((k, state.value) for (k, state) in
                           States.from_load_page(vehicle_load).table.items())
             states["off_nominal_roll"] = calc_off_nom_rolls(states)
-            cti_run_idxs = states["tstart"] < tstop
-            states["ccd_count"][cti_run_idxs] = ccd_count
-            states["fep_count"][cti_run_idxs] = ccd_count
-            states["clocking"][cti_run_idxs] = 1
-            states["vid_board"][cti_run_idxs] = 1
+            ecs_run_idxs = states["tstart"] < tstop
+            states["ccd_count"][ecs_run_idxs] = ccd_count
+            states["fep_count"][ecs_run_idxs] = ccd_count
+            states["clocking"][ecs_run_idxs] = 1
+            states["vid_board"][ecs_run_idxs] = 1
         super(SimulateSingleObs, self).__init__(name, datestart, dateend, states,
                                                 T_init, model_spec=model_spec,
                                                 use_msids=False)
@@ -717,8 +717,8 @@ class SimulateSingleObs(ThermalModelRunner):
             disp_pitch = pitch
             disp_roll = off_nominal_roll
         else:
-            pitches = states["pitch"][cti_run_idxs]
-            rolls = states["off_nominal_roll"][cti_run_idxs]
+            pitches = states["pitch"][ecs_run_idxs]
+            rolls = states["off_nominal_roll"][ecs_run_idxs]
             disp_pitch = "Min: %g, Max: %g" % (pitches.min(), pitches.max())
             disp_roll = "Min: %g, Max: %g" % (rolls.min(), rolls.max())
         mylog.info("Pitch: %s" % disp_pitch)
@@ -772,7 +772,7 @@ class SimulateSingleObs(ThermalModelRunner):
         ----------
         no_annotations : boolean, optional
             If True, don't put lines or text on the plot. Shouldn't be
-            used if you're actually trying to determine if a CTI run is
+            used if you're actually trying to determine if a ECS run is
             safe. Default: False
         """
         if self.vehicle_load is None:
@@ -804,7 +804,7 @@ class SimulateSingleObs(ThermalModelRunner):
     def get_temp_at_time(self, t):
         """
         Get the model temperature at a time *t* seconds
-        past the beginning of the CTI run.
+        past the beginning of the ECS run.
         """
         t += self.tstart.value
         return Quantity(np.interp(t, self['model', self.name].times.value,
@@ -830,5 +830,8 @@ class SimulateSingleObs(ThermalModelRunner):
         raise NotImplementedError
 
 
-class SimulateCTIRun(SimulateSingleObs):
+class SimulateECSRun(SimulateSingleObs):
+    pass
+
+class SimulateCTIRun(SimulateECSRun):
     pass
