@@ -570,8 +570,8 @@ class ThermalModelRunner(ModelDataset):
                                       telem.times.value <= date2secs(right))
                 mask[idxs] = False
         if msid == "fptemp_11" and mask_radzones:
-            rad_zones = events.rad_zones.filter(start=telem.dates.value[0],
-                                                stop=telem.dates.value[-1])
+            rad_zones = events.rad_zones.filter(start=telem.dates[0],
+                                                stop=telem.dates[-1])
             for rz in rad_zones:
                 idxs = np.logical_and(telem.times.value >= rz.tstart,
                                       telem.times.value <= rz.tstop)
