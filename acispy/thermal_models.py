@@ -15,6 +15,7 @@ from acispy.utils import mylog, calc_off_nom_rolls, \
 import Ska.Numpy
 import Ska.engarchive.fetch_sci as fetch
 from chandra_models import get_xija_model_file
+import matplotlib.pyplot as plt
 
 short_name = {"1deamzt": "dea",
               "1dpamzt": "dpa",
