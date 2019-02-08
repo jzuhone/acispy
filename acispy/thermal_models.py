@@ -622,7 +622,7 @@ class ThermalModelRunner(ModelDataset):
         else:
             ax = fig.add_subplot(111)
         try:
-            comp = self.xija_model.com["solarheat__%s" % node]
+            comp = self.xija_model.comp["solarheat__%s" % node]
         except KeyError:
             raise KeyError("%s does not have a SolarHeat component!" % node)
         comp.plot_solar_heat__pitch(fig, ax)
