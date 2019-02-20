@@ -345,7 +345,7 @@ Returns:
     acispy: [WARNING  ] 2017-09-14 14:23:36,932 This observation is NOT safe from a thermal perspective.
     acispy: [INFO     ] 2017-09-14 14:23:37,499 Image of the model run has been written to ecs_run_dpa_6chip_2015:100:12:45:30.png.
 
-.. image:: _images/cti_run.png
+.. image:: _images/ecs_run.png
 
 Example 2
 +++++++++
