@@ -147,10 +147,16 @@ class ThermalModelFromFiles(ModelDataset):
     >>> ds = ThermalModelFromFiles(["temperatures_dea.dat", "temperatures_dpa.dat"],
     ...                            "old_model/states.dat", get_msids=True)
     """
-    def __init__(self, temp_files, state_file, get_msids=False, tl_file=None):
+    def __init__(self, temp_files, state_file, get_msids=False, tl_file=None,
+                 esa_files=None):
         temp_files = ensure_list(temp_files)
+        esa_files = ensure_list(esa_files)
+        if len(esa_files) == len(temp_files):
+            pass
+        elif len(esa_files) != 1:
+            pass
         if len(temp_files) == 1:
-            models = Model.from_load_file(temp_files[0])
+            models = Model.from_load_file(temp_files[0], esa_file=esa_files[0])
             comps = list(models.keys())
             times = models[comps[0]].times.value
         else:

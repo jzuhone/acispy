@@ -86,7 +86,7 @@ class Model(TimeSeriesData):
         return cls(table=data)
 
     @classmethod
-    def from_load_file(cls, temps_file):
+    def from_load_file(cls, temps_file, esa_file=None):
         data = {}
         table = ascii.read(temps_file)
         comp = list(table.keys())[-1]
@@ -95,6 +95,13 @@ class Model(TimeSeriesData):
         data[key] = APQuantity(table[comp].data, times, 
                                get_units("model", key), 
                                dtype=table[comp].data.dtype)
+        if esa_file is not None:
+            etable = ascii.read(esa_file)
+            key = "earth_solid_angle"
+            times = Quantity(etable["time"], 's')
+            data[key] = APQuantity(etable[key].data, times,
+                                   get_units("model", key),
+                                   dtype=etable[key].data.dtype)
         return cls(table=data)
 
     def get_values(self, time):
