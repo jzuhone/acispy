@@ -8,10 +8,10 @@ short_name = {"dea": "1deamzt",
               "dpa": "1dpamzt",
               "psmc": "1pdeaat"}
 
-parser = argparse.ArgumentParser(description='Simulate a CTI run.')
+parser = argparse.ArgumentParser(description='Simulate an ECS run.')
 parser.add_argument("component", type=str, help='The component to model: dpa, dea, or psmc.')
-parser.add_argument("tstart", type=str, help='The start time of the CTI run in YYYY:DOY:HH:MM:SS format')
-parser.add_argument("tstop", type=str, help='The start time of the CTI run in YYYY:DOY:HH:MM:SS format')
+parser.add_argument("tstart", type=str, help='The start time of the ECS run in YYYY:DOY:HH:MM:SS format')
+parser.add_argument("tstop", type=str, help='The start time of the ECS run in YYYY:DOY:HH:MM:SS format')
 parser.add_argument("T_init", type=float, help='The initial temperature of the component in degrees C.')
 parser.add_argument("pitch", type=float, help='The pitch in degrees.')
 parser.add_argument("ccd_count", type=int, help="The number of CCDs to clock.")
@@ -26,12 +26,12 @@ parser.add_argument("--dh_heater", type=int, default=0, help="Is the DH heater o
 
 args = parser.parse_args()
 
-cti_run = acispy.SimulateCTIRun(short_name[args.component], args.tstart, args.tstop, args.T_init, 
+ecs_run = acispy.SimulateECSRun(short_name[args.component], args.tstart, args.tstop, args.T_init,
                                 args.pitch, args.ccd_count, vehicle_load=args.vehicle_load,
                                 simpos=args.simpos, off_nominal_roll=args.off_nominal_roll, 
                                 dh_heater=args.dh_heater)
 
-dp = cti_run.plot_model()
-filename = "cti_run_%s_%dchip_%s.png" % (args.component, args.ccd_count, args.tstart)
+dp = ecs_run.plot_model()
+filename = "ecs_run_%s_%dchip_%s.png" % (args.component, args.ccd_count, args.tstart)
 dp.savefig(filename)
 mylog.info("Image of the model run has been written to %s." % filename)

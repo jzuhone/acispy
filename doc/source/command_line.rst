@@ -274,34 +274,39 @@ Returns:
 
 .. image:: _images/plot_msid.png
 
-``simulate_cti_run``
+``simulate_ecs_run``
 --------------------
 
 .. code-block:: text
 
-    usage: simulate_cti_run [-h] [--days DAYS] [--simpos SIMPOS]
+    usage: simulate_ecs_run [-h] [--vehicle_load VEHICLE_LOAD] [--simpos SIMPOS]
                             [--off_nominal_roll OFF_NOMINAL_ROLL]
                             [--dh_heater DH_HEATER]
-                            component tstart T_init pitch ccd_count
+                            component tstart tstop T_init pitch ccd_count
 
-    Simulate a CTI run.
+    Simulate an ECS run.
 
     positional arguments:
       component             The component to model: dpa, dea, or psmc.
-      tstart                The start time in YYYY:DOY:HH:MM:SS format
+      tstart                The start time of the ECS run in YYYY:DOY:HH:MM:SS format
+      tstop                 The start time of the ECS run in YYYY:DOY:HH:MM:SS format
       T_init                The initial temperature of the component in degrees C.
       pitch                 The pitch in degrees.
       ccd_count             The number of CCDs to clock.
 
     optional arguments:
       -h, --help            show this help message and exit
-      --days DAYS           The number of days to run the model. Default: 3.0
+      --vehicle_load VEHICLE_LOAD
+                            The vehicle load which is running. Default: None,
+                            meaning no vehicle load. If this parameter is set, the
+                            input values of pitch and off-nominal roll will be
+                            ignored and the values from the vehicle load will be
+                            used.
       --simpos SIMPOS       The SIM position. Default: -99616.0
       --off_nominal_roll OFF_NOMINAL_ROLL
                             The off-nominal roll. Default: 0.0
       --dh_heater DH_HEATER
                             Is the DH heater on (1) or off (0)? Default: 0/off.
-
 
 Example 1
 +++++++++
@@ -317,7 +322,7 @@ To run the 1DPAMZT model with the following conditions:
 
 .. code-block:: bash
 
-    [~]$ simulate_cti_run dpa 2015:100:12:45:30 2015:101:12:45:30 10.0 150. 6 --off_nominal_roll 12.0
+    [~]$ simulate_ecs_run dpa 2015:100:12:45:30 2015:101:12:45:30 10.0 150. 6 --off_nominal_roll 12.0
 
 Returns:
 
@@ -336,9 +341,9 @@ Returns:
     acispy: [INFO     ] 2017-09-14 14:23:36,931 Model Result
     acispy: [INFO     ] 2017-09-14 14:23:36,931 ------------
     acispy: [INFO     ] 2017-09-14 14:23:36,932 The limit of 35.5 degrees C will be reached at 2015:100:21:12:32.816, after 30.4228 ksec.
-    acispy: [INFO     ] 2017-09-14 14:23:36,932 The limit is reached before the end of the CTI run.
-    acispy: [WARNING  ] 2017-09-14 14:23:36,932 This CTI run is NOT safe from a thermal perspective.
-    acispy: [INFO     ] 2017-09-14 14:23:37,499 Image of the model run has been written to cti_run_dpa_6chip_2015:100:12:45:30.png.
+    acispy: [INFO     ] 2017-09-14 14:23:36,932 The limit is reached before the end of the observation.
+    acispy: [WARNING  ] 2017-09-14 14:23:36,932 This observation is NOT safe from a thermal perspective.
+    acispy: [INFO     ] 2017-09-14 14:23:37,499 Image of the model run has been written to ecs_run_dpa_6chip_2015:100:12:45:30.png.
 
 .. image:: _images/cti_run.png
 
@@ -356,7 +361,7 @@ To run the 1DEAMZT model with the following conditions:
 
 .. code-block:: bash
 
-    [~]$ simulate_cti_run dea 2017:069:15:40:00 2017:070:10:00:00 7.5 150. 4 --off_nominal_roll 0.0
+    [~]$ simulate_ecs_run dea 2017:069:15:40:00 2017:070:10:00:00 7.5 150. 4 --off_nominal_roll 0.0
 
 Returns:
 
@@ -375,10 +380,10 @@ Returns:
     acispy: [INFO     ] 2017-09-14 14:26:16,009 Model Result
     acispy: [INFO     ] 2017-09-14 14:26:16,009 ------------
     acispy: [INFO     ] 2017-09-14 14:26:16,009 The limit of 35.5 degrees C is never reached.
-    acispy: [INFO     ] 2017-09-14 14:26:16,009 This CTI run is safe from a thermal perspective.
-    acispy: [INFO     ] 2017-09-14 14:26:16,546 Image of the model run has been written to cti_run_dea_4chip_2017:069:15:40:00.png.
+    acispy: [INFO     ] 2017-09-14 14:26:16,009 This observation is safe from a thermal perspective.
+    acispy: [INFO     ] 2017-09-14 14:26:16,546 Image of the model run has been written to ecs_run_dea_4chip_2017:069:15:40:00.png.
 
-.. image:: _images/cti_run2.png
+.. image:: _images/ecs_run2.png
 
 Example 3
 +++++++++
@@ -398,7 +403,7 @@ To run the 1DPAMZT model with the following conditions:
 
 .. code-block:: bash
 
-    [~]$ simulate_cti_run dpa 2017:256:03:20:00 2017:257:15:20:00 10.0 0.0 6 --vehicle_load SEP0917C
+    [~]$ simulate_ecs_run dpa 2017:256:03:20:00 2017:257:15:20:00 10.0 0.0 6 --vehicle_load SEP0917C
 
 Returns:
 
@@ -418,11 +423,11 @@ Returns:
     acispy: [INFO     ] 2017-09-14 15:40:30,686 Model Result
     acispy: [INFO     ] 2017-09-14 15:40:30,686 ------------
     acispy: [INFO     ] 2017-09-14 15:40:30,686 The limit of 35.5 degrees C will be reached at 2017:256:09:17:34.816, after 21.4548 ksec.
-    acispy: [INFO     ] 2017-09-14 15:40:30,686 The limit is reached before the end of the CTI run.
-    acispy: [WARNING  ] 2017-09-14 15:40:30,686 This CTI run is NOT safe from a thermal perspective.
-    acispy: [INFO     ] 2017-09-14 15:40:31,526 Image of the model run has been written to cti_run_dpa_6chip_2017:256:03:20:00.png.
+    acispy: [INFO     ] 2017-09-14 15:40:30,686 The limit is reached before the end of the observation.
+    acispy: [WARNING  ] 2017-09-14 15:40:30,686 This observation is NOT safe from a thermal perspective.
+    acispy: [INFO     ] 2017-09-14 15:40:31,526 Image of the model run has been written to ecs_run_dpa_6chip_2017:256:03:20:00.png.
 
-.. image:: _images/cti_run3.png
+.. image:: _images/ecs_run3.png
 
 ``phase_scatter_plot``
 ----------------------
