@@ -95,7 +95,7 @@ tm_link_base = "http://cxc.cfa.harvard.edu/acis/Thermal/%s/%s.html"
 def get_instr(simpos):
     if 104839 >= simpos >= 82109:
         instr = 'ACIS-I'
-    elif 82108 >= simpos >= 70736:
+    elif 82108 >= simpos >= 60000:
         instr = 'ACIS-S'
     elif -20000 >= simpos >= -86147:
         instr = 'HRC-I'
