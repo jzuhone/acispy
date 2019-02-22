@@ -13,6 +13,7 @@ from io import BytesIO
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from acispy.utils import convert_state_code, get_time
 import numpy as np
+from astropy.units import Quantity
 
 drawstyles = {"simpos": "steps",
               "pitch": "steps",
@@ -905,6 +906,65 @@ class MultiDatePlot(object):
         Re-draw the plot.
         """
         self.fig.canvas.draw()
+
+
+class HistogramPlot(ACISPlot):
+    def __init__(self, ds, field, bins=None, range=None, tstart=None,
+                 tstop=None, cumulative=False, normed=False,
+                 figsize=(12, 12), fontsize=18, plot=None, **kwargs):
+        self.field = ds._determine_field(field)
+        self.xlabel = ds.fields[self.field].display_name
+        self.unit = ds.fields[self.field].units
+        slc = slice(tstart, tstop)
+        self.xx = ds[field][slc]
+
+        if plot is None:
+            fig = plt.figure(figsize=figsize)
+            ax = fig.add_subplot(111)
+        else:
+            fig = plot.fig
+            ax = plot.ax
+        super(HistogramPlot, self).__init__(fig, ax)
+
+        if self.field[0] == "states":
+            self.weights = (ds.states["tstop"][slc] -
+                            ds.states["tstart"][slc]).to("ks")
+        else:
+            weights = np.diff(self.xx.times.to_value("ks"))
+            self.weights = Quantity(np.concatenate([weights[0],
+                                                    0.5*(weights[:-1] +
+                                                         weights[1:]),
+                                                    weights[-1]]), "ks")
+
+        hist, bins, patches = self.ax.hist(self.xx.value, bins=bins,
+                                           range=range, normed=normed,
+                                           cumulative=cumulative,
+                                           weights=self.weights.value, **kwargs)
+
+        self.hist = hist
+        self.bins = bins
+        self.patches = patches
+
+        fontProperties = self._annotate_plot(fontsize, normed, cumulative)
+
+    def _annotate_plot(self, fontsize, normed, cumulative):
+        fontProperties = font_manager.FontProperties(size=fontsize)
+        for label in self.ax.get_xticklabels():
+            label.set_fontproperties(fontProperties)
+        for label in self.ax.get_yticklabels():
+            label.set_fontproperties(fontProperties)
+        if self.unit != '':
+            self.xlabel += ' (%s)' % unit_labels.get(self.unit, self.unit)
+        self.ax.set_xlabel(self.xlabel, fontsize=18)
+        if normed:
+            self.ylabel = "Fraction of Time"
+        else:
+            if cumulative:
+                self.ylabel = "Cumulative Time (ks)"
+            else:
+                self.ylabel = "Time (ks)"
+        self.ax.set_ylabel(self.ylabel, fontsize=18)
+        return fontProperties
 
 
 class PhasePlot(ACISPlot):

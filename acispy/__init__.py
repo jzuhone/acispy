@@ -7,7 +7,8 @@ from acispy.dataset import EngArchiveData, \
     DEAHousekeepingTracelogData, \
     TenDayTracelogData, MaudeData, TelemData
 from acispy.plots import DatePlot, MultiDatePlot, \
-    PhaseScatterPlot, PhaseHistogramPlot, CustomDatePlot
+    PhaseScatterPlot, PhaseHistogramPlot, CustomDatePlot, \
+    HistogramPlot
 from acispy.thermal_models import SimulateECSRun, \
     ThermalModelRunner, ThermalModelFromLoad, \
     ThermalModelFromRun, SimulateSingleObs
