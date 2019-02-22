@@ -112,6 +112,30 @@ class ACISPlot(object):
         self.ax.axhline(y=y, lw=lw, ls=ls, color=color, 
                         label='_nolegend_', **kwargs)
 
+    def add_vline(self, x, lw=2, ls='-', color='green', **kwargs):
+        """
+        Add a vertical line on the x-axis of the plot.
+
+        Parameters
+        ----------
+        x : float
+            The value to place the vertical line at.
+        lw : integer, optional
+            The width of the line. Default: 2
+        ls : string, optional
+            The style of the line. Can be one of:
+            'solid', 'dashed', 'dashdot', 'dotted'.
+            Default: 'solid'
+        color : string, optional
+            The color of the line. Default: 'green'
+
+        Examples
+        --------
+        >>> p.add_vline(25., lw=3, ls='dashed', color='red')
+        """
+        self.ax.axvline(x=x, lw=lw, ls=ls, color=color, **kwargs,
+                        label='_nolegend_')
+
     def set_ylim(self, ymin, ymax):
         """
         Set the limits on the left y-axis of the plot to *ymin* and *ymax*.
