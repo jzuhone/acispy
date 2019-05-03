@@ -272,6 +272,9 @@ class ThermalModelRunner(ModelDataset):
         The initial temperature for the thermal model run. If None,
         an initial temperature will be determined from telemetry.
         Default: None
+    dt : float, optional
+        The timestep to use for this run. Default is 328 seconds or is provided
+        by the model specification file.
     model_spec : string, optional
         Path to the model spec JSON file for the model. Default: None, the 
         standard model path will be used.
@@ -296,8 +299,8 @@ class ThermalModelRunner(ModelDataset):
     ...                                T_init=10.1)
     """
     def __init__(self, name, tstart, tstop, states=None, T_init=None,
-                 use_msids=True, model_spec=None, include_bad_times=False,
-                 server=None, ephemeris=None):
+                 use_msids=True, dt=328.0, model_spec=None, 
+                 include_bad_times=False, server=None, ephemeris=None):
 
         self.name = name
 
@@ -335,7 +338,7 @@ class ThermalModelRunner(ModelDataset):
         ephem_times, ephem_data = self._get_ephemeris(ephemeris, tstart_secs, tstop_secs)
 
         self.xija_model = self._compute_model(name, tstart, tstop, states, 
-                                              state_times, T_init, 
+                                              state_times, dt, T_init, 
                                               ephem_times=ephem_times,
                                               ephem_data=ephem_data)
 
@@ -377,7 +380,7 @@ class ThermalModelRunner(ModelDataset):
         ephemeris_times = ephem_data["times"].data[idxs]
         return ephemeris_times, ephemeris
 
-    def _compute_model(self, name, tstart, tstop, states, state_times, T_init,
+    def _compute_model(self, name, tstart, tstop, states, state_times, dt, T_init,
                        ephem_times=None, ephem_data=None):
         if name == "fptemp_11":
             name = "fptemp"
@@ -389,7 +392,7 @@ class ThermalModelRunner(ModelDataset):
             roll = np.array(states["off_nominal_roll"])
         else:
             roll = calc_off_nom_rolls(states)
-        model = xija.XijaModel(name, start=tstart, stop=tstop, model_spec=self.model_spec)
+        model = xija.XijaModel(name, start=tstart, stop=tstop, dt=dt, model_spec=self.model_spec)
         if 'eclipse' in model.comp:
             model.comp['eclipse'].set_data(False)
         model.comp[name].set_data(T_init)
@@ -433,7 +436,7 @@ class ThermalModelRunner(ModelDataset):
 
     @classmethod
     def from_states_table(cls, name, tstart, tstop, states_file, T_init,
-                          model_spec=None, include_bad_times=False, 
+                          dt=328.0, model_spec=None, include_bad_times=False, 
                           ephemeris=None, use_msids=True):
         """
         Class for running Xija thermal models.
@@ -465,22 +468,23 @@ class ThermalModelRunner(ModelDataset):
         if "off_nominal_roll" not in states.colnames:
             states_dict["off_nominal_roll"] = calc_off_nom_rolls(states)
         return cls(name, tstart, tstop, states=states_dict, T_init=T_init,
-                   model_spec=model_spec, include_bad_times=include_bad_times,
+                   dt=dt, model_spec=model_spec, include_bad_times=include_bad_times,
                    ephemeris=ephemeris, use_msids=use_msids)
 
     @classmethod
     def from_commands(cls, name, tstart, tstop, cmds, T_init, use_msids=True,
-                      model_spec=None, include_bad_times=False, ephemeris=None):
+                      dt=328.0, model_spec=None, include_bad_times=False, 
+                      ephemeris=None):
         tstart = get_time(tstart)
         tstop = get_time(tstop)
         t = States.from_commands(tstart, tstop, cmds)
         states = {k: t[k].value for k in t.keys()}
-        return cls(name, tstart, tstop, states=states, T_init=T_init,
+        return cls(name, tstart, tstop, states=states, T_init=T_init, dt=dt,
                    model_spec=model_spec, include_bad_times=include_bad_times,
                    ephemeris=ephemeris, use_msids=use_msids)
 
     @classmethod
-    def from_kadi(cls, name, tstart, tstop, T_init, use_msids=True, 
+    def from_kadi(cls, name, tstart, tstop, T_init, use_msids=True, dt=328.0,
                   model_spec=None, include_bad_times=False, ephemeris=None):
         from kadi.commands import states as cmd_states
         tstart = get_time(tstart)
@@ -496,18 +500,18 @@ class ThermalModelRunner(ModelDataset):
                 states[k] = np.array([",".join(d) for d in t["trans_keys"].data])
             else:
                 states[k] = t[k].data
-        return cls(name, tstart, tstop, states=states, T_init=T_init,
+        return cls(name, tstart, tstop, states=states, T_init=T_init, dt=dt,
                    model_spec=model_spec, include_bad_times=include_bad_times,
                    ephemeris=ephemeris, use_msids=use_msids)
 
     @classmethod
-    def from_backstop(cls, name, backstop_file, T_init, model_spec=None,
+    def from_backstop(cls, name, backstop_file, T_init, model_spec=None, dt=328.0,
                       include_bad_times=False, ephemeris=None, use_msids=True):
         import Ska.ParseCM
         bs_cmds = Ska.ParseCM.read_backstop(backstop_file)
         tstart = bs_cmds[0]['time']
         tstop = bs_cmds[-1]['time']
-        return cls.from_commands(name, tstart, tstop, bs_cmds, T_init,
+        return cls.from_commands(name, tstart, tstop, bs_cmds, T_init, dt=dt,
                                  model_spec=model_spec, use_msids=use_msids,
                                  include_bad_times=include_bad_times,
                                  ephemeris=ephemeris)
