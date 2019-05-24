@@ -179,19 +179,21 @@ class MSIDs(TimeSeriesData):
             start = max(start, max_fetch_tstart)
             stop = min(stop, min_fetch_tstop)
             interpolate_times = np.arange((stop - start) // dt + 1) * dt + start
+        print(np.diff(interpolate_times).max())
         for k, msid in data.items():
             if interpolate:
                 indexes = Ska.Numpy.interpolate(np.arange(len(msid.times)),
                                                 msid.times, interpolate_times,
                                                 method='nearest', sorted=True)
+                times[k.lower()] = interpolate_times
             else:
                 indexes = slice(None, None, None)
+                times[k.lower()] = get_time(data[k].times, 'secs')
             if msid.state_codes:
                 state_codes[k] = dict((k, v) for v, k in msid.state_codes)
             table[k.lower()] = msid.vals[indexes]
             if msid.bads is not None:
                 masks[k.lower()] = (~msid.bads)[indexes]
-            times[k.lower()] = get_time(data[k].times[indexes], 'secs')
         return cls(table, times, state_codes=state_codes, masks=masks,
                    derived_msids=derived_msids)
 
