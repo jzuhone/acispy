@@ -261,7 +261,7 @@ class ThermalModelRunner(ModelDataset):
     model_spec : string, optional
         Path to the model spec JSON file for the model. Default: None, the 
         standard model path will be used.
-    include_bad_times : boolean, optional
+    mask_bad_times : boolean, optional
         If set, bad times from the data are included in the array masks
         and plots. Default: False
     server : string
@@ -283,7 +283,7 @@ class ThermalModelRunner(ModelDataset):
     """
     def __init__(self, name, tstart, tstop, states=None, T_init=None,
                  use_msids=True, dt=328.0, model_spec=None, 
-                 include_bad_times=False, server=None, ephemeris=None):
+                 mask_bad_times=False, server=None, ephemeris=None):
 
         self.name = name
 
@@ -338,7 +338,7 @@ class ThermalModelRunner(ModelDataset):
             components.append('earthheat__fptemp')
 
         masks = {}
-        if include_bad_times and self.bad_times is not None:
+        if mask_bad_times and self.bad_times is not None:
             masks[name] = np.ones(self.xija_model.times.shape, dtype='bool')
             for (left, right) in self.bad_times_indices:
                 masks[name][left:right] = False
@@ -419,7 +419,7 @@ class ThermalModelRunner(ModelDataset):
 
     @classmethod
     def from_states_table(cls, name, tstart, tstop, states_file, T_init,
-                          dt=328.0, model_spec=None, include_bad_times=False, 
+                          dt=328.0, model_spec=None, mask_bad_times=False, 
                           ephemeris=None, use_msids=True):
         """
         Class for running Xija thermal models.
@@ -440,7 +440,7 @@ class ThermalModelRunner(ModelDataset):
         model_spec : string, optional
             Path to the model spec JSON file for the model. Default: None, the
             standard model path will be used.
-        include_bad_times : boolean, optional
+        mask_bad_times : boolean, optional
             If set, bad times from the data are included in the array masks
             and plots. Default: False
         """
@@ -451,24 +451,24 @@ class ThermalModelRunner(ModelDataset):
         if "off_nominal_roll" not in states.colnames:
             states_dict["off_nominal_roll"] = calc_off_nom_rolls(states)
         return cls(name, tstart, tstop, states=states_dict, T_init=T_init,
-                   dt=dt, model_spec=model_spec, include_bad_times=include_bad_times,
+                   dt=dt, model_spec=model_spec, mask_bad_times=mask_bad_times,
                    ephemeris=ephemeris, use_msids=use_msids)
 
     @classmethod
     def from_commands(cls, name, tstart, tstop, cmds, T_init, use_msids=True,
-                      dt=328.0, model_spec=None, include_bad_times=False, 
+                      dt=328.0, model_spec=None, mask_bad_times=False, 
                       ephemeris=None):
         tstart = get_time(tstart)
         tstop = get_time(tstop)
         t = States.from_commands(tstart, tstop, cmds)
         states = {k: t[k].value for k in t.keys()}
         return cls(name, tstart, tstop, states=states, T_init=T_init, dt=dt,
-                   model_spec=model_spec, include_bad_times=include_bad_times,
+                   model_spec=model_spec, mask_bad_times=mask_bad_times,
                    ephemeris=ephemeris, use_msids=use_msids)
 
     @classmethod
     def from_kadi(cls, name, tstart, tstop, T_init, use_msids=True, dt=328.0,
-                  model_spec=None, include_bad_times=False, ephemeris=None):
+                  model_spec=None, mask_bad_times=False, ephemeris=None):
         from kadi.commands import states as cmd_states
         tstart = get_time(tstart)
         tstop = get_time(tstop)
@@ -484,19 +484,19 @@ class ThermalModelRunner(ModelDataset):
             else:
                 states[k] = t[k].data
         return cls(name, tstart, tstop, states=states, T_init=T_init, dt=dt,
-                   model_spec=model_spec, include_bad_times=include_bad_times,
+                   model_spec=model_spec, mask_bad_times=mask_bad_times,
                    ephemeris=ephemeris, use_msids=use_msids)
 
     @classmethod
     def from_backstop(cls, name, backstop_file, T_init, model_spec=None, dt=328.0,
-                      include_bad_times=False, ephemeris=None, use_msids=True):
+                      mask_bad_times=False, ephemeris=None, use_msids=True):
         import Ska.ParseCM
         bs_cmds = Ska.ParseCM.read_backstop(backstop_file)
         tstart = bs_cmds[0]['time']
         tstop = bs_cmds[-1]['time']
         return cls.from_commands(name, tstart, tstop, bs_cmds, T_init, dt=dt,
                                  model_spec=model_spec, use_msids=use_msids,
-                                 include_bad_times=include_bad_times,
+                                 mask_bad_times=mask_bad_times,
                                  ephemeris=ephemeris)
 
     def make_dashboard_plots(self, tstart=None, tstop=None, yplotlimits=None,
