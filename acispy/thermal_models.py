@@ -16,6 +16,7 @@ import Ska.Numpy
 import Ska.engarchive.fetch_sci as fetch
 from chandra_models import get_xija_model_file
 import matplotlib.pyplot as plt
+from kadi import events
 
 short_name = {"1deamzt": "dea",
               "1dpamzt": "dpa",
@@ -88,7 +89,7 @@ class ModelDataset(Dataset):
         Ska.Numpy.pprint(temp_array, fmt, out)
         out.close()
 
-    def write_model_and_data(self, filename, overwrite=False):
+    def write_model_and_data(self, filename, overwrite=False, mask_radzones=False):
         """
         Write the model, telemetry, and states data vs. time to
         an ASCII text file. The state data is interpolated to the
@@ -114,7 +115,19 @@ class ModelDataset(Dataset):
             if ("msids", msid) in self.field_list:
                 self.add_diff_data_model_field(msid)
                 out += [("msids", msid), ("model", "diff_%s" % msid)]
-        self.write_msids(filename, out, overwrite=overwrite)
+        if mask_radzones:
+            msid = list(self.model.keys())[0]
+            telem = self["msids", msid]
+            mask = np.ones_like(telem.value, dtype='bool')
+            rad_zones = events.rad_zones.filter(start=telem.dates[0],
+                                                stop=telem.dates[-1])
+            for rz in rad_zones:
+                idxs = np.logical_and(telem.times.value >= rz.tstart,
+                                      telem.times.value <= rz.tstop)
+                mask[idxs] = False
+        else:
+            mask = None
+        self.write_msids(filename, out, overwrite=overwrite, mask=mask)
 
 
 class ThermalModelFromRun(ModelDataset):
@@ -538,7 +551,6 @@ class ThermalModelRunner(ModelDataset):
             dashboard plots. Default: True
         """
         from xijafit import dashboard as dash
-        from kadi import events
         if fig is None:
             fig = plt.figure(figsize=(20,10))
         msid = self.name

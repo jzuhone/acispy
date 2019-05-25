@@ -269,7 +269,7 @@ class Dataset(object):
             self._dates[ftype, fname] = self[ftype, fname].dates
         return self._dates[ftype, fname]
 
-    def write_msids(self, filename, fields, mask_field=None, overwrite=False):
+    def write_msids(self, filename, fields, mask=None, overwrite=False):
         """
         Write MSIDs (or MSID-like quantities such as model values) to an ASCII
         table file. This assumes that all of the quantities have been
@@ -287,10 +287,8 @@ class Dataset(object):
         from astropy.table import Table
         fields = ensure_list(fields)
         base_times = self.dates(*fields[0])
-        if mask_field is not None:
-            mask = self[mask_field].mask
-        else:
-            mask = np.ones(base_times.size, dtype="bool")
+        if mask is None:
+            mask = slice(None, None, None)
         if len(fields) > 1:
             for field in fields[1:]:
                 if not np.all(base_times == self.dates(*field)):

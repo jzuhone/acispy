@@ -179,7 +179,6 @@ class MSIDs(TimeSeriesData):
             start = max(start, max_fetch_tstart)
             stop = min(stop, min_fetch_tstop)
             interpolate_times = np.arange((stop - start) // dt + 1) * dt + start
-        print(np.diff(interpolate_times).max())
         for k, msid in data.items():
             if interpolate:
                 indexes = Ska.Numpy.interpolate(np.arange(len(msid.times)),
