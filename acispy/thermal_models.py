@@ -89,7 +89,9 @@ class ModelDataset(Dataset):
         Ska.Numpy.pprint(temp_array, fmt, out)
         out.close()
 
-    def write_model_and_data(self, filename, overwrite=False, mask_radzones=False):
+    def write_model_and_data(self, filename, overwrite=False, 
+                             mask_radzones=False, mask_fmt1=False,
+                             mask_badtimes=True):
         """
         Write the model, telemetry, and states data vs. time to
         an ASCII text file. The state data is interpolated to the
@@ -115,19 +117,38 @@ class ModelDataset(Dataset):
             if ("msids", msid) in self.field_list:
                 self.add_diff_data_model_field(msid)
                 out += [("msids", msid), ("model", "diff_%s" % msid)]
+        msid = list(self.model.keys())[0]
+        telem = self["msids", msid]
+        mask = np.ones_like(telem.value, dtype='bool')
         if mask_radzones:
-            msid = list(self.model.keys())[0]
-            telem = self["msids", msid]
-            mask = np.ones_like(telem.value, dtype='bool')
             rad_zones = events.rad_zones.filter(start=telem.dates[0],
                                                 stop=telem.dates[-1])
             for rz in rad_zones:
                 idxs = np.logical_and(telem.times.value >= rz.tstart,
                                       telem.times.value <= rz.tstop)
                 mask[idxs] = False
-        else:
-            mask = None
+        if mask_fmt1:
+            which = self["msids", "ccsdstmf"]
+            mask[which] = False
         self.write_msids(filename, out, overwrite=overwrite, mask=mask)
+
+    def _get_msids(self, model, comps, tl_file):
+        times = model[comps[0]].times.value
+        tstart = secs2date(times[0] - 700.0)
+        tstop = secs2date(times[-1] + 700.0)
+        if tl_file is not None:
+            msids = MSIDs.from_tracelog(tl_file, tbegin=tstart, tend=tstop)
+        else:
+            if "earth_solid_angle" in comps:
+                comps.remove("earth_solid_angle")
+            comps.append("ccsdstmf")
+            msids = MSIDs.from_database(comps, tstart, tstop=tstop, filter_bad=True,
+                                        interpolate=True, interpolate_times=times)
+            if msids[comps[0]].times.size != times.size:
+                raise RuntimeError("Lengths of time arrays for model data and MSIDs "
+                                   "do not match. You probably ran a model past the "
+                                   "end date in the engineering archive!")
+        return msids
 
 
 class ThermalModelFromRun(ModelDataset):
@@ -165,20 +186,7 @@ class ThermalModelFromRun(ModelDataset):
         comps = list(model.keys())
         states = States.from_load_file(state_file)
         if get_msids:
-            if tl_file is not None:
-                msids = MSIDs.from_tracelog(tl_file)
-            else:
-                times = model[comps[0]].times.value
-                tstart = secs2date(times[0]-700.0)
-                tstop = secs2date(times[-1]+700.0)
-                if "earth_solid_angle" in comps:
-                    comps.remove("earth_solid_angle")
-                msids = MSIDs.from_database(comps, tstart, tstop=tstop, filter_bad=True,
-                                            interpolate=True, interpolate_times=times)
-                if msids[comps[0]].times.size != times.size:
-                    raise RuntimeError("Lengths of time arrays for model data and MSIDs "
-                                       "do not match. You probably ran a model past the "
-                                       "end date in the engineering archive!")
+            msids = self._get_msids(model, comps, tl_file)
         else:
             msids = EmptyTimeSeries()
         super(ThermalModelFromRun, self).__init__(msids, states, model)
@@ -212,36 +220,16 @@ class ThermalModelFromLoad(ModelDataset):
     >>> comps = ["1deamzt", "1pdeaat", "fptemp_11"]
     >>> ds = ThermalModelFromLoad("APR0416C", comps, get_msids=True)
     """
-    def __init__(self, load, comps=None, get_msids=False, time_range=None,
+    def __init__(self, load, comps=None, get_msids=False,
                  tl_file=None, states_comp="DPA"):
         if comps is None:
-            comps = ["1deamzt","1dpamzt","1pdeaat","fptemp_11",
+            comps = ["1deamzt", "1dpamzt", "1pdeaat", "fptemp_11",
                      "tmp_fep1_mong", "tmp_fep1_actel", "tmp_bep_pcb"]
         comps = ensure_list(comps)
-        if time_range is not None:
-            time_range = [date2secs(t) for t in time_range]
-        model = Model.from_load_page(load, comps, time_range=time_range)
+        model = Model.from_load_page(load, comps)
         states = States.from_load_page(load, comp=states_comp)
         if get_msids:
-            if tl_file is not None:
-                if time_range is None:
-                    tbegin = None
-                    tend = None
-                else:
-                    tbegin, tend = time_range
-                msids = MSIDs.from_tracelog(tl_file, tbegin=tbegin, tend=tend)
-            else:
-                times = model[comps[0]].times.value
-                tstart = secs2date(times[0]-700.0)
-                tstop = secs2date(times[-1]+700.0)
-                if "earth_solid_angle" in comps:
-                    comps.remove("earth_solid_angle")
-                msids = MSIDs.from_database(comps, tstart, tstop=tstop,
-                                            interpolate=True, interpolate_times=times)
-                if msids[comps[0]].times.size != times.size:
-                    raise RuntimeError("Lengths of time arrays for model data and MSIDs "
-                                       "do not match. You probably ran a model past the "
-                                       "end date in the engineering archive!")
+            msids = self._get_msids(model, comps, tl_file)
         else:
             msids = EmptyTimeSeries()
         super(ThermalModelFromLoad, self).__init__(msids, states, model)
@@ -295,8 +283,9 @@ class ThermalModelRunner(ModelDataset):
     ...                                T_init=10.1)
     """
     def __init__(self, name, tstart, tstop, states=None, T_init=None,
-                 use_msids=True, dt=328.0, model_spec=None, 
-                 mask_bad_times=False, server=None, ephemeris=None):
+                 get_msids=True, dt=328.0, model_spec=None,
+                 mask_bad_times=False, server=None, ephemeris=None,
+                 tl_file=None):
 
         self.name = name
 
@@ -322,9 +311,6 @@ class ThermalModelRunner(ModelDataset):
                 states["hetg"] = np.array(["RETR"]*num_states)
             states_obj = States(states)
         if T_init is None:
-            if not use_msids:
-                raise RuntimeError("Set 'use_msids=True' if you want to use telemetry "
-                                   "for setting the initial state!")
             T_init = fetch.MSID(name, tstart_secs-700., tstart_secs+700.).vals.mean()
 
         state_times = np.array([states["tstart"], states["tstop"]])
@@ -357,10 +343,8 @@ class ThermalModelRunner(ModelDataset):
                 masks[name][left:right] = False
 
         model_obj = Model.from_xija(self.xija_model, components, masks=masks)
-        if use_msids:
-            msids_obj = MSIDs.from_database([name], tstart, tstop=tstop,
-                                            interpolate=True,
-                                            interpolate_times=self.xija_model.times)
+        if get_msids:
+            msids_obj = self._get_msids(model_obj, [name], tl_file)
         else:
             msids_obj = EmptyTimeSeries()
         super(ThermalModelRunner, self).__init__(msids_obj, states_obj, model_obj)
@@ -431,9 +415,9 @@ class ThermalModelRunner(ModelDataset):
         return model
 
     @classmethod
-    def from_states_table(cls, name, tstart, tstop, states_file, T_init,
-                          dt=328.0, model_spec=None, mask_bad_times=False, 
-                          ephemeris=None, use_msids=True):
+    def from_states_file(cls, name, tstart, tstop, states_file, T_init,
+                         dt=328.0, model_spec=None, mask_bad_times=False, 
+                         ephemeris=None, get_msids=True):
         """
         Class for running Xija thermal models.
 
@@ -465,10 +449,10 @@ class ThermalModelRunner(ModelDataset):
             states_dict["off_nominal_roll"] = calc_off_nom_rolls(states)
         return cls(name, tstart, tstop, states=states_dict, T_init=T_init,
                    dt=dt, model_spec=model_spec, mask_bad_times=mask_bad_times,
-                   ephemeris=ephemeris, use_msids=use_msids)
+                   ephemeris=ephemeris, get_msids=get_msids)
 
     @classmethod
-    def from_commands(cls, name, tstart, tstop, cmds, T_init, use_msids=True,
+    def from_commands(cls, name, tstart, tstop, cmds, T_init, get_msids=True,
                       dt=328.0, model_spec=None, mask_bad_times=False, 
                       ephemeris=None):
         tstart = get_time(tstart)
@@ -477,10 +461,10 @@ class ThermalModelRunner(ModelDataset):
         states = {k: t[k].value for k in t.keys()}
         return cls(name, tstart, tstop, states=states, T_init=T_init, dt=dt,
                    model_spec=model_spec, mask_bad_times=mask_bad_times,
-                   ephemeris=ephemeris, use_msids=use_msids)
+                   ephemeris=ephemeris, get_msids=get_msids)
 
     @classmethod
-    def from_kadi(cls, name, tstart, tstop, T_init, use_msids=True, dt=328.0,
+    def from_kadi(cls, name, tstart, tstop, T_init, get_msids=True, dt=328.0,
                   model_spec=None, mask_bad_times=False, ephemeris=None):
         from kadi.commands import states as cmd_states
         tstart = get_time(tstart)
@@ -498,17 +482,17 @@ class ThermalModelRunner(ModelDataset):
                 states[k] = t[k].data
         return cls(name, tstart, tstop, states=states, T_init=T_init, dt=dt,
                    model_spec=model_spec, mask_bad_times=mask_bad_times,
-                   ephemeris=ephemeris, use_msids=use_msids)
+                   ephemeris=ephemeris, get_msids=get_msids)
 
     @classmethod
     def from_backstop(cls, name, backstop_file, T_init, model_spec=None, dt=328.0,
-                      mask_bad_times=False, ephemeris=None, use_msids=True):
+                      mask_bad_times=False, ephemeris=None, get_msids=True):
         import Ska.ParseCM
         bs_cmds = Ska.ParseCM.read_backstop(backstop_file)
         tstart = bs_cmds[0]['time']
         tstop = bs_cmds[-1]['time']
         return cls.from_commands(name, tstart, tstop, bs_cmds, T_init, dt=dt,
-                                 model_spec=model_spec, use_msids=use_msids,
+                                 model_spec=model_spec, get_msids=get_msids,
                                  mask_bad_times=mask_bad_times,
                                  ephemeris=ephemeris)
 
@@ -556,7 +540,7 @@ class ThermalModelRunner(ModelDataset):
         msid = self.name
         if ("msids", msid) not in self.field_list:
             raise RuntimeError("You must include the real data if you want to make a "
-                               "dashboard plot! Set use_msids=True when creating the"
+                               "dashboard plot! Set get_msids=True when creating the"
                                "thermal model!")
         telem = self["msids", msid]
         pred = self["model", msid]
@@ -740,7 +724,7 @@ class SimulateSingleObs(ThermalModelRunner):
             states["vid_board"][ecs_run_idxs] = 1
         super(SimulateSingleObs, self).__init__(name, datestart, dateend, states,
                                                 T_init, model_spec=model_spec,
-                                                use_msids=False)
+                                                get_msids=False)
 
         mylog.info("Run Parameters")
         mylog.info("--------------")
@@ -864,8 +848,10 @@ class SimulateSingleObs(ThermalModelRunner):
     def write_model_and_data(self, filename, overwrite=False):
         raise NotImplementedError
 
+
 class SimulateECSRun(SimulateSingleObs):
     pass
+
 
 class SimulateCTIRun(SimulateECSRun):
     pass

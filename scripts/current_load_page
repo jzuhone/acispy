@@ -409,7 +409,7 @@ while True:
             T_init = ds_tlm["msids", temp][model_start-700.0:model_start+700.0].value.mean()
             ds_models[temp] = acispy.ThermalModelRunner.from_kadi(temp, model_start,
                                                                   model_end, T_init,
-                                                                  use_msids=False)
+                                                                  get_msids=False)
         cti_runs = find_cti_runs(ds_models["1dpamzt"].states)
         reload = False
         last_reload_time = now_time_secs
