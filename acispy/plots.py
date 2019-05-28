@@ -509,7 +509,10 @@ class DatePlot(CustomDatePlot):
         fig, ax = get_figure(plot, fig, subplot, figsize)
         fields = ensure_list(fields)
         lw = ensure_list(lw)
-        self.lines = []
+        if plot is None:
+            self.lines = []
+        else:
+            self.lines = plot.lines
         self.num_fields = len(fields)
         if len(lw) == 1 and len(fields) > 1:
             lw = lw*self.num_fields
@@ -593,9 +596,12 @@ class DatePlot(CustomDatePlot):
             field2 = ds._determine_field(field2)
             self.field2 = field2
             src_name2, fd2 = field2
-            self.ax2 = self.ax.twinx()
-            self.ax2.set_zorder(-10)
-            self.ax.patch.set_visible(False)
+            if plot is None or not hasattr(plot, "ax2"):
+                self.ax2 = self.ax.twinx()
+                self.ax2.set_zorder(-10)
+                self.ax.patch.set_visible(False)
+            else:
+                self.ax2 = plot.ax2
             drawstyle = drawstyles.get(fd2, None)
             state_codes = ds.state_codes.get(field2, None)
             if not plot_bad:
