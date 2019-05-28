@@ -579,7 +579,7 @@ class DatePlot(CustomDatePlot):
             ticklocs, fig, ax = plot_cxctime(x, y, fig=fig, lw=lw[i], ax=ax,
                                              color=color[i], ls=ls[i],
                                              state_codes=state_codes,
-                                             drawstyle=drawstyle, 
+                                             drawstyle=drawstyle,
                                              label=label)
             self.lines.append(ax.lines[-1])
             self.y[field] = ds[field][mask]
