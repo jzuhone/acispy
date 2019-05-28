@@ -133,6 +133,7 @@ class ModelDataset(Dataset):
         self.write_msids(filename, out, overwrite=overwrite, mask=mask)
 
     def _get_msids(self, model, comps, tl_file):
+        comps = [comp.lower() for comp in comps]
         times = model[comps[0]].times.value
         tstart = secs2date(times[0] - 700.0)
         tstop = secs2date(times[-1] + 700.0)
@@ -287,7 +288,7 @@ class ThermalModelRunner(ModelDataset):
                  mask_bad_times=False, server=None, ephemeris=None,
                  tl_file=None):
 
-        self.name = name
+        self.name = name.lower()
 
         tstart = get_time(tstart)
         tstop = get_time(tstop)
@@ -311,15 +312,15 @@ class ThermalModelRunner(ModelDataset):
                 states["hetg"] = np.array(["RETR"]*num_states)
             states_obj = States(states)
         if T_init is None:
-            T_init = fetch.MSID(name, tstart_secs-700., tstart_secs+700.).vals.mean()
+            T_init = fetch.MSID(self.name, tstart_secs-700., tstart_secs+700.).vals.mean()
 
         state_times = np.array([states["tstart"], states["tstop"]])
 
-        self.model_spec = find_json(name, model_spec)
+        self.model_spec = find_json(self.name, model_spec)
 
         ephem_times, ephem_data = self._get_ephemeris(ephemeris, tstart_secs, tstop_secs)
 
-        self.xija_model = self._compute_model(name, tstart, tstop, states, 
+        self.xija_model = self._compute_model(self.name, tstart, tstop, states, 
                                               state_times, dt, T_init, 
                                               ephem_times=ephem_times,
                                               ephem_data=ephem_data)
@@ -330,7 +331,7 @@ class ThermalModelRunner(ModelDataset):
         if isinstance(states, dict):
             states.pop("dh_heater", None)
 
-        components = [name]
+        components = [self.name]
         if 'dpa_power' in self.xija_model.comp:
             components.append('dpa_power')
         if 'earthheat__fptemp' in self.xija_model.comp:
@@ -338,13 +339,13 @@ class ThermalModelRunner(ModelDataset):
 
         masks = {}
         if mask_bad_times and self.bad_times is not None:
-            masks[name] = np.ones(self.xija_model.times.shape, dtype='bool')
+            masks[self.name] = np.ones(self.xija_model.times.shape, dtype='bool')
             for (left, right) in self.bad_times_indices:
-                masks[name][left:right] = False
+                masks[self.name][left:right] = False
 
         model_obj = Model.from_xija(self.xija_model, components, masks=masks)
         if get_msids:
-            msids_obj = self._get_msids(model_obj, [name], tl_file)
+            msids_obj = self._get_msids(model_obj, [self.name], tl_file)
         else:
             msids_obj = EmptyTimeSeries()
         super(ThermalModelRunner, self).__init__(msids_obj, states_obj, model_obj)

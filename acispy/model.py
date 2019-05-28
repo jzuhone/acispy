@@ -50,6 +50,7 @@ class Model(TimeSeriesData):
 
     @classmethod
     def from_load_page(cls, load, components, time_range=None):
+        components = [comp.lower() for comp in components]
         load = find_load(load)
         mylog.info("Reading model data from the %s load." % load)
         components = ensure_list(components)
