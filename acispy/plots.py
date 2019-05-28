@@ -969,7 +969,7 @@ class HistogramPlot(ACISPlot):
         self.bins = bins
         self.patches = patches
 
-        fontProperties = self._annotate_plot(fontsize, normed, cumulative)
+        self._annotate_plot(fontsize, normed, cumulative)
 
     def _annotate_plot(self, fontsize, normed, cumulative):
         fontProperties = font_manager.FontProperties(size=fontsize)
@@ -988,7 +988,6 @@ class HistogramPlot(ACISPlot):
             else:
                 self.ylabel = "Time (ks)"
         self.ax.set_ylabel(self.ylabel, fontsize=18)
-        return fontProperties
 
 
 class PhasePlot(ACISPlot):
