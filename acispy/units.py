@@ -308,17 +308,19 @@ class APQuantity(Quantity):
 
     def argmax(self, dates=False):
         idx = np.argmax(self.value)
+        times = self.times[idx]
         if dates:
-            return self.dates[idx]
+            return secs2date(times)
         else:
-            return self.times[idx]
+            return times
 
     def argmin(self, dates=False):
         idx = np.argmin(self.value)
+        times = self.times[idx]
         if dates:
-            return self.dates[idx]
+            return secs2date(times)
         else:
-            return self.times[idx]
+            return times
 
 
 units_trans = {"DEGC": "deg_C",
