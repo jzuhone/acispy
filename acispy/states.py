@@ -46,6 +46,11 @@ class States(TimeSeriesData):
         super(States, self).__init__(table=new_table)
 
     @classmethod
+    def from_hdf5(cls, g):
+        table = dict((k, g[k][()]) for k in g)
+        cls(table)
+
+    @classmethod
     def from_database(cls, tstart, tstop, states=None, server=None):
         tstart = get_time(tstart)
         tstop = get_time(tstop)

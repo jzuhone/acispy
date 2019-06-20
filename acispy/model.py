@@ -15,7 +15,17 @@ comp_map = {"1deamzt": "dea",
             "tmp_fep1_mong": "fep1_mong",
             "tmp_fep1_actel": "fep1_actel"}
 
+
 class Model(TimeSeriesData):
+
+    @classmethod
+    def from_hdf5(cls, g):
+        table = {}
+        for k in g:
+            times = Quantity(g[k].attrs["times"])
+            table[k] = APQuantity(g[k][()], times, g[k].attrs["unit"],
+                                  mask=g[k].attrs.get("mask", None))
+        return cls(table=table)
 
     @classmethod
     def from_xija(cls, model, components, interp_times=None, masks=None):
@@ -116,13 +126,3 @@ class Model(TimeSeriesData):
             unit = get_units("model", key)
             values[key] = APQuantity(v, t, unit=unit, dtype=v.dtype)
         return values
-
-    def keys(self):
-        return self.table.keys()
-
-    @classmethod
-    def join_models(cls, model_list):
-        table = {}
-        for model in model_list:
-            table.update(model.table)
-        return cls(table=table)

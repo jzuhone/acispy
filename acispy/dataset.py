@@ -1,5 +1,6 @@
 from acispy.msids import MSIDs, CombinedMSIDs, ConcatenatedMSIDs
 from acispy.states import States, cmd_state_codes
+from acispy.model import Model
 from acispy.units import APQuantity, APStringArray
 from Chandra.Time import secs2date
 from acispy.fields import create_builtin_derived_msids, \
@@ -110,6 +111,59 @@ class Dataset(object):
                     dep_list.append(fd)
             if len(dep_list) > 0:
                 raise OutputFieldsNotFound(field, dep_list)
+
+    @classmethod
+    def from_hdf5(cls, filename):
+        import h5py
+        f = h5py.File(filename, "r")
+        if "msids" in f:
+            msids = MSIDs.from_hdf5(f["msids"])
+        else:
+            msids = EmptyTimeSeries()
+        if "states" in f:
+            states = States.from_hdf5(f["states"])
+        else:
+            states = EmptyTimeSeries()
+        if "model" in f:
+            model = Model.from_hdf5(f["model"])
+        else:
+            model = EmptyTimeSeries()
+        f.close()
+        return cls(msids, states, model)
+
+    def write_hdf5(self, filename, overwrite=True):
+        import h5py
+        if os.path.exists(filename) and not overwrite:
+            raise IOError("The file %s already exists and overwrite=False!!" % filename)
+        f = h5py.File(filename, "w")
+        if not self.msids._is_empty:
+            gmsids = f.create_group("msids")
+            for k, v in self.msids.items():
+                d = gmsids.create_dataset(k, data=v.value)
+                d.attrs["times"] = v.times
+                if hasattr(v, "mask"):
+                    d.attrs["mask"] = v.mask
+                if hasattr(v, "unit"):
+                    d.attrs["unit"] = v.unit
+            gmsids.attrs["state_codes"] = self.msids.state_codes
+            gmsids.attrs["derived_msids"] = self.msids.derived_msids
+        if not self.states._is_empty:
+            gstates = f.create_group("states")
+            for k, v in self.states.items():
+                d = gstates.create_dataset(k, data=v.value)
+                d.attrs["times"] = v.times
+                if hasattr(v, "unit"):
+                    d.attrs["unit"] = v.unit
+        if not self.model._is_empty:
+            gmodel = f.create_group("model")
+            for k, v in self.model.items():
+                d = gmodel.create_dataset(k, data=v.value)
+                d.attrs["times"] = v.times
+                if hasattr(v, "mask"):
+                    d.attrs["mask"] = v.mask
+                d.attrs["unit"] = v.unit
+        f.flush()
+        f.close()
 
     def add_derived_field(self, ftype, fname, function, units,
                           display_name=None, depends=None):

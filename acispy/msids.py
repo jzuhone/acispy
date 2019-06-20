@@ -52,6 +52,21 @@ class MSIDs(TimeSeriesData):
         self.derived_msids = derived_msids
 
     @classmethod
+    def from_hdf5(cls, g):
+        table = {}
+        times = {}
+        masks = {}
+        for k in g:
+            table[k] = g[k][()]
+            times[k] = g[k].attrs["times"]
+            if "mask" in g[k].attrs:
+                masks[k] = g[k].attrs["mask"]
+        state_codes = g.attrs.get("state_codes", None)
+        derived_msids = g.attrs.get("derived_msids", None)
+        return cls(table, times, masks=masks, state_codes=state_codes,
+                   derived_msids=derived_msids)
+
+    @classmethod
     def from_mit_file(cls, filename, tbegin=None, tend=None):
         if tbegin is None:
             tbegin = -1.0e22
