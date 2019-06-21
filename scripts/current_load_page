@@ -124,6 +124,18 @@ def find_the_load(t):
     return load
 
 
+def get_radzones(begin_time, last_time):
+    get_radzones = True
+    while get_radzones:
+        try:
+            radzones = events.rad_zones.filter(begin_time, last_time)
+            list(radzones)
+            get_radzones = False
+        except:
+            pass
+    return radzones
+
+
 def process_commands(now_time_utc, cmds):
 
     now_time_secs = DateTime(now_time_utc).secs
@@ -402,7 +414,7 @@ while True:
         cmds = commands.get_cmds(begin_time_str, last_time_str)
         cmds.fetch_params()
         comms, durations = get_comms()
-        radzones = events.rad_zones.filter(begin_time_str, last_time_str)
+        radzones = get_radzones(begin_time_str, last_time_str)
         model_start = now_time_secs - 4.0*86400.0
         model_end = now_time_secs + 4.0*86400.0
         for temp in temps:
