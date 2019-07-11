@@ -4,7 +4,7 @@ from matplotlib import font_manager
 import matplotlib.pyplot as plt
 from matplotlib.dates import num2date
 from acispy.utils import ensure_list
-from Chandra.Time import DateTime
+from Chandra.Time import DateTime, date2secs
 from datetime import datetime
 from collections import OrderedDict
 from matplotlib.backends.backend_agg import \
@@ -187,12 +187,15 @@ class CustomDatePlot(ACISPlot):
 
     """
     def __init__(self, dates, values, lw=2, fontsize=18, ls='-',
-                 figsize=(10, 8), plot=None, fig=None, subplot=None, 
-                 **kwargs):
+                 figsize=(10, 8), color="C0", plot=None, fig=None, 
+                 subplot=None, **kwargs):
         fig, ax = get_figure(plot, fig, subplot, figsize)
-        dates = DateTime(dates).secs
+        dates = np.asarray(dates)
+        if dates.dtype.char in ['S', 'U']:
+            dates = date2secs(dates)
         ticklocs, fig, ax = plot_cxctime(dates, np.array(values), fig=fig, 
-                                         ax=ax, lw=lw, ls=ls, **kwargs)
+                                         ax=ax, lw=lw, ls=ls, color=color, 
+                                         **kwargs)
         super(CustomDatePlot, self).__init__(fig, ax)
         self.lines.append(ax.lines[-1])
         self.ax.set_xlabel("Date", fontdict={"size": fontsize})
