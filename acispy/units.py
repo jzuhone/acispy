@@ -302,9 +302,12 @@ class APQuantity(Quantity):
         return APQuantity(ret.value, self.times, unit=ret.unit, mask=self.mask,
                           dtype=ret.dtype)
 
+    _dates = None
     @property
     def dates(self):
-        return secs2date(self.times.value)
+        if self._dates is None:
+            self._dates = secs2date(self.times.value)
+        return self._dates
 
     def argmax(self, dates=False):
         idx = np.argmax(self.value)
