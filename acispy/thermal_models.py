@@ -286,7 +286,7 @@ class ThermalModelRunner(ModelDataset):
     def __init__(self, name, tstart, tstop, states=None, T_init=None,
                  get_msids=True, dt=328.0, model_spec=None,
                  mask_bad_times=False, server=None, ephemeris=None,
-                 tl_file=None):
+                 tl_file=None, no_eclipse=False):
 
         self.name = name.lower()
 
@@ -323,7 +323,8 @@ class ThermalModelRunner(ModelDataset):
         self.xija_model = self._compute_model(self.name, tstart, tstop, states, 
                                               state_times, dt, T_init, 
                                               ephem_times=ephem_times,
-                                              ephem_data=ephem_data)
+                                              ephem_data=ephem_data,
+                                              no_eclipse=no_eclipse)
 
         self.bad_times = getattr(self.xija_model, "bad_times", None)
         self.bad_times_indices = getattr(self.xija_model, "bad_times_indices", None)
@@ -362,7 +363,7 @@ class ThermalModelRunner(ModelDataset):
         return ephemeris_times, ephemeris
 
     def _compute_model(self, name, tstart, tstop, states, state_times, dt, T_init,
-                       ephem_times=None, ephem_data=None):
+                       ephem_times=None, ephem_data=None, no_eclipse=False):
         if name == "fptemp_11":
             name = "fptemp"
         if isinstance(states, np.ndarray):
@@ -376,6 +377,8 @@ class ThermalModelRunner(ModelDataset):
         model = xija.XijaModel(name, start=tstart, stop=tstop, dt=dt, model_spec=self.model_spec)
         model.comp[name].set_data(T_init)
         model.comp['sim_z'].set_data(np.array(states['simpos']), state_times)
+        if no_eclipse:
+            model.comp["eclipse"].set_data(False)
         if 'roll' in model.comp:
             model.comp['roll'].set_data(roll, state_times)
         if 'dpa_power' in model.comp:
@@ -416,7 +419,7 @@ class ThermalModelRunner(ModelDataset):
     @classmethod
     def from_states_file(cls, name, tstart, tstop, states_file, T_init,
                          dt=328.0, model_spec=None, mask_bad_times=False, 
-                         ephemeris=None, get_msids=True):
+                         ephemeris=None, get_msids=True, no_eclipse=False):
         """
         Class for running Xija thermal models.
 
@@ -448,23 +451,24 @@ class ThermalModelRunner(ModelDataset):
             states_dict["off_nominal_roll"] = calc_off_nom_rolls(states)
         return cls(name, tstart, tstop, states=states_dict, T_init=T_init,
                    dt=dt, model_spec=model_spec, mask_bad_times=mask_bad_times,
-                   ephemeris=ephemeris, get_msids=get_msids)
+                   ephemeris=ephemeris, get_msids=get_msids, no_eclipse=no_eclipse)
 
     @classmethod
     def from_commands(cls, name, tstart, tstop, cmds, T_init, get_msids=True,
                       dt=328.0, model_spec=None, mask_bad_times=False, 
-                      ephemeris=None):
+                      ephemeris=None, no_eclipse=False):
         tstart = get_time(tstart)
         tstop = get_time(tstop)
         t = States.from_commands(tstart, tstop, cmds)
         states = {k: t[k].value for k in t.keys()}
         return cls(name, tstart, tstop, states=states, T_init=T_init, dt=dt,
                    model_spec=model_spec, mask_bad_times=mask_bad_times,
-                   ephemeris=ephemeris, get_msids=get_msids)
+                   ephemeris=ephemeris, get_msids=get_msids, no_eclipse=no_eclipse)
 
     @classmethod
     def from_kadi(cls, name, tstart, tstop, T_init, get_msids=True, dt=328.0,
-                  model_spec=None, mask_bad_times=False, ephemeris=None):
+                  model_spec=None, mask_bad_times=False, ephemeris=None,
+                  no_eclipse=False):
         from kadi.commands import states as cmd_states
         tstart = get_time(tstart)
         tstop = get_time(tstop)
@@ -481,11 +485,12 @@ class ThermalModelRunner(ModelDataset):
                 states[k] = t[k].data
         return cls(name, tstart, tstop, states=states, T_init=T_init, dt=dt,
                    model_spec=model_spec, mask_bad_times=mask_bad_times,
-                   ephemeris=ephemeris, get_msids=get_msids)
+                   ephemeris=ephemeris, get_msids=get_msids, no_eclipse=no_eclipse)
 
     @classmethod
     def from_backstop(cls, name, backstop_file, T_init, model_spec=None, dt=328.0,
-                      mask_bad_times=False, ephemeris=None, get_msids=True):
+                      mask_bad_times=False, ephemeris=None, get_msids=True,
+                      no_eclipse=False):
         import Ska.ParseCM
         bs_cmds = Ska.ParseCM.read_backstop(backstop_file)
         tstart = bs_cmds[0]['time']
@@ -493,7 +498,7 @@ class ThermalModelRunner(ModelDataset):
         return cls.from_commands(name, tstart, tstop, bs_cmds, T_init, dt=dt,
                                  model_spec=model_spec, get_msids=get_msids,
                                  mask_bad_times=mask_bad_times,
-                                 ephemeris=ephemeris)
+                                 ephemeris=ephemeris, no_eclipse=no_eclipse)
 
     def make_dashboard_plots(self, tstart=None, tstop=None, yplotlimits=None,
                              errorplotlimits=None, fig=None, figfile=None,
