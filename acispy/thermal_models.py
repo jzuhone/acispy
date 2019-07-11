@@ -374,8 +374,6 @@ class ThermalModelRunner(ModelDataset):
         else:
             roll = calc_off_nom_rolls(states)
         model = xija.XijaModel(name, start=tstart, stop=tstop, dt=dt, model_spec=self.model_spec)
-        if 'eclipse' in model.comp:
-            model.comp['eclipse'].set_data(False)
         model.comp[name].set_data(T_init)
         model.comp['sim_z'].set_data(np.array(states['simpos']), state_times)
         if 'roll' in model.comp:
