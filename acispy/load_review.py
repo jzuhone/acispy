@@ -1,4 +1,3 @@
-from __future__ import print_function
 import os
 from acispy.thermal_models import ThermalModelFromLoad
 from acispy.plots import DatePlot

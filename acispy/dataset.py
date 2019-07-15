@@ -11,8 +11,6 @@ from acispy.utils import get_display_name, moving_average, \
     ensure_list, get_time
 from acispy.units import get_units
 import numpy as np
-import os
-from six import string_types
 import Ska.engarchive.fetch_sci as fetch
 
 
@@ -78,7 +76,7 @@ class Dataset(object):
                     checked_field = fd
                 else:
                     raise RuntimeError("Cannot find field {}!".format(field))
-            elif isinstance(field, string_types):
+            elif isinstance(field, str):
                 fd = field.lower()
                 candidates = []
                 for ftype in self.fields.types:

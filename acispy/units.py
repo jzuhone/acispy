@@ -1,7 +1,6 @@
 import astropy.units as u
 from astropy.units import Quantity
 from acispy.utils import mylog
-from six import string_types
 import numpy as np
 from Chandra.Time import secs2date, DateTime
 from numpy import \
@@ -166,7 +165,7 @@ def parse_index(idx, times):
         return idx
     else:
         orig_idx = idx
-        if isinstance(idx, string_types):
+        if isinstance(idx, str):
             idx = DateTime(idx).secs
         if idx < times[0] or idx > times[-1]:
             raise RuntimeError("The time %s is outside the bounds of this dataset!" % orig_idx)

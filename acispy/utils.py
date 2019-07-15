@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 from Chandra.Time import DateTime
 import Ska.Sun
 import Ska.Numpy

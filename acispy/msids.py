@@ -6,15 +6,9 @@ import Ska.engarchive.fetch_sci as fetch
 from astropy.io import ascii
 import numpy as np
 from acispy.time_series import TimeSeriesData
-import six
 from Chandra.Time import date2secs, DateTime
 import Ska.Numpy
 from acispy.fields import builtin_deps
-
-if six.PY2:
-    str_type = "|S4"
-else:
-    str_type = "|U4"
 
 
 def check_depends(msids):
@@ -71,12 +65,12 @@ class MSIDs(TimeSeriesData):
         if tbegin is None:
             tbegin = -1.0e22
         else:
-            if isinstance(tbegin, six.string_types):
+            if isinstance(tbegin, str):
                 tbegin = date2secs(tbegin)
         if tend is None:
             tend = 1.0e22
         else:
-            if isinstance(tend, six.string_types):
+            if isinstance(tend, str):
                 tend = date2secs(tend)
         f = open(filename, 'r')
         line = f.readline()
@@ -136,12 +130,12 @@ class MSIDs(TimeSeriesData):
         if tbegin is None:
             tbegin = -1.0e22
         else:
-            if isinstance(tbegin, six.string_types):
+            if isinstance(tbegin, str):
                 tbegin = date2secs(tbegin)
         if tend is None:
             tend = 1.0e22
         else:
-            if isinstance(tend, six.string_types):
+            if isinstance(tend, str):
                 tend = date2secs(tend)
         f = open(filename, "r")
         header = f.readline().split()
@@ -152,7 +146,7 @@ class MSIDs(TimeSeriesData):
             if msid.lower() != "time":
                 state_codes[msid.lower()] = state_code
             if state_code is not None:
-                dtype.append((msid.lower(), str_type))
+                dtype.append((msid.lower(), "|U4"))
             else:
                 dtype.append((msid.lower(), '<f8'))
         data = []

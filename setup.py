@@ -11,7 +11,7 @@ setup(name='acispy',
       author='John ZuHone',
       author_email='john.zuhone@cfa.harvard.edu',
       url='http://github.com/jzuhone/acispy',
-      install_requires=["numpy>=1.12.1","six","requests","astropy"],
+      install_requires=["numpy>=1.12.1","requests","astropy"],
       scripts=scripts,
       classifiers=[
           'Intended Audience :: Science/Research',
