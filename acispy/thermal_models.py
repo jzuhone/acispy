@@ -51,8 +51,8 @@ margins = {'1deamzt': 2.0,
 
 
 def find_json(name, model_spec):
-    name = short_name[name]
     if model_spec is None:
+        name = short_name[name]
         model_spec = get_xija_model_file(name)
     elif not os.path.exists(model_spec):
         raise IOError("The JSON file %s does not exist!" % model_spec)
@@ -320,11 +320,14 @@ class ThermalModelRunner(ModelDataset):
 
         ephem_times, ephem_data = self._get_ephemeris(ephemeris, tstart_secs, tstop_secs)
 
-        self.xija_model = self._compute_model(self.name, tstart, tstop, states, 
-                                              state_times, dt, T_init, 
-                                              ephem_times=ephem_times,
-                                              ephem_data=ephem_data,
-                                              no_eclipse=no_eclipse)
+        if self.name in short_name:
+            self.xija_model = self._compute_acis_model(self.name, tstart, tstop, states,
+                                                       state_times, dt, T_init,
+                                                       ephem_times=ephem_times,
+                                                       ephem_data=ephem_data,
+                                                       no_eclipse=no_eclipse)
+        else:
+            self.xija_model = self._compute_model(self.name, tstart, tstop, dt, T_init)
 
         self.bad_times = getattr(self.xija_model, "bad_times", None)
         self.bad_times_indices = getattr(self.xija_model, "bad_times_indices", None)
@@ -362,8 +365,12 @@ class ThermalModelRunner(ModelDataset):
         ephemeris_times = ephem_data["times"].data[idxs]
         return ephemeris_times, ephemeris
 
-    def _compute_model(self, name, tstart, tstop, states, state_times, dt, T_init,
-                       ephem_times=None, ephem_data=None, no_eclipse=False):
+    def _compute_model(self, name, tstart, tstop, dt, T_init):
+        model = xija.XijaModel(name, start=tstart, stop=tstop, dt=dt, model_spec=self.model_spec)
+        model.comp[name].set_data(T_init)
+
+    def _compute_acis_model(self, name, tstart, tstop, states, state_times, dt, T_init,
+                            ephem_times=None, ephem_data=None, no_eclipse=False):
         if name == "fptemp_11":
             name = "fptemp"
         if isinstance(states, np.ndarray):
@@ -584,7 +591,7 @@ class ThermalModelRunner(ModelDataset):
                 mylimits["caution_high"] = limits[self.name]+margins[self.name]
                 mylimits["planning_limit"] = limits[self.name]
         dash.dashboard(pred.value[mask], telem.value[mask], times, mylimits,
-                       msid=self.name, modelname=full_name[self.name],
+                       msid=self.name, modelname=full_name.get(self.name, self.name),
                        errorplotlimits=errorplotlimits, yplotlimits=yplotlimits,
                        fig=fig, savefig=False)
         if figfile is not None:
