@@ -21,6 +21,7 @@ drawstyles = {"simpos": "steps",
               "ccsdstmf": "steps"}
 
 units_map = {"deg_C": "Temperature",
+             "deg_F": "Temperature",
              "V": "Voltage",
              "A": "Current",
              "W": "Power",
