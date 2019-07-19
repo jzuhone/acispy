@@ -286,7 +286,7 @@ class ThermalModelRunner(ModelDataset):
     def __init__(self, name, tstart, tstop, states=None, T_init=None,
                  get_msids=True, dt=328.0, model_spec=None,
                  mask_bad_times=False, server=None, ephemeris=None,
-                 tl_file=None, no_eclipse=False):
+                 tl_file=None, no_eclipse=False, compute_model=None):
 
         self.name = name.lower()
 
@@ -320,7 +320,10 @@ class ThermalModelRunner(ModelDataset):
 
         ephem_times, ephem_data = self._get_ephemeris(ephemeris, tstart_secs, tstop_secs)
 
-        if self.name in short_name:
+        if compute_model is not None:
+            self.xija_model = compute_model(self.name, tstart, tstop, states,
+                                            state_times, dt, T_init, model_spec)
+        elif self.name in short_name:
             self.xija_model = self._compute_acis_model(self.name, tstart, tstop, states,
                                                        state_times, dt, T_init,
                                                        ephem_times=ephem_times,
