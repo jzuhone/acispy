@@ -368,6 +368,9 @@ class ThermalModelRunner(ModelDataset):
     def _compute_model(self, name, tstart, tstop, dt, T_init):
         model = xija.XijaModel(name, start=tstart, stop=tstop, dt=dt, model_spec=self.model_spec)
         model.comp[name].set_data(T_init)
+        model.make()
+        model.calc()
+        return model
 
     def _compute_acis_model(self, name, tstart, tstop, states, state_times, dt, T_init,
                             ephem_times=None, ephem_data=None, no_eclipse=False):
