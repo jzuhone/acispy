@@ -285,7 +285,7 @@ class ThermalModelRunner(ModelDataset):
     """
     def __init__(self, name, tstart, tstop, states=None, T_init=None,
                  get_msids=True, dt=328.0, model_spec=None,
-                 mask_bad_times=False, server=None, ephemeris=None,
+                 mask_bad_times=False, ephemeris=None,
                  tl_file=None, no_eclipse=False, compute_model=None):
 
         self.name = name.lower()
@@ -295,13 +295,8 @@ class ThermalModelRunner(ModelDataset):
 
         tstart_secs = DateTime(tstart).secs
         tstop_secs = DateTime(tstop).secs
-        start = secs2date(tstart_secs - 700.0)
 
-        if states is None:
-            states_obj = States.from_database(start, tstop, server=server)
-            states = dict((k, np.array(v)) for k, v in states_obj.items())
-            states["off_nominal_roll"] = calc_off_nom_rolls(states)
-        else:
+        if states is not None:
             if "tstart" not in states:
                 states["tstart"] = DateTime(states["datestart"]).secs
                 states["tstop"] = DateTime(states["datestop"]).secs
@@ -311,6 +306,7 @@ class ThermalModelRunner(ModelDataset):
             if "hetg" not in states:
                 states["hetg"] = np.array(["RETR"]*num_states)
             states_obj = States(states)
+
         if T_init is None:
             T_init = fetch.MSID(self.name, tstart_secs-700., tstart_secs+700.).vals.mean()
 
@@ -325,8 +321,7 @@ class ThermalModelRunner(ModelDataset):
                                             dt, T_init, model_spec)
         elif self.name in short_name:
             self.xija_model = self._compute_acis_model(self.name, tstart, tstop, states,
-                                                       state_times, dt, T_init,
-                                                       ephem_times=ephem_times,
+                                                       dt, T_init, ephem_times=ephem_times,
                                                        ephem_data=ephem_data,
                                                        no_eclipse=no_eclipse)
         else:
@@ -375,8 +370,9 @@ class ThermalModelRunner(ModelDataset):
         model.calc()
         return model
 
-    def _compute_acis_model(self, name, tstart, tstop, states, state_times, dt, T_init,
+    def _compute_acis_model(self, name, tstart, tstop, states, dt, T_init,
                             ephem_times=None, ephem_data=None, no_eclipse=False):
+        state_times = np.array([states["tstart"], states["tstop"]])
         if name == "fptemp_11":
             name = "fptemp"
         if isinstance(states, np.ndarray):
@@ -467,21 +463,35 @@ class ThermalModelRunner(ModelDataset):
                    ephemeris=ephemeris, get_msids=get_msids, no_eclipse=no_eclipse)
 
     @classmethod
+    def from_database(cls, name, tstart, tstop, T_init, server=None, get_msids=True,
+                      dt=328.0, model_spec=None, mask_bad_times=False,
+                      ephemeris=None, no_eclipse=False, compute_model=None):
+        from Chandra.cmd_states import fetch_states
+        t = fetch_states(tstart, tstop, server=server)
+        states = dict((k, t[k]) for k in t.dtype.names)
+        states["off_nominal_roll"] = calc_off_nom_rolls(states)
+        return cls(name, tstart, tstop, states=states, T_init=T_init, dt=dt,
+                   model_spec=model_spec, mask_bad_times=mask_bad_times,
+                   ephemeris=ephemeris, get_msids=get_msids, no_eclipse=no_eclipse,
+                   compute_model=compute_model)
+
+    @classmethod
     def from_commands(cls, name, tstart, tstop, cmds, T_init, get_msids=True,
                       dt=328.0, model_spec=None, mask_bad_times=False, 
-                      ephemeris=None, no_eclipse=False):
+                      ephemeris=None, no_eclipse=False, compute_model=None):
         tstart = get_time(tstart)
         tstop = get_time(tstop)
         t = States.from_commands(tstart, tstop, cmds)
         states = {k: t[k].value for k in t.keys()}
         return cls(name, tstart, tstop, states=states, T_init=T_init, dt=dt,
                    model_spec=model_spec, mask_bad_times=mask_bad_times,
-                   ephemeris=ephemeris, get_msids=get_msids, no_eclipse=no_eclipse)
+                   ephemeris=ephemeris, get_msids=get_msids, no_eclipse=no_eclipse,
+                   compute_model=compute_model)
 
     @classmethod
     def from_kadi(cls, name, tstart, tstop, T_init, get_msids=True, dt=328.0,
                   model_spec=None, mask_bad_times=False, ephemeris=None,
-                  no_eclipse=False):
+                  no_eclipse=False, compute_model=None):
         from kadi.commands import states as cmd_states
         tstart = get_time(tstart)
         tstop = get_time(tstop)
@@ -498,19 +508,20 @@ class ThermalModelRunner(ModelDataset):
                 states[k] = t[k].data
         return cls(name, tstart, tstop, states=states, T_init=T_init, dt=dt,
                    model_spec=model_spec, mask_bad_times=mask_bad_times,
-                   ephemeris=ephemeris, get_msids=get_msids, no_eclipse=no_eclipse)
+                   ephemeris=ephemeris, get_msids=get_msids, no_eclipse=no_eclipse,
+                   compute_model=compute_model)
 
     @classmethod
     def from_backstop(cls, name, backstop_file, T_init, model_spec=None, dt=328.0,
                       mask_bad_times=False, ephemeris=None, get_msids=True,
-                      no_eclipse=False):
+                      no_eclipse=False, compute_model=None):
         import Ska.ParseCM
         bs_cmds = Ska.ParseCM.read_backstop(backstop_file)
         tstart = bs_cmds[0]['time']
         tstop = bs_cmds[-1]['time']
         return cls.from_commands(name, tstart, tstop, bs_cmds, T_init, dt=dt,
                                  model_spec=model_spec, get_msids=get_msids,
-                                 mask_bad_times=mask_bad_times,
+                                 mask_bad_times=mask_bad_times, compute_model=compute_model,
                                  ephemeris=ephemeris, no_eclipse=no_eclipse)
 
     def make_dashboard_plots(self, tstart=None, tstop=None, yplotlimits=None,
