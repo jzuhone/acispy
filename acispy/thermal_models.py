@@ -306,11 +306,11 @@ class ThermalModelRunner(ModelDataset):
             if "hetg" not in states:
                 states["hetg"] = np.array(["RETR"]*num_states)
             states_obj = States(states)
+        else:
+            states_obj = EmptyTimeSeries()
 
         if T_init is None:
             T_init = fetch.MSID(self.name, tstart_secs-700., tstart_secs+700.).vals.mean()
-
-        state_times = np.array([states["tstart"], states["tstop"]])
 
         self.model_spec = find_json(self.name, model_spec)
 
@@ -399,6 +399,8 @@ class ThermalModelRunner(ModelDataset):
             model.comp['pin1at'].set_data(T_init-10.)
         if 'dpa0' in model.comp:
             model.comp['dpa0'].set_data(T_init)
+        if 'dea0' in model.comp:
+            model.comp['dea0'].set_data(T_init)
         if 'dh_heater' in model.comp:
             model.comp['dh_heater'].set_data(states.get("dh_heater", 0), state_times)
         for st in ('ccd_count', 'fep_count', 'vid_board', 'clocking', 'pitch'):
