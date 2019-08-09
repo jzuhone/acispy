@@ -54,19 +54,19 @@ plot_limits = {"fptemp_11": (-120.0, -110.0),
                "tmp_bep_pcb": (5.0, 50.0)}
 
 planning_limits = {"1deamzt": 35.5,
-                   "1dpamzt": 36.5,
+                   "1dpamzt": 37.5,
                    "1pdeaat": 52.5,
                    "tmp_fep1_mong": 47.0,
                    "tmp_fep1_actel": 46.0,
                    "tmp_bep_pcb": 42.0}
 yellow_limits = {"1deamzt": 37.5,
-                 "1dpamzt": 38.5,
+                 "1dpamzt": 39.5,
                  "1pdeaat": 57.0,
                  "tmp_fep1_mong": 49.0,
                  "tmp_fep1_actel": 48.0,
                  "tmp_bep_pcb": 44.0}
 red_limits = {"1deamzt": 40.5,
-              "1dpamzt": 40.5,
+              "1dpamzt": 41.5,
               "1pdeaat": 62.0,
               "tmp_fep1_mong": 54.0,
               "tmp_fep1_actel": 53.0,
@@ -82,8 +82,8 @@ low_red_limits = {"tmp_fep1_mong": -10.0,
                   "tmp_fep1_actel": -10.0,
                   "tmp_bep_pcb": -10.0}
 
-fp_limits = {"acis_i": -114.0,
-             "acis_s": -112.0,
+fp_limits = {"acis_i": -111.0,
+             "acis_s": -111.0,
              "fp_sens": -118.7}
 
 obsid_link_base = "https://icxc.harvard.edu/cgi-bin/mp/target_param.cgi?"
