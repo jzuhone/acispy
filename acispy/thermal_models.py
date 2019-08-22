@@ -364,6 +364,8 @@ class ThermalModelRunner(ModelDataset):
         return ephemeris_times, ephemeris
 
     def _compute_model(self, name, tstart, tstop, dt, T_init):
+        if name == "fptemp_11":
+            name = "fptemp"
         model = xija.XijaModel(name, start=tstart, stop=tstop, dt=dt, model_spec=self.model_spec)
         model.comp[name].set_data(T_init)
         model.make()
