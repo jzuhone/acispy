@@ -319,7 +319,7 @@ class ThermalModelRunner(ModelDataset):
         if compute_model is not None:
             self.xija_model = compute_model(self.name, tstart, tstop, states,
                                             dt, T_init, model_spec)
-        elif self.name in short_name:
+        elif self.name in short_name and states is not None:
             self.xija_model = self._compute_acis_model(self.name, tstart, tstop, states,
                                                        dt, T_init, ephem_times=ephem_times,
                                                        ephem_data=ephem_data,
