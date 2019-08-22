@@ -105,14 +105,17 @@ class ModelDataset(Dataset):
         overwrite : boolean, optional
             If True, an existing file with the same name will be overwritten.
         """
-        states_to_map = ["vid_board", "pcad_mode", "pitch", "clocking", "simpos",
-                         "ccd_count", "fep_count", "off_nominal_roll", "power_cmd"]
+        states_to_map = ["vid_board", "pitch", "clocking", "simpos",
+                         "ccd_count", "fep_count", "off_nominal_roll"]
         out = []
         for i, msid in enumerate(self.model.keys()):
             if i == 0:
-                for state in states_to_map:
-                    self.map_state_to_msid(state, msid)
-                    out.append(("msids", state))
+                if self.states._is_empty:
+                    out += [("model", state) for state in states_to_map]
+                else:
+                    for state in states_to_map:
+                        self.map_state_to_msid(state, msid)
+                        out.append(("msids", state))
             out.append(("model", msid))
             if ("msids", msid) in self.field_list:
                 self.add_diff_data_model_field(msid)
@@ -338,7 +341,9 @@ class ThermalModelRunner(ModelDataset):
             components.append('dpa_power')
         if 'earthheat__fptemp' in self.xija_model.comp:
             components.append('earthheat__fptemp')
-
+        if states is None:
+            components += ["pitch", "roll", "fep_count", "vid_board", "clocking",
+                           "ccd_count", "sim_z"]
         masks = {}
         if mask_bad_times and self.bad_times is not None:
             masks[self.name] = np.ones(self.xija_model.times.shape, dtype='bool')
@@ -346,6 +351,7 @@ class ThermalModelRunner(ModelDataset):
                 masks[self.name][left:right] = False
 
         model_obj = Model.from_xija(self.xija_model, components, masks=masks)
+
         if get_msids:
             msids_obj = self._get_msids(model_obj, [self.name], tl_file)
         else:

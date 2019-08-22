@@ -37,7 +37,12 @@ class Model(TimeSeriesData):
             t = interp_times
         table = {}
         for k in components:
-            key = k
+            if k == "roll":
+                key = "off_nominal_roll"
+            elif k == "sim_z":
+                key = "simpos"
+            else:
+                key = k
             if k == "dpa_power":
                 mvals = model.comp[k].mvals*100. / model.comp[k].mult
                 mvals += model.comp[k].bias
