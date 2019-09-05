@@ -246,6 +246,39 @@ class CustomDatePlot(ACISPlot):
             xmax = datetime.strptime(DateTime(xmax).iso, "%Y-%m-%d %H:%M:%S.%f")
         self.ax.set_xlim(xmin, xmax)
 
+    def add_hline(self, y, lw=2, ls='-', color='green', 
+                  xmin=None, xmax=None, **kwargs):
+        """
+        Add a horizontal line on the y-axis of the plot.
+
+        Parameters
+        ----------
+        y : float
+            The value to place the vertical line at.
+        lw : integer, optional
+            The width of the line. Default: 2
+        ls : string, optional
+            The style of the line. Can be one of:
+            'solid', 'dashed', 'dashdot', 'dotted'.
+            Default: 'solid'
+        color : string, optional
+            The color of the line. Default: 'green'
+
+        Examples
+        --------
+        >>> p.add_hline(36., lw=3, ls='dashed', color='red')
+        """
+        if xmin is None:
+            xmin = 0
+        else:
+            xmin = datetime.strptime(DateTime(xmin).iso, "%Y-%m-%d %H:%M:%S.%f")
+        if xmax is None:
+            xmax = 1
+        else:
+            xmax = datetime.strptime(DateTime(xmax).iso, "%Y-%m-%d %H:%M:%S.%f")
+        self.ax.axhline(y=y, lw=lw, ls=ls, color=color, xmin=xmin,
+                        xmax=xmax, label='_nolegend_', **kwargs)
+
     def add_vline(self, time, lw=2, ls='solid', color='green', **kwargs):
         """
         Add a vertical line on the time axis of the plot.

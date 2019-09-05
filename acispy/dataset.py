@@ -464,14 +464,18 @@ class EngArchiveData(Dataset):
     >>> msids = ["1deamzt", "1pin1at"]
     >>> ds = EngArchiveData(tstart, tstop, msids)
     """
-    def __init__(self, tstart, tstop, msids, filter_bad=False, stat=None,
-                 interpolate_msids=False, server=None):
+    def __init__(self, tstart, tstop, msids, get_states=True, 
+                 filter_bad=False, stat=None, interpolate_msids=False, 
+                 server=None):
         tstart = get_time(tstart)
         tstop = get_time(tstop)
         msids = MSIDs.from_database(msids, tstart, tstop=tstop,
                                     filter_bad=filter_bad, stat=stat,
                                     interpolate=interpolate_msids)
-        states = States.from_database(tstart, tstop, server=server)
+        if get_states:
+            states = States.from_database(tstart, tstop, server=server)
+        else:
+            states = EmptyTimeSeries()
         model = EmptyTimeSeries()
         super(EngArchiveData, self).__init__(msids, states, model)
 

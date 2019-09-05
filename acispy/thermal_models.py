@@ -60,6 +60,9 @@ def find_json(name, model_spec):
 
 
 class ModelDataset(Dataset):
+    def __init__(self, msids, states, model):
+        super(ModelDataset, self).__init__(msids, states, model)
+
     def write_model(self, filename, overwrite=False):
         """
         Write the model data vs. time to an ASCII text file.
@@ -154,6 +157,97 @@ class ModelDataset(Dataset):
                                    "end date in the engineering archive!")
         return msids
 
+    def make_dashboard_plots(self, msid, tstart=None, tstop=None, yplotlimits=None,
+                             errorplotlimits=None, fig=None, figfile=None,
+                             bad_times=None, mask_radzones=False, plot_limits=True):
+        """
+        Make dashboard plots for the particular thermal model.
+
+        Parameters
+        ----------
+        msid : string
+            The MSID name to plot in the dashboard. 
+        tstart : string, optional
+            The start time of the data for the dashboard plot. If not specified,
+            the beginning of the thermal model run is used.
+        tstop : string, optional
+            The stop time of the data for the dashboard plot. If not specified,
+            the end of the thermal model run is used.
+        yplotlimits : two-element array_like, optional
+            The (min, max) bounds on the temperature to use for the
+            temperature vs. time plot. Default: Determine the min/max
+            bounds from the telemetry and model prediction and
+            decrease/increase by degrees to determine the plot limits.
+        errorplotlimits : two-element array_like, optional
+            The (min, max) error bounds to use for the error plot.
+            Default: [-15, 15]
+        fig : :class:`~matplotlib.figure.Figure`, optional
+            A Figure instance to plot in. Default: None, one will be
+            created if not provided.
+        figfile : string, optional
+            The file to write the dashboard plot to. One will be created
+            if not provided.
+        bad_times : list of tuples, optional
+            Provide a set of times to exclude from the creation of the
+            dashboard plot.
+        mask_radzones : boolean, optional
+            If True, mask out radzone periods for dashboard plots of the
+            focal plane model. Default: False
+        plot_limits : boolean, optional
+            If True, plot the yellow caution and planning limits on the
+            dashboard plots. Default: True
+        """
+        from xijafit import dashboard as dash
+        if fig is None:
+            fig = plt.figure(figsize=(20,10))
+        if ("msids", msid) not in self.field_list:
+            raise RuntimeError("You must include the real data if you want to make a "
+                               "dashboard plot! Set get_msids=True when creating the"
+                               "thermal model!")
+        telem = self["msids", msid]
+        pred = self["model", msid]
+        mask = np.logical_and(telem.mask, pred.mask)
+        if tstart is not None:
+            tstart = DateTime(tstart).secs
+            mask[telem.times.value < tstart] = False
+        if tstop is not None:
+            tstop = DateTime(tstop).secs
+            mask[telem.times.value > tstop] = False
+        if bad_times is not None:
+            for (left, right) in bad_times:
+                idxs = np.logical_and(telem.times.value >= date2secs(left),
+                                      telem.times.value <= date2secs(right))
+                mask[idxs] = False
+        if msid == "fptemp_11" and mask_radzones:
+            rad_zones = events.rad_zones.filter(start=telem.dates[0],
+                                                stop=telem.dates[-1])
+            for rz in rad_zones:
+                idxs = np.logical_and(telem.times.value >= rz.tstart,
+                                      telem.times.value <= rz.tstop)
+                mask[idxs] = False
+        times = telem.times.value[mask]
+        if yplotlimits is None:
+            ymin = min(telem.value[mask].min(), pred.value[mask].min())-2
+            ymax = min(telem.value[mask].max(), pred.value[mask].max())+2
+            yplotlimits = [ymin, ymax]
+        if errorplotlimits is None:
+            errorplotlimits = [-15, 15]
+        mylimits = {"units": "C"}
+        if plot_limits:
+            if msid == "fptemp_11":
+                mylimits["acisi_limit"] = -112.0
+                mylimits["aciss_limit"] = -111.0
+                mylimits["fp_sens_limit"] = -118.7
+            else:
+                mylimits["caution_high"] = limits[msid]+margins[msid]
+                mylimits["planning_limit"] = limits[msid]
+        dash.dashboard(pred.value[mask], telem.value[mask], times, mylimits,
+                       msid=msid, modelname=full_name.get(msid, msid),
+                       errorplotlimits=errorplotlimits, yplotlimits=yplotlimits,
+                       fig=fig, savefig=False)
+        if figfile is not None:
+            fig.savefig(figfile)
+        return fig
 
 class ThermalModelFromRun(ModelDataset):
     """
@@ -184,11 +278,16 @@ class ThermalModelFromRun(ModelDataset):
         temp_file = os.path.join(loc, "temperatures.dat")
         state_file = os.path.join(loc, "states.dat")
         esa_file = os.path.join(loc, "earth_solid_angle.dat")
+        if not os.path.exists(state_file):
+            state_file = None
         if not os.path.exists(esa_file):
             esa_file = None
         model = Model.from_load_file(temp_file, esa_file=esa_file)
         comps = list(model.keys())
-        states = States.from_load_file(state_file)
+        if state_file is not None:
+            states = States.from_load_file(state_file)
+        else:
+            states = EmptyTimeSeries()
         if get_msids:
             msids = self._get_msids(model, comps, tl_file)
         else:
@@ -534,97 +633,6 @@ class ThermalModelRunner(ModelDataset):
                                  mask_bad_times=mask_bad_times, compute_model=compute_model,
                                  ephemeris=ephemeris, no_eclipse=no_eclipse)
 
-    def make_dashboard_plots(self, tstart=None, tstop=None, yplotlimits=None,
-                             errorplotlimits=None, fig=None, figfile=None,
-                             bad_times=None, mask_radzones=False, plot_limits=True):
-        """
-        Make dashboard plots for the particular thermal model.
-
-        Parameters
-        ----------
-        tstart : string, optional
-            The start time of the data for the dashboard plot. If not specified,
-            the beginning of the thermal model run is used.
-        tstop : string, optional
-            The stop time of the data for the dashboard plot. If not specified,
-            the end of the thermal model run is used.
-        yplotlimits : two-element array_like, optional
-            The (min, max) bounds on the temperature to use for the
-            temperature vs. time plot. Default: Determine the min/max
-            bounds from the telemetry and model prediction and
-            decrease/increase by degrees to determine the plot limits.
-        errorplotlimits : two-element array_like, optional
-            The (min, max) error bounds to use for the error plot.
-            Default: [-15, 15]
-        fig : :class:`~matplotlib.figure.Figure`, optional
-            A Figure instance to plot in. Default: None, one will be
-            created if not provided.
-        figfile : string, optional
-            The file to write the dashboard plot to. One will be created
-            if not provided.
-        bad_times : list of tuples, optional
-            Provide a set of times to exclude from the creation of the
-            dashboard plot.
-        mask_radzones : boolean, optional
-            If True, mask out radzone periods for dashboard plots of the
-            focal plane model. Default: False
-        plot_limits : boolean, optional
-            If True, plot the yellow caution and planning limits on the
-            dashboard plots. Default: True
-        """
-        from xijafit import dashboard as dash
-        if fig is None:
-            fig = plt.figure(figsize=(20,10))
-        msid = self.name
-        if ("msids", msid) not in self.field_list:
-            raise RuntimeError("You must include the real data if you want to make a "
-                               "dashboard plot! Set get_msids=True when creating the"
-                               "thermal model!")
-        telem = self["msids", msid]
-        pred = self["model", msid]
-        mask = np.logical_and(telem.mask, pred.mask)
-        if tstart is not None:
-            tstart = DateTime(tstart).secs
-            mask[telem.times.value < tstart] = False
-        if tstop is not None:
-            tstop = DateTime(tstop).secs
-            mask[telem.times.value > tstop] = False
-        if bad_times is not None:
-            for (left, right) in bad_times:
-                idxs = np.logical_and(telem.times.value >= date2secs(left),
-                                      telem.times.value <= date2secs(right))
-                mask[idxs] = False
-        if msid == "fptemp_11" and mask_radzones:
-            rad_zones = events.rad_zones.filter(start=telem.dates[0],
-                                                stop=telem.dates[-1])
-            for rz in rad_zones:
-                idxs = np.logical_and(telem.times.value >= rz.tstart,
-                                      telem.times.value <= rz.tstop)
-                mask[idxs] = False
-        times = telem.times.value[mask]
-        if yplotlimits is None:
-            ymin = min(telem.value[mask].min(), pred.value[mask].min())-2
-            ymax = min(telem.value[mask].max(), pred.value[mask].max())+2
-            yplotlimits = [ymin, ymax]
-        if errorplotlimits is None:
-            errorplotlimits = [-15, 15]
-        mylimits = {"units": "C"}
-        if plot_limits:
-            if msid == "fptemp_11":
-                mylimits["acisi_limit"] = -114.0
-                mylimits["aciss_limit"] = -112.0
-                mylimits["fp_sens_limit"] = -118.7
-            else:
-                mylimits["caution_high"] = limits[self.name]+margins[self.name]
-                mylimits["planning_limit"] = limits[self.name]
-        dash.dashboard(pred.value[mask], telem.value[mask], times, mylimits,
-                       msid=self.name, modelname=full_name.get(self.name, self.name),
-                       errorplotlimits=errorplotlimits, yplotlimits=yplotlimits,
-                       fig=fig, savefig=False)
-        if figfile is not None:
-            fig.savefig(figfile)
-        return fig
-
     def make_solarheat_plot(self, node, figfile=None, fig=None):
         """
         Make a plot which shows the solar heat value vs. pitch.
@@ -762,7 +770,7 @@ class SimulateSingleObs(ThermalModelRunner):
             states["vid_board"][ecs_run_idxs] = 1
         super(SimulateSingleObs, self).__init__(name, datestart, dateend, states,
                                                 T_init, model_spec=model_spec,
-                                                get_msids=False)
+                                                get_msids=False, no_eclipse=True)
 
         mylog.info("Run Parameters")
         mylog.info("--------------")
