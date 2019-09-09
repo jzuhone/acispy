@@ -808,8 +808,8 @@ class DatePlot(CustomDatePlot):
 class DummyDatePlot(object):
     def __init__(self, fig, ax):
         self.fig = fig
-        self.ax = ax
-
+        self.ax = ax    
+        self.lines = []
 
 class MultiDatePlot(object):
     r""" Make a multi-panel plot of multiple quantities vs. date and time.
