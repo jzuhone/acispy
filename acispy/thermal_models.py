@@ -473,6 +473,9 @@ class ThermalModelRunner(ModelDataset):
             name = "fptemp"
         model = xija.XijaModel(name, start=tstart, stop=tstop, dt=dt, model_spec=self.model_spec)
         model.comp[name].set_data(T_init)
+        for t in ["dea0","dpa0"]:
+            if t in model.comp:
+                model.comp[t].set_data(T_init)
         model.make()
         model.calc()
         return model
