@@ -249,6 +249,7 @@ class ModelDataset(Dataset):
             fig.savefig(figfile)
         return fig
 
+
 class ThermalModelFromRun(ModelDataset):
     """
     Fetch multiple temperature models and their associated commanded states

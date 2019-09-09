@@ -87,8 +87,7 @@ class ACISLoadReview(object):
         tracelog file rather than the engineering archive.
         Default: None
     """
-    def __init__(self, load_name, get_msids=True, interpolate_msids=False,
-                 tl_file=None):
+    def __init__(self, load_name, get_msids=True, tl_file=None):
         self.load_name = find_load(load_name)
         self.load_letter = self.load_name[-1]
         self.load_week = self.load_name[:7]
@@ -101,13 +100,8 @@ class ACISLoadReview(object):
         self.start_status = self._get_start_status()
         self.begin_radzone = int(self.start_status['radmon_status'] == "OORMPDS")
         self.lines, self.line_times = self._populate_event_times()
-        # We're going to buffer the grabbing of MSIDs from the tracelog
-        # file to make sure we actually have data
-        tl_tbegin = secs2date(date2secs(self.first_time) - 86400.0)
-        tl_tend = secs2date(date2secs(self.last_time) + 86400.0)
         self.ds = ThermalModelFromLoad(self.load_name, get_msids=get_msids,
-                                       tl_file=tl_file,
-                                       time_range=[tl_tbegin, tl_tend])
+                                       tl_file=tl_file)
         self._find_cti_runs()
 
     def __repr__(self):
