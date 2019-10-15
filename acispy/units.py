@@ -338,10 +338,13 @@ mit_fields = ["beptic", "blockid", "bepint",
 
 def get_units(ftype, fname):
     import Ska.tdb
-    if ftype == "states":
+    if ftype == 'states':
         unit = state_units.get(fname, '')
     else:
-        unit = msid_units.get(fname, None)
+        if ftype == 'model' and fname in state_units:
+            unit = state_units[fname]
+        else:
+            unit = msid_units.get(fname, None)
         if unit is None:
             try:
                 unit = Ska.tdb.msids[fname].eng_unit
