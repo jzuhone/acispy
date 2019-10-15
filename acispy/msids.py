@@ -196,7 +196,7 @@ class MSIDs(TimeSeriesData):
                 times[k.lower()] = interpolate_times
             else:
                 indexes = slice(None, None, None)
-                times[k.lower()] = get_time(data[k].times, 'secs')
+                times[k.lower()] = data[k].times
             if msid.state_codes:
                 state_codes[k] = dict((k, v) for v, k in msid.state_codes)
             table[k.lower()] = msid.vals[indexes]
