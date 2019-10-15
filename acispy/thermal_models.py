@@ -94,7 +94,8 @@ class ModelDataset(Dataset):
 
     def write_model_and_data(self, filename, overwrite=False, 
                              mask_radzones=False, mask_fmt1=False,
-                             mask_badtimes=True):
+                             mask_badtimes=True, tstart=None,
+                             tstop=None):
         """
         Write the model, telemetry, and states data vs. time to
         an ASCII text file. The state data is interpolated to the
@@ -126,6 +127,12 @@ class ModelDataset(Dataset):
         msid = list(self.model.keys())[0]
         telem = self["msids", msid]
         mask = np.ones_like(telem.value, dtype='bool')
+        if tstart is not None:
+            tstart = DateTime(tstart).secs
+            mask[telem.times.value < tstart] = False
+        if tstop is not None:
+            tstop = DateTime(tstop).secs
+            mask[telem.times.value > tstop] = False
         if mask_radzones:
             rad_zones = events.rad_zones.filter(start=telem.dates[0],
                                                 stop=telem.dates[-1])
@@ -134,7 +141,7 @@ class ModelDataset(Dataset):
                                       telem.times.value <= rz.tstop)
                 mask[idxs] = False
         if mask_fmt1:
-            which = self["msids", "ccsdstmf"]
+            which = self["msids", "ccsdstmf"] == "FMT1"
             mask[which] = False
         self.write_msids(filename, out, overwrite=overwrite, mask=mask)
 
@@ -159,7 +166,8 @@ class ModelDataset(Dataset):
 
     def make_dashboard_plots(self, msid, tstart=None, tstop=None, yplotlimits=None,
                              errorplotlimits=None, fig=None, figfile=None,
-                             bad_times=None, mask_radzones=False, plot_limits=True):
+                             bad_times=None, mask_radzones=False, plot_limits=True, 
+                             mask_fmt1=False):
         """
         Make dashboard plots for the particular thermal model.
 
@@ -225,6 +233,9 @@ class ModelDataset(Dataset):
                 idxs = np.logical_and(telem.times.value >= rz.tstart,
                                       telem.times.value <= rz.tstop)
                 mask[idxs] = False
+        if mask_fmt1:
+            which = self["msids", "ccsdstmf"] == "FMT1"
+            mask[which] = False
         times = telem.times.value[mask]
         if yplotlimits is None:
             ymin = min(telem.value[mask].min(), pred.value[mask].min())-2
