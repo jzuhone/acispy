@@ -35,7 +35,7 @@ full_name = {"1deamzt": "DEA",
              "tmp_bep_pcb": "BEP PCB"}
 
 limits = {'1deamzt': 35.5,
-          '1dpamzt': 36.5,
+          '1dpamzt': 37.5,
           '1pdeaat': 52.5,
           'tmp_fep1_mong': 43.0,
           'tmp_fep1_actel': 43.0,
