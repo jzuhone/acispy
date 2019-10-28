@@ -380,7 +380,7 @@ class ThermalModelRunner(ModelDataset):
     mask_bad_times : boolean, optional
         If set, bad times from the data are included in the array masks
         and plots. Default: False
-    server : string
+    server : string 
          DBI server or HDF5 file. Only used if the commanded states database
          is used. Default: None
 
@@ -659,7 +659,7 @@ class ThermalModelRunner(ModelDataset):
             in the model. Can be an real node on the spacecraft like
             1DEAMZT or a pseudo-node like "dpa0" in the 1DPAMZT model.
         figfile : string, optional
-            The file to write the dashboard plot to. One will be created
+            The file to write the solar heating plot to. One will be created
             if not provided.
         fig : :class:`~matplotlib.figure.Figure`, optional
             A Figure instance to plot in. Default: None, one will be
@@ -678,6 +678,65 @@ class ThermalModelRunner(ModelDataset):
             fig.savefig(figfile)
         return fig
 
+    def make_power_plot(self, figfile=None, fig=None):
+        """
+        Make a plot which shows the ACIS state power coefficients.
+
+        Parameters
+        ----------
+        figfile : string, optional
+            The file to write the power coefficient plot to. One will be created
+            if not provided.
+        fig : :class:`~matplotlib.figure.Figure`, optional
+            A Figure instance to plot in. Default: None, one will be
+            created if not provided.
+        """
+        plt.rc("font", size=18)
+        plt.rc("axes", linewidth=2)
+        if fig is None:
+            fig, ax = plt.subplots(figsize=(15, 10))
+        else:
+            ax = fig.add_subplot(111)
+        xm = self.xija_model
+        dtype = [('x', 'int'), ('y', 'float'), ('name', '<U32')]
+        clocking = []
+        not_clocking = []
+        either = []
+        for i, parname in enumerate(xm.parnames):
+            name = parname.split("__")[-1]
+            if name.startswith("pow"):
+                coeff = name.split("_")[-1]
+                fep_count = int(coeff[0])
+                if name.endswith("x"):
+                    either.append((fep_count, xm.parvals[i], coeff))
+                elif name.endswith("1"):
+                    clocking.append((fep_count, xm.parvals[i], coeff))
+                elif name.endswith("0"):
+                    not_clocking.append((fep_count, xm.parvals[i], coeff))
+        clocking = np.array(clocking, dtype=dtype)
+        not_clocking = np.array(not_clocking, dtype=dtype)
+        either = np.array(either, dtype=dtype)
+        ax.scatter(clocking["x"], clocking["y"], label="Clocking", s=40,
+                   color="C0")
+        for i, txt in enumerate(clocking["name"]):
+            ax.text(clocking["x"][i] + 0.25, clocking["y"][i], txt, color="C0")
+        ax.scatter(not_clocking["x"], not_clocking["y"], label="Not Clocking", 
+                   s=40, color="C1")
+        for i, txt in enumerate(not_clocking["name"]):
+            ax.text(not_clocking["x"][i] + 0.25, not_clocking["y"][i], txt, 
+                    color="C1")
+        ax.scatter(either["x"], either["y"], label="Either", s=40, color="C2")
+        for i, txt in enumerate(either["name"]):
+            ax.text(either["x"][i] + 0.25, either["y"][i], txt, color="C2")
+        ax.tick_params(width=2, length=6)
+        ax.set_xlabel("FEP Count")
+        ax.set_ylabel("Coefficient Value")
+        ax.set_xticks(np.arange(7))
+        ax.set_xlim(-0.25, 7.0)
+        ax.legend()
+        if figfile is not None:
+            fig.savefig(figfile)
+        return fig
 
 def find_text_time(time, hours=1.0):
     return secs2date(date2secs(time)+hours*3600.0)
