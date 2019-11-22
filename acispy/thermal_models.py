@@ -40,7 +40,7 @@ limits = {'1deamzt': 36.5,
           'tmp_fep1_mong': 43.0,
           'tmp_fep1_actel': 43.0,
           'tmp_bep_pcb': 43.0,
-          'fptemp_11': {"ACIS-I": -114.0, "ACIS-S": -112.0}}
+          'fptemp_11': {"ACIS-I": -112.0, "ACIS-S": -111.0}}
 
 margins = {'1deamzt': 2.0,
            '1dpamzt': 2.0,
