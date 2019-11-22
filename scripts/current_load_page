@@ -14,7 +14,6 @@ import numpy as np
 from Ska.Matplotlib import cxctime2plotdate
 import bisect
 from Chandra.cmd_states import decode_power
-
 dsnfile = "/data/acis/dsn_summary.dat"
 
 header = ['<?xml version="1.0" encoding="UTF-8">',
@@ -292,18 +291,18 @@ def insert_comms(cmdtimes, cmdlines, comms, durations, tmin, tmax):
         tend_loc = datetime.strptime(comm[1], "%Y:%j:%H:%M:%S.%f").replace(tzinfo=timezone.utc).astimezone(tz=None)
         idx = bisect.bisect_right(cmdtimes, tbegin)
         cmdtimes.insert(idx, tbegin)
-        cmdlines.insert(idx, "<commline>%s   REAL-TIME COMM BEGINS   %s  EDT             </commline>\n" % (comm[0], tbegin_loc.strftime("%Y:%j:%H:%M:%S")))
+        cmdlines.insert(idx, "<commline>%s   REAL-TIME COMM BEGINS   %s  ET              </commline>\n" % (comm[0], tbegin_loc.strftime("%Y:%j:%H:%M:%S")))
         idx = bisect.bisect_right(cmdtimes, tend)
         cmdtimes.insert(idx, tend)
-        cmdlines.insert(idx, "<commline>%s   REAL-TIME COMM ENDS     %s  EDT             </commline>\n" % (comm[1], tend_loc.strftime("%Y:%j:%H:%M:%S")))
+        cmdlines.insert(idx, "<commline>%s   REAL-TIME COMM ENDS     %s  ET              </commline>\n" % (comm[1], tend_loc.strftime("%Y:%j:%H:%M:%S")))
         idx = bisect.bisect_right(cmdtimes, tend)
         cmdtimes.insert(idx, tend)
         cmdlines.insert(idx, "==> COMM DURATION:  %.2f mins.\n" % durations[i])
 
 
 def insert_now_time(cmdtimes, cmdlines, now_time_secs, now_time_utc, now_time_local):
-    new_line = '<a name="now"></a>NOW: %s (%s)' % (now_time_utc.strftime("%Y:%j:%H:%M:%S"),
-                                                   now_time_local.strftime("%D %H:%M:%S"))
+    new_line = '<a name="now"></a>NOW: %s (%s ET)' % (now_time_utc.strftime("%Y:%j:%H:%M:%S"),
+                                                      now_time_local.strftime("%D %H:%M:%S"))
     new_line += ' ' * (100 - len(new_line))
     new_line = '<font style="background-color:#5AC831"><b>%s</b></font>\n' % new_line
     idx = bisect.bisect_right(cmdtimes, now_time_secs)
@@ -422,9 +421,12 @@ while True:
         reload = False
         last_reload_time = now_time_secs
 
+    last_reload_date = secs2date(last_reload_time)
+    last_reload_loc = datetime.strptime(last_reload_date, "%Y:%j:%H:%M:%S.%f").replace(tzinfo=timezone.utc).astimezone(tz=None).strftime("%D %H:%M:%S")
+
     outlines = ["<font face=\"times\">This is the <a href=\"%s\"><font style=\"color:blue\">%s</font></a> load.</font>" % (lr_link, load_name),
                 " ", " ", 
-                "<font face=\"times\">The last data update was at %s.</font>" % secs2date(last_reload_time),
+                "<font face=\"times\">The last data update was at %s (%s ET).</font>" % (last_reload_date, last_reload_loc),
                 " ", " "]
 
     cmdtimes, cmdlines, simtrans = process_commands(now_time_utc, cmds)
