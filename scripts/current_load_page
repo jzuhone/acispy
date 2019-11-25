@@ -125,7 +125,7 @@ def find_the_load(t):
 
 def get_radzones(begin_time, last_time):
     try:
-        radzones = events.rad_zones.filter(begin_time, last_time)
+        radzones = list(events.rad_zones.filter(begin_time, last_time))
     except:
         radzones = []
     return radzones
