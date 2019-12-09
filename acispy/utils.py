@@ -5,6 +5,8 @@ import numpy as np
 import logging
 import sys
 import os
+import warnings
+
 
 acispyLogger = logging.getLogger("acispy")
 
@@ -212,3 +214,24 @@ def find_state_keys(states):
     if "off_nominal_roll" in states:
         state_keys += ["q1", "q2", "q3", "q4"]
     return state_keys
+
+
+class KadiWrapper:
+    def __init__(self):
+        for m in list(sys.modules.keys()):
+            if m.startswith('kadi'):
+                del sys.modules[m]
+
+    @property
+    def events(self):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            from kadi import events
+        return events
+
+    @property
+    def commands(self):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            from kadi import commands
+            return commands

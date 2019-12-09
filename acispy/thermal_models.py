@@ -11,7 +11,7 @@ from acispy.model import Model
 from acispy.msids import MSIDs
 from acispy.time_series import EmptyTimeSeries
 from acispy.utils import mylog, calc_off_nom_rolls, \
-    get_time, ensure_list, default_states
+    get_time, ensure_list, default_states, KadiWrapper
 import Ska.Numpy
 import Ska.engarchive.fetch_sci as fetch
 from chandra_models import get_xija_model_file
@@ -616,7 +616,8 @@ class ThermalModelRunner(ModelDataset):
     def from_kadi(cls, name, tstart, tstop, T_init, get_msids=True, dt=328.0,
                   model_spec=None, mask_bad_times=False, ephemeris=None,
                   no_eclipse=False, compute_model=None):
-        from kadi.commands import states as cmd_states
+        kadi = KadiWrapper()
+        cmd_states = kadi.commands.states
         tstart = get_time(tstart)
         tstop = get_time(tstop)
         t = cmd_states.get_states(tstart, tstop)
