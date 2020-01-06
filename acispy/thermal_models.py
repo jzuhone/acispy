@@ -412,7 +412,7 @@ class ThermalModelRunner(ModelDataset):
     """
     def __init__(self, name, tstart, tstop, states=None, T_init=None,
                  get_msids=True, dt=328.0, model_spec=None,
-                 mask_bad_times=False, ephemeris=None,
+                 mask_bad_times=False, ephemeris=None, evolve_method=1,
                  tl_file=None, no_eclipse=False, compute_model=None):
 
         self.name = name.lower()
@@ -445,14 +445,16 @@ class ThermalModelRunner(ModelDataset):
 
         if compute_model is not None:
             self.xija_model = compute_model(self.name, tstart, tstop, states,
-                                            dt, T_init, model_spec)
+                                            dt, T_init, model_spec, evolve_method)
         elif self.name in short_name and states is not None:
             self.xija_model = self._compute_acis_model(self.name, tstart, tstop, states,
-                                                       dt, T_init, ephem_times=ephem_times,
+                                                       dt, T_init, evolve_method=evolve_method, 
+                                                       ephem_times=ephem_times,
                                                        ephem_data=ephem_data,
                                                        no_eclipse=no_eclipse)
         else:
-            self.xija_model = self._compute_model(self.name, tstart, tstop, dt, T_init)
+            self.xija_model = self._compute_model(self.name, tstart, tstop, dt, T_init,
+                                                  evolve_method=evolve_method)
 
         self.bad_times = getattr(self.xija_model, "bad_times", None)
         self.bad_times_indices = getattr(self.xija_model, "bad_times_indices", None)
@@ -493,10 +495,11 @@ class ThermalModelRunner(ModelDataset):
         ephemeris_times = ephem_data["times"].data[idxs]
         return ephemeris_times, ephemeris
 
-    def _compute_model(self, name, tstart, tstop, dt, T_init):
+    def _compute_model(self, name, tstart, tstop, dt, T_init, evolve_method=1):
         if name == "fptemp_11":
             name = "fptemp"
-        model = xija.XijaModel(name, start=tstart, stop=tstop, dt=dt, model_spec=self.model_spec)
+        model = xija.XijaModel(name, start=tstart, stop=tstop, dt=dt, 
+                               model_spec=self.model_spec, evolve_method=evolve_method)
         model.comp[name].set_data(T_init)
         for t in ["dea0","dpa0"]:
             if t in model.comp:
@@ -506,7 +509,8 @@ class ThermalModelRunner(ModelDataset):
         return model
 
     def _compute_acis_model(self, name, tstart, tstop, states, dt, T_init,
-                            ephem_times=None, ephem_data=None, no_eclipse=False):
+                            ephem_times=None, ephem_data=None, no_eclipse=False,
+                            evolve_method=1):
         state_times = np.array([states["tstart"], states["tstop"]])
         if name == "fptemp_11":
             name = "fptemp"
@@ -518,7 +522,8 @@ class ThermalModelRunner(ModelDataset):
             roll = np.array(states["off_nominal_roll"])
         else:
             roll = calc_off_nom_rolls(states)
-        model = xija.XijaModel(name, start=tstart, stop=tstop, dt=dt, model_spec=self.model_spec)
+        model = xija.XijaModel(name, start=tstart, stop=tstop, dt=dt, 
+                               model_spec=self.model_spec, evolve_method=evolve_method)
         model.comp[name].set_data(T_init)
         model.comp['sim_z'].set_data(np.array(states['simpos']), state_times)
         if no_eclipse:
