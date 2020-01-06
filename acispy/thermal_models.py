@@ -617,10 +617,9 @@ class ThermalModelRunner(ModelDataset):
                   model_spec=None, mask_bad_times=False, ephemeris=None,
                   no_eclipse=False, compute_model=None):
         kadi = KadiWrapper()
-        cmd_states = kadi.commands.states
         tstart = get_time(tstart)
         tstop = get_time(tstop)
-        t = cmd_states.get_states(tstart, tstop)
+        t = kadi.cmd_states.get_states(tstart, tstop)
         states = {}
         for k in default_states:
             if k == "tstart":
