@@ -550,7 +550,7 @@ class ThermalModelRunner(ModelDataset):
         return model
 
     @classmethod
-    def from_states_file(cls, name, tstart, tstop, states_file, T_init,
+    def from_states_file(cls, name, states_file, T_init,
                          dt=328.0, model_spec=None, mask_bad_times=False, 
                          ephemeris=None, get_msids=True, no_eclipse=False):
         """
@@ -560,10 +560,6 @@ class ThermalModelRunner(ModelDataset):
         ----------
         name : string
             The name of the model to simulate. Can be "dea", "dpa", "psmc", or "fep1mong".
-        tstart : string
-            The start time in YYYY:DOY:HH:MM:SS format.
-        tstop : string
-            The stop time in YYYY:DOY:HH:MM:SS format.
         states_file : string
             A file containing commanded states, in the same format as "states.dat" which is
             outputted by ACIS thermal model runs for loads.
@@ -576,12 +572,12 @@ class ThermalModelRunner(ModelDataset):
             If set, bad times from the data are included in the array masks
             and plots. Default: False
         """
-        tstart = get_time(tstart)
-        tstop = get_time(tstop)
         states = ascii.read(states_file)
         states_dict = dict((k, states[k]) for k in states.colnames)
         if "off_nominal_roll" not in states.colnames:
             states_dict["off_nominal_roll"] = calc_off_nom_rolls(states)
+        tstart = get_time(states_dict['tstart'][0])
+        tstop = get_time(states_dict['tstop'][-1])
         return cls(name, tstart, tstop, states=states_dict, T_init=T_init,
                    dt=dt, model_spec=model_spec, mask_bad_times=mask_bad_times,
                    ephemeris=ephemeris, get_msids=get_msids, no_eclipse=no_eclipse)
