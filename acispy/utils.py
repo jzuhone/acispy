@@ -194,7 +194,11 @@ def get_state_codes(msid):
 def convert_state_code(ds, field):
     return np.array([ds.state_codes[field].get(val, -1) for val in ds[field]])
 
-lr_root = "/data/acis/LoadReviews"
+
+if os.path.exists("/data/acis"):
+    lr_root = "/data/acis/LoadReviews"
+else:
+    lr_root = "/Users/jzuhone/acis/LoadReviews"
 
 
 def find_load(load_name):
