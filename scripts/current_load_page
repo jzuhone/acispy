@@ -5,7 +5,7 @@ import os
 import matplotlib
 matplotlib.use("agg")
 import acispy
-from acispy.utils import cti_simodes, KadiWrapper
+from acispy.utils import cti_simodes
 import matplotlib.pyplot as plt
 from Chandra.Time import date2secs, secs2date, DateTime
 import argparse
@@ -13,6 +13,8 @@ import numpy as np
 from Ska.Matplotlib import cxctime2plotdate
 import bisect
 from Chandra.cmd_states import decode_power
+from kadi.commands import get_cmds
+from kadi.events import load_segments, rad_zones
 
 dsnfile = "/data/acis/dsn_summary.dat"
 
@@ -109,8 +111,7 @@ def detect_safing_actions(t):
 
 def find_the_load(t):
     load = None
-    kadi = KadiWrapper()
-    ls = kadi.events.load_segments.filter(start=t-86400.0, stop=t+86400.0)
+    ls = load_segments.filter(start=t-86400.0, stop=t+86400.0)
     try:
         if len(ls) > 0:
             for l in ls:
@@ -125,9 +126,8 @@ def find_the_load(t):
 
 
 def get_radzones(begin_time, last_time):
-    kadi = KadiWrapper()
     try:
-        radzones = list(kadi.events.rad_zones.filter(begin_time, last_time))
+        radzones = list(rad_zones.filter(begin_time, last_time))
     except:
         radzones = []
     return radzones
@@ -408,8 +408,7 @@ while True:
             pass
 
     if reload or cmds is None:
-        kadi = KadiWrapper()
-        cmds = kadi.commands.get_cmds(begin_time_str, last_time_str)
+        cmds = get_cmds(begin_time_str, last_time_str)
         cmds.fetch_params()
         comms, durations = get_comms()
         radzones = get_radzones(begin_time_str, last_time_str)
