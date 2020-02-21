@@ -674,7 +674,7 @@ class ThermalModelRunner(ModelDataset):
             fig.savefig(figfile)
         return fig
 
-    def make_power_plot(self, figfile=None, fig=None):
+    def make_power_plot(self, figfile=None, fig=None, use_ccd_count=False):
         """
         Make a plot which shows the ACIS state power coefficients.
 
@@ -690,7 +690,7 @@ class ThermalModelRunner(ModelDataset):
         plt.rc("font", size=18)
         plt.rc("axes", linewidth=2)
         if fig is None:
-            fig, ax = plt.subplots(figsize=(15, 10))
+            fig, ax = plt.subplots(figsize=(10, 10))
         else:
             ax = fig.add_subplot(111)
         xm = self.xija_model
@@ -702,13 +702,16 @@ class ThermalModelRunner(ModelDataset):
             name = parname.split("__")[-1]
             if name.startswith("pow"):
                 coeff = name.split("_")[-1]
-                fep_count = int(coeff[0])
+                if use_ccd_count:
+                    count = int(coeff[1])
+                else:
+                    count = int(coeff[0])
                 if name.endswith("x"):
-                    either.append((fep_count, xm.parvals[i], coeff))
+                    either.append((count, xm.parvals[i], coeff))
                 elif name.endswith("1"):
-                    clocking.append((fep_count, xm.parvals[i], coeff))
+                    clocking.append((count, xm.parvals[i], coeff))
                 elif name.endswith("0"):
-                    not_clocking.append((fep_count, xm.parvals[i], coeff))
+                    not_clocking.append((count, xm.parvals[i], coeff))
         clocking = np.array(clocking, dtype=dtype)
         not_clocking = np.array(not_clocking, dtype=dtype)
         either = np.array(either, dtype=dtype)
@@ -725,7 +728,7 @@ class ThermalModelRunner(ModelDataset):
         for i, txt in enumerate(either["name"]):
             ax.text(either["x"][i] + 0.25, either["y"][i], txt, color="C2")
         ax.tick_params(width=2, length=6)
-        ax.set_xlabel("FEP Count")
+        ax.set_xlabel("{} Count".format("CCD" if use_ccd_count else "FEP"))
         ax.set_ylabel("Coefficient Value")
         ax.set_xticks(np.arange(7))
         ax.set_xlim(-0.25, 7.0)
@@ -733,6 +736,7 @@ class ThermalModelRunner(ModelDataset):
         if figfile is not None:
             fig.savefig(figfile)
         return fig
+
 
 def find_text_time(time, hours=1.0):
     return secs2date(date2secs(time)+hours*3600.0)
