@@ -212,16 +212,16 @@ class CustomDatePlot(ACISPlot):
         will be created if not provided.
 
     """
-    def __init__(self, dates, values, lw=2, fontsize=18, ls='-',
+    def __init__(self, dates, values, fmt='-b', lw=2, fontsize=18, ls='-',
                  figsize=(10, 8), color="C0", plot=None, fig=None, 
                  subplot=None, **kwargs):
         fig, ax = get_figure(plot, fig, subplot, figsize)
         dates = np.asarray(dates)
         if dates.dtype.char in ['S', 'U']:
             dates = date2secs(dates)
-        ticklocs, fig, ax = plot_cxctime(dates, np.array(values), fig=fig, 
-                                         ax=ax, lw=lw, ls=ls, color=color, 
-                                         **kwargs)
+        ticklocs, fig, ax = plot_cxctime(dates, np.array(values), fmt=fmt,
+                                         fig=fig, ax=ax, lw=lw, ls=ls,
+                                         color=color, **kwargs)
         super(CustomDatePlot, self).__init__(fig, ax)
         self.lines.append(ax.lines[-1])
         self.ax.set_xlabel("Date", fontdict={"size": fontsize})
@@ -562,9 +562,10 @@ class DatePlot(CustomDatePlot):
     >>> fields = [("msids", "1dpamzt"), ("msids", "1deamzt"), ("msids", "1pdeaat")]
     >>> p2 = DatePlot(ds, fields, fontsize=12, color=["brown","black","orange"])
     """
-    def __init__(self, ds, fields, field2=None, lw=2, ls='-',  ls2='-', lw2=2,
-                 fontsize=18, color=None, color2='magenta', figsize=(10, 8),
-                 plot=None, fig=None, subplot=None, plot_bad=False):
+    def __init__(self, ds, fields, field2=None, fmt='-b', lw=2, ls='-',
+                 ls2='-', lw2=2, fontsize=18, color=None, color2='magenta',
+                 figsize=(10, 8), plot=None, fig=None, subplot=None,
+                 plot_bad=False):
         fig, ax = get_figure(plot, fig, subplot, figsize)
         fields = ensure_list(fields)
         lw = ensure_list(lw)
@@ -610,8 +611,8 @@ class DatePlot(CustomDatePlot):
             else:
                 x = ds[field].times.value[mask]
             label = ds.fields[field].display_name
-            ticklocs, fig, ax = plot_cxctime(x, y, fig=fig, lw=lw[i], ax=ax,
-                                             color=color[i], ls=ls[i],
+            ticklocs, fig, ax = plot_cxctime(x, y, fmt=fmt, fig=fig, lw=lw[i],
+                                             ax=ax, color=color[i], ls=ls[i],
                                              state_codes=state_codes,
                                              drawstyle=drawstyle,
                                              label=label)
