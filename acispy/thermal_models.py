@@ -24,6 +24,7 @@ short_name = {"1deamzt": "dea",
               "fptemp_11": "acisfp",
               "tmp_fep1_mong": "fep1_mong",
               "tmp_fep1_actel": "fep1_actel",
+              "tmp_fep1_fb": "fep1_fb",
               "tmp_bep_pcb": "bep_pcb"}
 
 short_name_rev = {v: k for k, v in short_name.items()}
@@ -34,21 +35,31 @@ full_name = {"1deamzt": "DEA",
              "fptemp_11": "Focal Plane",
              "tmp_fep1_mong": "FEP1 Mongoose",
              "tmp_fep1_actel": "FEP1 Actel",
+             "tmp_fep1_fb": "FEP1 FB",
              "tmp_bep_pcb": "BEP PCB"}
 
 limits = {'1deamzt': 36.5,
           '1dpamzt': 37.5,
           '1pdeaat': 52.5,
-          'tmp_fep1_mong': 43.0,
-          'tmp_fep1_actel': 43.0,
+          'tmp_fep1_mong': 47.0,
+          'tmp_fep1_actel': 46.0,
           'tmp_bep_pcb': 43.0,
+          'tmp_fep1_fb': 41.0,
           'fptemp_11': {"ACIS-I": -112.0, "ACIS-S": -111.0}}
+
+low_limits = {
+    'tmp_fep1_mong': 2.0,
+    'tmp_fep1_actel': 2.0,
+    'tmp_fep1_fb': 2.0,
+    'tmp_bep_pcb': 4.5
+}
 
 margins = {'1deamzt': 2.0,
            '1dpamzt': 2.0,
            '1pdeaat': 4.5,
            'tmp_fep1_mong': 2.0,
            'tmp_fep1_actel': 2.0,
+           'tmp_fep1_fb': 2.0,
            'tmp_bep_pcb': 2.0}
 
 
@@ -860,6 +871,7 @@ class SimulateSingleObs(ThermalModelRunner):
         mylog.info("Stop Datestring: %s" % datestop)
         mylog.info("Initial Temperature: %g degrees C" % T_init)
         mylog.info("CCD Count: %d" % ccd_count)
+        mylog.info("FEP Count: %d" % fep_count)
         if vehicle_load is None:
             disp_pitch = pitch
             disp_roll = off_nominal_roll
@@ -876,11 +888,18 @@ class SimulateSingleObs(ThermalModelRunner):
         mylog.info("Model Result")
         mylog.info("------------")
 
-        if name == "fptemp_11":
+        if self.name == "fptemp_11":
             limit = limits[self.name][instrument]
+            margin = 0.0
         else:
             limit = limits[self.name]
+            margin = margins[self.name]
+        if self.name in low_limits:
+            self.low_limit = Quantity(low_limits[self.name], "deg_C")
+        else:
+            self.low_limit = None
         self.limit = Quantity(limit, "deg_C")
+        self.margin = Quantity(margin, 'deg_C')
         self.limit_time = None
         self.limit_date = None
         self.duration = None
@@ -911,7 +930,7 @@ class SimulateSingleObs(ThermalModelRunner):
         else:
             mylog.info("This observation is safe from a thermal perspective.")
 
-    def plot_model(self, no_annotations=False):
+    def plot_model(self, no_annotations=False, plot=None):
         """
         Plot the simulated model run.
 
@@ -927,10 +946,15 @@ class SimulateSingleObs(ThermalModelRunner):
         else:
             field2 = "pitch"
         viol_text = "NOT SAFE" if self.violate else "SAFE"
-        dp = DatePlot(self, [("model", self.name)], field2=field2)
+        dp = DatePlot(self, [("model", self.name)], field2=field2, plot=plot)
+        if not self.no_limit:
+            dp.add_hline(self.limit.value, ls='-', lw=2, color='g')
+            dp.add_hline(self.limit.value+self.margin.value, ls='-', lw=2, color='gold')
+            if self.low_limit is not None:
+                dp.add_hline(self.low_limit.value, ls='-', lw=2, color='g')
+                dp.add_hline(self.low_limit.value - self.margin.value, ls='-', lw=2, color='gold')
         if not no_annotations:
             if not self.no_limit:
-                dp.add_hline(self.limit.value, ls='--', lw=2, color='g')
                 dp.add_text(find_text_time(self.datestop, hours=4.0), self.T_init.value + 2.0,
                             viol_text, fontsize=22, color='black')
             dp.add_vline(self.datestart, ls='--', lw=2, color='b')
@@ -944,8 +968,13 @@ class SimulateSingleObs(ThermalModelRunner):
                 dp.add_text(find_text_time(self.limit_date), self.limit.value-2.0,
                             "VIOLATION", color='red', rotation="vertical")
         dp.set_xlim(find_text_time(self.datestart, hours=-1.0), self.dateend)
-        dp.set_ylim(self.T_init.value-2.0, 
-                    max(self.limit.value, self.mvals.value.max())+3.0)
+        if self.low_limit is not None:
+            ymin = self.low_limit.value-self.margin.value
+        else:
+            ymin = self.T_init.value
+        ymin = min(ymin, self.mvals.value.min())-2.0
+        ymax = max(self.limit.value+self.margin.value, self.mvals.value.max())+3.0
+        dp.set_ylim(ymin, ymax)
         return dp
 
     def get_temp_at_time(self, t):
