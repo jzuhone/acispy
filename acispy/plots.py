@@ -809,8 +809,23 @@ class DatePlot(CustomDatePlot):
 class DummyDatePlot(object):
     def __init__(self, fig, ax):
         self.fig = fig
-        self.ax = ax    
+        self.ax = ax
         self.lines = []
+
+
+def make_dateplots(*args, **kwargs):
+    fig, axes = plt.subplots(*args, **kwargs)
+    if not hasattr(axes, "shape"):
+        return DummyDatePlot(fig, axes)
+    elif len(axes.shape) == 1:
+        return np.array([DummyDatePlot(fig, ax) for ax in axes])
+    elif len(axes.shape) == 2:
+        plots = np.empty(axes.shape, dtype=DummyDatePlot)
+        nx, ny = axes.shape
+        for i in range(nx):
+            for j in range(ny):
+                plots[i][j] = DummyDatePlot(fig, axes[i][j])
+        return plots
 
 class MultiDatePlot(object):
     r""" Make a multi-panel plot of multiple quantities vs. date and time.
