@@ -827,6 +827,7 @@ def make_dateplots(*args, **kwargs):
                 plots[i][j] = DummyDatePlot(fig, axes[i][j])
         return plots
 
+
 class MultiDatePlot(object):
     r""" Make a multi-panel plot of multiple quantities vs. date and time.
 
