@@ -26,6 +26,8 @@ short_name = {"1deamzt": "dea",
               "tmp_fep1_actel": "fep1_actel",
               "tmp_bep_pcb": "bep_pcb"}
 
+short_name_rev = {v: k for k, v in short_name.items()}
+
 full_name = {"1deamzt": "DEA",
              "1dpamzt": "DPA",
              "1pdeaat": "PSMC",
@@ -749,7 +751,7 @@ class SimulateSingleObs(ThermalModelRunner):
     Parameters
     ----------
     name : string
-        The name of the model to simulate. Can be "dea", "dpa", "psmc", or "fep1mong".
+        The name of the model to simulate. 
     tstart : string
         The start time of the ECS run in YYYY:DOY:HH:MM:SS format.
     tstop : string
@@ -772,6 +774,8 @@ class SimulateSingleObs(ThermalModelRunner):
     dh_heater: integer, optional
         Flag to set whether (1) or not (0) the detector housing heater is on. 
         Default: 0
+    ccd_count : integer, optional
+        The number of FEPs which are on. Default: equal to ccd_count.
     clocking : integer, optional
         Set to 0 if you want to simulate a ECS run which doesn't clock, which
         you probably don't want to do if you're going to simulate an actual
@@ -788,12 +792,16 @@ class SimulateSingleObs(ThermalModelRunner):
     """
     def __init__(self, name, tstart, tstop, T_init, pitch, ccd_count,
                  vehicle_load=None, simpos=-99616.0, off_nominal_roll=0.0, 
-                 dh_heater=0, clocking=1, q=None, instrument=None,
+                 dh_heater=0, fep_count=None, clocking=1, q=None, instrument=None,
                  model_spec=None, no_limit=False):
+        if name in short_name_rev:
+            name = short_name_rev[name]
         if name == "fptemp_11" and instrument is None:
             raise RuntimeError("Must specify either 'ACIS-I' or 'ACIS-S' in "
                                "'instrument' if you want to test a focal plane " 
                                "temperature prediction!")
+        if fep_count is None:
+            fep_count = ccd_count
         tstart = get_time(tstart)
         tstop = get_time(tstop)
         if q is None and name == "fptemp_11":
@@ -814,9 +822,9 @@ class SimulateSingleObs(ThermalModelRunner):
         self.T_init = Quantity(T_init, "deg_C")
         if vehicle_load is None:
             states = {"ccd_count": np.array([ccd_count], dtype='int'),
-                      "fep_count": np.array([ccd_count], dtype='int'),
+                      "fep_count": np.array([fep_count], dtype='int'),
                       "clocking": np.array([clocking], dtype='int'),
-                      'vid_board': np.array([clocking], dtype='int'),
+                      'vid_board': np.array([ccd_count > 0], dtype='int'),
                       "pitch": np.array([pitch]),
                       "simpos": np.array([simpos]),
                       "datestart": np.array([self.datestart]),
@@ -839,9 +847,9 @@ class SimulateSingleObs(ThermalModelRunner):
             states["off_nominal_roll"] = calc_off_nom_rolls(states)
             ecs_run_idxs = states["tstart"] < tstop
             states["ccd_count"][ecs_run_idxs] = ccd_count
-            states["fep_count"][ecs_run_idxs] = ccd_count
-            states["clocking"][ecs_run_idxs] = 1
-            states["vid_board"][ecs_run_idxs] = 1
+            states["fep_count"][ecs_run_idxs] = fep_count
+            states["clocking"][ecs_run_idxs] = clocking
+            states["vid_board"][ecs_run_idxs] = ccd_count > 0
         super(SimulateSingleObs, self).__init__(name, datestart, dateend, states,
                                                 T_init, model_spec=model_spec,
                                                 get_msids=False, no_eclipse=True)
