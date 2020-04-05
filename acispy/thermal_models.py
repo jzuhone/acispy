@@ -11,7 +11,7 @@ from acispy.model import Model
 from acispy.msids import MSIDs
 from acispy.time_series import EmptyTimeSeries
 from acispy.utils import mylog, calc_off_nom_rolls, \
-    get_time, ensure_list, default_states, KadiWrapper
+    get_time, ensure_list, default_states
 import Ska.Numpy
 import Ska.engarchive.fetch_sci as fetch
 from chandra_models import get_xija_model_file

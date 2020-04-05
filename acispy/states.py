@@ -21,10 +21,10 @@ cmd_state_codes = {("states", "hetg"): {"RETR": 0, "INSR": 1},
                                              "PWRF": 4, "RMAN": 5, 
                                              "NULL": 6}}
 
-state_dtypes = {"ccd_count": "int", 
+state_dtypes = {"ccd_count": "int",
                 "fep_count": "int",
                 "vid_board": "int",
-                "clocking": "int"}
+                "clocking":  "int"}
 
 
 class States(TimeSeriesData):
@@ -57,8 +57,7 @@ class States(TimeSeriesData):
         if states is not None:
             states = ensure_list(states)
         t = fetch_states(tstart, tstop, vals=states, server=server)
-        table = dict((k, t[k]) for k in t.dtype.names)
-        return cls(table)
+        return cls(t)
 
     @classmethod
     def from_load_page(cls, load, comp="DPA"):
@@ -93,8 +92,7 @@ class States(TimeSeriesData):
             cmds = get_cmds(tstart, tstop, db)
         state0 = get_state0(tstart, db, datepar='datestart', date_margin=None)
         t = get_states(state0, cmds)
-        table = dict((k, t[k]) for k in t.dtype.names)
-        return cls(table)
+        return cls(t)
 
     def get_states(self, time):
         time = get_time(time, 'secs')
@@ -106,3 +104,6 @@ class States(TimeSeriesData):
     @property
     def current_states(self):
         return self.get_states("now")
+
+    def __len__(self):
+        return self['tstart'].size
