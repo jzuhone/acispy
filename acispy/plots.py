@@ -38,11 +38,11 @@ unit_labels = {"V": 'V',
 
 
 class ACISPlot(object):
-    def __init__(self, fig, ax):
+    def __init__(self, fig, ax, lines):
         self.fig = fig
         self.ax = ax
         self.legend = None
-        self.lines = []
+        self.lines = lines
 
     def _repr_png_(self):
         canvas = FigureCanvasAgg(self.fig)
@@ -180,13 +180,15 @@ def get_figure(plot, fig, subplot, figsize):
         if not isinstance(subplot, tuple):
             subplot = (subplot,)
         ax = fig.add_subplot(*subplot)
+        lines = []
     else:
         fig = plot.fig
         if subplot is None:
             ax = plot.ax
         else:
             ax = fig.add_subplot(subplot)
-    return fig, ax
+        lines = plot.lines
+    return fig, ax, lines
 
 
 class CustomDatePlot(ACISPlot):
@@ -210,25 +212,76 @@ class CustomDatePlot(ACISPlot):
     plot : :class:`~acispy.plots.DatePlot` or :class:`~acispy.plots.CustomDatePlot`, optional
         An existing DatePlot to add this plot to. Default: None, one 
         will be created if not provided.
-
     """
     def __init__(self, dates, values, fmt='-b', lw=2, fontsize=18, ls='-',
-                 figsize=(10, 8), color="C0", plot=None, fig=None, 
+                 figsize=(10, 8), color=None, plot=None, fig=None, 
                  subplot=None, **kwargs):
-        fig, ax = get_figure(plot, fig, subplot, figsize)
+        fig, ax, lines = get_figure(plot, fig, subplot, figsize)
         dates = np.asarray(dates)
         if dates.dtype.char in ['S', 'U']:
             dates = date2secs(dates)
-        ticklocs, fig, ax = plot_cxctime(dates, np.array(values), fmt=fmt,
-                                         fig=fig, ax=ax, lw=lw, ls=ls,
-                                         color=color, **kwargs)
-        super(CustomDatePlot, self).__init__(fig, ax)
+        if len(dates.shape) == 2:
+            tstart, tstop = np.asarray(dates)
+            x = pointpair(tstart, tstop)
+            y = pointpair(np.asarray(values))
+        else:
+            x = np.asarray(dates)
+            y = np.asarray(values)
+        if color is None:
+            color = "C{}".format(len(lines))
+        ticklocs, fig, ax = plot_cxctime(x, y, fmt=fmt, fig=fig, ax=ax, 
+                                         lw=lw, ls=ls, color=color, **kwargs)
+        super(CustomDatePlot, self).__init__(fig, ax, lines)
         self.lines.append(ax.lines[-1])
         self.ax.set_xlabel("Date", fontdict={"size": fontsize})
         fontProperties = font_manager.FontProperties(size=fontsize)
         for label in self.ax.get_xticklabels():
             label.set_fontproperties(fontProperties)
         for label in self.ax.get_yticklabels():
+            label.set_fontproperties(fontProperties)
+
+    def plot_right(self, dates, values, fmt='-b', lw=2, fontsize=18,
+                   ls='-', color="magenta", **kwargs):
+        """
+        Plot a quantity on the right x-axis of this plot.
+
+        Parameters
+        ----------
+        dates : array of strings
+            The dates to be plotted.
+        values : array
+            The values to be plotted.
+        lw : float, optional
+            The width of the lines in the plots. Default: 2 px.
+        ls : string, optional
+            The line style of the line. Default: '-'
+        fontsize : integer, optional
+            The font size for the labels in the plot. Default: 18 pt.
+        figsize : tuple of integers, optional
+            The size of the plot in (width, height) in inches. Default: (10, 8)
+        plot : :class:`~acispy.plots.DatePlot` or :class:`~acispy.plots.CustomDatePlot`, optional
+            An existing DatePlot to add this plot to. Default: None, one 
+            will be created if not provided.
+        """
+        if dates.dtype.char in ['S', 'U']:
+            dates = date2secs(dates)
+        if not hasattr(self, "ax2"):
+            self.ax2 = self.ax.twinx()
+            self.ax2.set_zorder(-10)
+            self.ax.patch.set_visible(False)
+        if len(dates.shape) == 2:
+            tstart, tstop = np.asarray(dates)
+            x = pointpair(tstart, tstop)
+            y = pointpair(np.asarray(values))
+        else:
+            x = np.asarray(dates)
+            y = np.asarray(values)
+        plot_cxctime(x, y, fmt=fmt, fig=self.fig,
+                     ax=self.ax2, ls=ls, color=color, lw=lw, **kwargs)
+        fontProperties = font_manager.FontProperties(size=fontsize)
+        for label in self.ax2.get_xticklabels():
+            label.set_fontproperties(fontProperties)
+        for label in self.ax2.get_yticklabels():
             label.set_fontproperties(fontProperties)
 
     def set_xlim(self, xmin, xmax):
@@ -566,13 +619,10 @@ class DatePlot(CustomDatePlot):
                  ls2='-', lw2=2, fontsize=18, color=None, color2='magenta',
                  figsize=(10, 8), plot=None, fig=None, subplot=None,
                  plot_bad=False):
-        fig, ax = get_figure(plot, fig, subplot, figsize)
+        fig, ax, lines = get_figure(plot, fig, subplot, figsize)
+        super(CustomDatePlot, self).__init__(fig, ax, lines)
         fields = ensure_list(fields)
         lw = ensure_list(lw)
-        if plot is None:
-            self.lines = []
-        else:
-            self.lines = plot.lines
         self.num_fields = len(fields)
         if len(lw) == 1 and len(fields) > 1:
             lw = lw*self.num_fields
