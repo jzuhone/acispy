@@ -17,6 +17,9 @@ import Ska.engarchive.fetch_sci as fetch
 from chandra_models import get_xija_model_file
 import matplotlib.pyplot as plt
 from kadi import events
+from acis_thermal_check import calc_pitch_roll
+import importlib
+
 
 short_name = {"1deamzt": "dea",
               "1dpamzt": "dpa",
@@ -62,6 +65,15 @@ margins = {'1deamzt': 2.0,
            'tmp_fep1_fb': 2.0,
            'tmp_bep_pcb': 2.0}
 
+model_classes = {
+    "dpa": "DPACheck",
+    "dea": "DEACheck",
+    "psmc": "PSMCCheck",
+    "acisfp": "ACISFPCheck",
+    "fep1_mong": "FEP1MongCheck",
+    "fep1_actel": "FEP1ActelCheck",
+    "bep_pcb": "BEPPCBCheck"
+}
 
 def find_json(name, model_spec):
     if model_spec is None:
@@ -412,16 +424,24 @@ class ThermalModelRunner(ModelDataset):
     """
     def __init__(self, name, tstart, tstop, states=None, T_init=None,
                  get_msids=True, dt=328.0, model_spec=None,
-                 mask_bad_times=False, ephemeris=None, evolve_method=1,
+                 mask_bad_times=False, ephem_file=None, evolve_method=1,
                  rk4=0, tl_file=None, no_eclipse=False, compute_model=None):
 
         self.name = name.lower()
+        self.sname = short_name[name]
+        if self.sname in short_name_rev:
+            self.model_check = importlib.import_module(f"{self.sname}_check")
+        else:
+            self.model_check = None
 
+        self.model_spec = find_json(name, model_spec)
+
+        self.ephem_file = ephem_file
+ 
         tstart = get_time(tstart)
         tstop = get_time(tstop)
 
         tstart_secs = DateTime(tstart).secs
-        tstop_secs = DateTime(tstop).secs
 
         if states is not None:
             if "tstart" not in states:
@@ -439,22 +459,14 @@ class ThermalModelRunner(ModelDataset):
         if T_init is None:
             T_init = fetch.MSID(self.name, tstart_secs-700., tstart_secs+700.).vals.mean()
 
-        self.model_spec = find_json(self.name, model_spec)
-
-        ephem_times, ephem_data = self._get_ephemeris(ephemeris, tstart_secs, tstop_secs)
-
         if compute_model is not None:
             self.xija_model = compute_model(self.name, tstart, tstop, states,
                                             dt, T_init, model_spec, evolve_method, rk4)
-        elif self.name in short_name and states is not None:
-            self.xija_model = self._compute_acis_model(self.name, tstart, tstop, states,
-                                                       dt, T_init, evolve_method=evolve_method, 
-                                                       ephem_times=ephem_times, rk4=rk4,
-                                                       ephem_data=ephem_data,
-                                                       no_eclipse=no_eclipse)
         else:
-            self.xija_model = self._compute_model(self.name, tstart, tstop, dt, T_init,
-                                                  evolve_method=evolve_method, rk4=rk4)
+            self.xija_model = self._compute_acis_model(self.name, tstart, tstop,
+                                                       states, dt, T_init, rk4=rk4,
+                                                       no_eclipse=no_eclipse,
+                                                       evolve_method=evolve_method)
 
         self.bad_times = getattr(self.xija_model, "bad_times", None)
         self.bad_times_indices = getattr(self.xija_model, "bad_times_indices", None)
@@ -484,88 +496,79 @@ class ThermalModelRunner(ModelDataset):
             msids_obj = EmptyTimeSeries()
         super(ThermalModelRunner, self).__init__(msids_obj, states_obj, model_obj)
 
-    def _get_ephemeris(self, ephemeris, tstart, tstop):
-        if ephemeris is None:
-            return None, None
-        ephem_data = ascii.read(ephemeris)
+    def _get_ephemeris(self, tstart, tstop, times):
         msids = ['orbitephem0_{}'.format(axis) for axis in "xyz"]
-        idxs = np.logical_and(ephem_data["times"] >= tstart - 2000.0,
-                              ephem_data["times"] <= tstop + 2000.0)
-        ephemeris = dict((k, ephem_data[k].data[idxs]) for k in msids)
-        ephemeris_times = ephem_data["times"].data[idxs]
-        return ephemeris_times, ephemeris
-
-    def _compute_model(self, name, tstart, tstop, dt, T_init, 
-                       evolve_method=1, rk4=0):
-        if name == "fptemp_11":
-            name = "fptemp"
-        model = xija.XijaModel(name, start=tstart, stop=tstop, dt=dt,
-                               model_spec=self.model_spec,
-                               evolve_method=evolve_method, rk4=rk4)
-        model.comp[name].set_data(T_init)
-        for t in ["dea0", "dpa0"]:
-            if t in model.comp:
-                model.comp[t].set_data(T_init)
-        model.make()
-        model.calc()
-        return model
+        msids += ['solarephem0_{}'.format(axis) for axis in "xyz"]
+        ephem = {}
+        if self.ephem_file is None:
+            e = fetch.MSIDset(msids, tstart - 2000.0, tstop + 2000.0)
+            for msid in msids:
+                ephem[msid] = Ska.Numpy.interpolate(e[msid].vals, e[msid].times,
+                                                    times)
+        else:
+            e = ascii.read(self.ephem_file)
+            msids = ['orbitephem0_{}'.format(axis) for axis in "xyz"]
+            idxs = np.logical_and(e["times"] >= tstart - 2000.0,
+                                  e["times"] <= tstop + 2000.0)
+            for msid in msids:
+                ephem[msid] = Ska.Numpy.interpolate(e[msid][idxs],
+                                                    e["times"][idxs], times)
+        return ephem
 
     def _compute_acis_model(self, name, tstart, tstop, states, dt, T_init,
-                            ephem_times=None, ephem_data=None, no_eclipse=False,
-                            evolve_method=1, rk4=0):
-        state_times = np.array([states["tstart"], states["tstop"]])
+                            no_eclipse=False, evolve_method=1, rk4=0):
+        import re
+        pattern = re.compile("q[1-4]")
+        check_obj = getattr(self.model_check, model_classes[self.sname])()
         if name == "fptemp_11":
             name = "fptemp"
-        if isinstance(states, np.ndarray):
-            state_names = states.dtype.names
-        else:
-            state_names = list(states.keys())
-        if "off_nominal_roll" in state_names:
-            roll = np.array(states["off_nominal_roll"])
-        else:
-            roll = calc_off_nom_rolls(states)
         model = xija.XijaModel(name, start=tstart, stop=tstop, dt=dt, 
                                model_spec=self.model_spec, rk4=rk4,
                                evolve_method=evolve_method)
+        ephem = self._get_ephemeris(model.tstart, model.tstop, model.times)
+        if states is None:
+            state_times = model.times
+            state_names = ["ccd_count", "fep_count", "vid_board", 
+                           "clocking", "pitch", "roll"]
+            if 'aoattqt1' in model.comp:
+                state_names += ["q1", "q2", "q3", "q4"]
+            states = {}
+            for n in state_names:
+                nstate = n
+                ncomp = n
+                if pattern.match(n):
+                    ncomp = f'aoattqt{n[-1]}'
+                elif name == "roll":
+                    nstate = "off_nominal_roll"
+                states[nstate] = np.array(model.comp[ncomp].dvals)
+            if 'dpa_power' in model.comp:
+                # This is just a hack, we're not
+                # really setting the power to zero.
+                model.comp['dpa_power'].set_data(0.0)
+        else:
+            if isinstance(states, np.ndarray):
+                state_names = states.dtype.names
+            else:
+                state_names = list(states.keys())
+            state_times = np.array([states["tstart"], states["tstop"]])
+            model.comp['sim_z'].set_data(np.array(states['simpos']), state_times)
+            if 'pitch' in state_names:
+                model.comp['pitch'].set_data(np.array(states['pitch']), state_times)
+            else:
+                pitch, roll = calc_pitch_roll(model.times, ephem, states)
+                model.comp['pitch'].set_data(pitch, model.times)
+                model.comp['roll'].set_data(roll, model.times)
+            for st in ('ccd_count', 'fep_count', 'vid_board', 'clocking'):
+                model.comp[st].set_data(np.array(states[st]), state_times)
+            if 'dh_heater' in model.comp:
+                model.comp['dh_heater'].set_data(states.get("dh_heater", 0), state_times)
+            if "off_nominal_roll" in state_names:
+                roll = np.array(states["off_nominal_roll"])
+                model.comp["roll"].set_data(roll, state_times)
         model.comp[name].set_data(T_init)
-        model.comp['sim_z'].set_data(np.array(states['simpos']), state_times)
         if no_eclipse:
             model.comp["eclipse"].set_data(False)
-        if 'roll' in model.comp:
-            model.comp['roll'].set_data(roll, state_times)
-        if 'dpa_power' in model.comp:
-            # This is just a hack, we're not
-            # really setting the power to zero.
-            model.comp['dpa_power'].set_data(0.0) 
-        # This is for the PSMC model
-        if 'pin1at' in model.comp:
-            model.comp['pin1at'].set_data(T_init-10.)
-        if 'dpa0' in model.comp:
-            model.comp['dpa0'].set_data(T_init)
-        if 'dea0' in model.comp:
-            model.comp['dea0'].set_data(T_init)
-        if 'dh_heater' in model.comp:
-            model.comp['dh_heater'].set_data(states.get("dh_heater", 0), state_times)
-        for st in ('ccd_count', 'fep_count', 'vid_board', 'clocking', 'pitch'):
-            model.comp[st].set_data(np.array(states[st]), state_times)
-        if name == "fptemp":
-            for axis in "xyz":
-                ephem = 'orbitephem0_{}'.format(axis)
-                if ephem_times is None:
-                    msid = fetch.Msid(ephem, model.tstart - 2000, model.tstop + 2000)
-                    e_times = msid.times
-                    e_data = msid.vals
-                else:
-                    e_times = ephem_times
-                    e_data = ephem_data[ephem]
-                model.comp[ephem].set_data(e_data, e_times)
-            for i in range(1, 5):
-                quat = 'aoattqt{}'.format(i)
-                quat_name = 'q{}'.format(i)
-                model.comp[quat].set_data(states[quat_name], state_times)
-            model.comp['1cbat'].set_data(-53.0)
-            model.comp['sim_px'].set_data(-120.0)
-
+        check_obj._calc_model_supp(model, state_times, states, ephem, None)
         model.make()
         model.calc()
         return model
@@ -573,7 +576,7 @@ class ThermalModelRunner(ModelDataset):
     @classmethod
     def from_states_file(cls, name, states_file, T_init,
                          dt=328.0, model_spec=None, mask_bad_times=False, 
-                         ephemeris=None, get_msids=True, no_eclipse=False):
+                         ephem_file=None, get_msids=True, no_eclipse=False):
         """
         Class for running Xija thermal models.
 
@@ -601,37 +604,37 @@ class ThermalModelRunner(ModelDataset):
         tstop = get_time(states_dict['tstop'][-1])
         return cls(name, tstart, tstop, states=states_dict, T_init=T_init,
                    dt=dt, model_spec=model_spec, mask_bad_times=mask_bad_times,
-                   ephemeris=ephemeris, get_msids=get_msids, no_eclipse=no_eclipse)
+                   ephem_file=ephem_file, get_msids=get_msids, no_eclipse=no_eclipse)
 
     @classmethod
     def from_database(cls, name, tstart, tstop, T_init, server=None, get_msids=True,
                       dt=328.0, model_spec=None, mask_bad_times=False,
-                      ephemeris=None, no_eclipse=False, compute_model=None):
+                      ephem_file=None, no_eclipse=False, compute_model=None):
         from Chandra.cmd_states import fetch_states
         t = fetch_states(tstart, tstop, server=server)
         states = dict((k, t[k]) for k in t.dtype.names)
         states["off_nominal_roll"] = calc_off_nom_rolls(states)
         return cls(name, tstart, tstop, states=states, T_init=T_init, dt=dt,
                    model_spec=model_spec, mask_bad_times=mask_bad_times,
-                   ephemeris=ephemeris, get_msids=get_msids, no_eclipse=no_eclipse,
-                   compute_model=compute_model)
+                   ephem_file=ephem_file, get_msids=get_msids, 
+                   no_eclipse=no_eclipse, compute_model=compute_model)
 
     @classmethod
     def from_commands(cls, name, tstart, tstop, cmds, T_init, get_msids=True,
                       dt=328.0, model_spec=None, mask_bad_times=False, 
-                      ephemeris=None, no_eclipse=False, compute_model=None):
+                      ephem_file=None, no_eclipse=False, compute_model=None):
         tstart = get_time(tstart)
         tstop = get_time(tstop)
         t = States.from_commands(tstart, tstop, cmds)
         states = {k: t[k].value for k in t.keys()}
         return cls(name, tstart, tstop, states=states, T_init=T_init, dt=dt,
                    model_spec=model_spec, mask_bad_times=mask_bad_times,
-                   ephemeris=ephemeris, get_msids=get_msids, no_eclipse=no_eclipse,
+                   ephem_file=ephem_file, get_msids=get_msids, no_eclipse=no_eclipse,
                    compute_model=compute_model)
 
     @classmethod
     def from_kadi(cls, name, tstart, tstop, T_init, get_msids=True, dt=328.0,
-                  model_spec=None, mask_bad_times=False, ephemeris=None,
+                  model_spec=None, mask_bad_times=False, ephem_file=None,
                   no_eclipse=False, compute_model=None):
         from kadi.commands import states as get_states
         tstart = get_time(tstart)
@@ -649,12 +652,12 @@ class ThermalModelRunner(ModelDataset):
                 states[k] = t[k].data
         return cls(name, tstart, tstop, states=states, T_init=T_init, dt=dt,
                    model_spec=model_spec, mask_bad_times=mask_bad_times,
-                   ephemeris=ephemeris, get_msids=get_msids, no_eclipse=no_eclipse,
+                   ephem_file=ephem_file, get_msids=get_msids, no_eclipse=no_eclipse,
                    compute_model=compute_model)
 
     @classmethod
     def from_backstop(cls, name, backstop_file, T_init, model_spec=None, dt=328.0,
-                      mask_bad_times=False, ephemeris=None, get_msids=True,
+                      mask_bad_times=False, ephem_file=None, get_msids=True,
                       no_eclipse=False, compute_model=None):
         import Ska.ParseCM
         bs_cmds = Ska.ParseCM.read_backstop(backstop_file)
@@ -663,7 +666,7 @@ class ThermalModelRunner(ModelDataset):
         return cls.from_commands(name, tstart, tstop, bs_cmds, T_init, dt=dt,
                                  model_spec=model_spec, get_msids=get_msids,
                                  mask_bad_times=mask_bad_times, compute_model=compute_model,
-                                 ephemeris=ephemeris, no_eclipse=no_eclipse)
+                                 ephem_file=ephem_file, no_eclipse=no_eclipse)
 
     def make_solarheat_plot(self, node, figfile=None, fig=None):
         """
