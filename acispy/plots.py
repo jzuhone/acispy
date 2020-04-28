@@ -1111,7 +1111,7 @@ class PhasePlot(ACISPlot):
 
         self.ds = ds
 
-        super(PhasePlot, self).__init__(fig, ax)
+        super(PhasePlot, self).__init__(fig, ax, [])
 
     def _annotate_plot(self, fontsize):
         fontProperties = font_manager.FontProperties(size=fontsize)
@@ -1357,8 +1357,8 @@ class PhaseHistogramPlot(PhasePlot):
             norm = LogNorm()
         else:
             norm = Normalize()
-        counts, xedges, yedges, pp = self.ax.hist2d(self.xx, self.yy, [x_bins, y_bins],
-                                                    cmap=cm, norm=norm, **kwargs)
+        counts, xedges, yedges, pp = self.ax.hist2d(np.asarray(self.xx), np.asarray(self.yy), 
+                                                    [x_bins, y_bins], cmap=cm, norm=norm, **kwargs)
         self.pp = pp
         self.counts = counts
         self.xedges = xedges

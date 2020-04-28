@@ -27,7 +27,7 @@ parser.add_argument("--simpos", type=float, default=-99616.0, help="The SIM posi
 parser.add_argument("--off_nominal_roll", type=float, default=0.0, help="The off-nominal roll. Default: 0.0")
 parser.add_argument("--dh_heater", type=int, default=0, help="Is the DH heater on (1) or off (0)? Default: 0/off.")
 parser.add_argument("--fep_count", type=int, help="The number of FEPs which are on.")
-parser.add_argument("--clocking", type=int, help="Whether or not the CCDs are being clocked.")
+parser.add_argument("--clocking", type=int, default=1, help="Whether or not the CCDs are being clocked.")
 
 args = parser.parse_args()
 
