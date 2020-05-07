@@ -942,7 +942,7 @@ class SimulateSingleObs(ThermalModelRunner):
         else:
             mylog.info("This observation is safe from a thermal perspective.")
 
-    def plot_model(self, no_annotations=False, plot=None):
+    def plot_model(self, no_annotations=False, plot=None, **kwargs):
         """
         Plot the simulated model run.
 
@@ -958,7 +958,8 @@ class SimulateSingleObs(ThermalModelRunner):
         else:
             field2 = "pitch"
         viol_text = "NOT SAFE" if self.violate else "SAFE"
-        dp = DatePlot(self, [("model", self.name)], field2=field2, plot=plot)
+        dp = DatePlot(self, [("model", self.name)], field2=field2, plot=plot,
+                      **kwargs)
         if not self.no_limit:
             if self.name == "fptemp_11":
                 color = {"ACIS-S": "blue", "ACIS-I": "purple"}[self.instrument]
