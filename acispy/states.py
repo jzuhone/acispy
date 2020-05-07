@@ -38,7 +38,7 @@ class States(TimeSeriesData):
             state_names = list(table.keys())
         for k in state_names:
             v = table[k]
-            if v.dtype.char in ['S', 'U']:
+            if v.dtype.char in ['S', 'U', 'O']:
                 new_table[k] = APStringArray(v, times)
             else:
                 new_table[k] = APQuantity(v, times, get_units("states", k),
