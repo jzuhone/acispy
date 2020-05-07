@@ -960,11 +960,15 @@ class SimulateSingleObs(ThermalModelRunner):
         viol_text = "NOT SAFE" if self.violate else "SAFE"
         dp = DatePlot(self, [("model", self.name)], field2=field2, plot=plot)
         if not self.no_limit:
-            dp.add_hline(self.limit.value, ls='-', lw=2, color='g')
-            dp.add_hline(self.limit.value+self.margin.value, ls='-', lw=2, color='gold')
-            if self.low_limit is not None:
-                dp.add_hline(self.low_limit.value, ls='-', lw=2, color='g')
-                dp.add_hline(self.low_limit.value - self.margin.value, ls='-', lw=2, color='gold')
+            if self.name == "fptemp_11":
+                color = {"ACIS-S": "blue", "ACIS-I": "purple"}[self.instrument]
+                dp.add_hline(self.limit.value, ls='--', lw=2, color=color)
+            else:
+                dp.add_hline(self.limit.value, ls='-', lw=2, color='g')
+                dp.add_hline(self.limit.value+self.margin.value, ls='-', lw=2, color='gold')
+                if self.low_limit is not None:
+                    dp.add_hline(self.low_limit.value, ls='-', lw=2, color='g')
+                    dp.add_hline(self.low_limit.value - self.margin.value, ls='-', lw=2, color='gold')
         if not no_annotations:
             if not self.no_limit:
                 dp.add_text(find_text_time(self.datestop, hours=4.0), self.T_init.value + 2.0,
