@@ -239,6 +239,8 @@ class CustomDatePlot(ACISPlot):
             label.set_fontproperties(fontProperties)
         for label in self.ax.get_yticklabels():
             label.set_fontproperties(fontProperties)
+        self.times = dates
+        self.y = values
 
     def plot_right(self, dates, values, fmt='-b', lw=2, fontsize=18,
                    ls='-', color="magenta", **kwargs):
