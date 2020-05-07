@@ -3,6 +3,7 @@
 import argparse
 import acispy
 from acispy.utils import mylog
+import numpy as np
 
 short_name = {"dea": "1deamzt",
               "dpa": "1dpamzt",
@@ -28,14 +29,22 @@ parser.add_argument("--off_nominal_roll", type=float, default=0.0, help="The off
 parser.add_argument("--dh_heater", type=int, default=0, help="Is the DH heater on (1) or off (0)? Default: 0/off.")
 parser.add_argument("--fep_count", type=int, help="The number of FEPs which are on.")
 parser.add_argument("--clocking", type=int, default=1, help="Whether or not the CCDs are being clocked.")
+parser.add_argument("--instrument", type=str, help="The instrument which is being used, only for the FP temperature.")
+parser.add_argument("--q", type=str, help="Target quaternion in the case of the FP temperature.")
 
 args = parser.parse_args()
+
+
+if args.component in ["fptemp_11", "acis_fp"] and args.q is not None:
+    q = np.array(args.q.split(',')).astype("float64")
+else:
+    q = args.q
 
 ecs_run = acispy.SimulateECSRun(args.component, args.tstart, args.tstop, args.T_init,
                                 args.pitch, args.ccd_count, vehicle_load=args.vehicle_load,
                                 simpos=args.simpos, off_nominal_roll=args.off_nominal_roll, 
                                 dh_heater=args.dh_heater, fep_count=args.fep_count,
-                                clocking=args.clocking)
+                                clocking=args.clocking, instrument=args.instrument, q=q)
 
 dp = ecs_run.plot_model()
 filename = "ecs_run_%s_%dchip_%s.png" % (args.component, args.ccd_count, args.tstart)
