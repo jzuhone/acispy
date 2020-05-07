@@ -75,6 +75,7 @@ model_classes = {
     "bep_pcb": "BEPPCBCheck"
 }
 
+
 def find_json(name, model_spec):
     if model_spec is None:
         name = short_name[name]
@@ -462,11 +463,15 @@ class ThermalModelRunner(ModelDataset):
         if compute_model is not None:
             self.xija_model = compute_model(self.name, tstart, tstop, states,
                                             dt, T_init, model_spec, evolve_method, rk4)
-        else:
+        elif self.name in short_name and states is not None:
             self.xija_model = self._compute_acis_model(self.name, tstart, tstop,
                                                        states, dt, T_init, rk4=rk4,
                                                        no_eclipse=no_eclipse,
                                                        evolve_method=evolve_method)
+        else:
+            self.xija_model = self._compute_model(name, tstart, tstop, dt, T_init,
+                                                  evolve_method=evolve_method, 
+                                                  rk4=rk4)
 
         self.bad_times = getattr(self.xija_model, "bad_times", None)
         self.bad_times_indices = getattr(self.xija_model, "bad_times_indices", None)
@@ -514,6 +519,21 @@ class ThermalModelRunner(ModelDataset):
                 ephem[msid] = Ska.Numpy.interpolate(e[msid][idxs],
                                                     e["times"][idxs], times)
         return ephem
+
+    def _compute_model(self, name, tstart, tstop, dt, T_init,
+                       evolve_method=1, rk4=0):
+        if name == "fptemp_11":
+            name = "fptemp"
+        model = xija.XijaModel(name, start=tstart, stop=tstop, dt=dt,
+                               model_spec=self.model_spec,
+                               evolve_method=evolve_method, rk4=rk4)
+        model.comp[name].set_data(T_init)
+        for t in ["dea0", "dpa0"]:
+            if t in model.comp:
+                model.comp[t].set_data(T_init)
+        model.make()
+        model.calc()
+        return model
 
     def _compute_acis_model(self, name, tstart, tstop, states, dt, T_init,
                             no_eclipse=False, evolve_method=1, rk4=0):
