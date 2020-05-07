@@ -842,6 +842,7 @@ class SimulateSingleObs(ThermalModelRunner):
         self.tstop = Quantity(tstop, "s")
         self.dateend = dateend
         self.T_init = Quantity(T_init, "deg_C")
+        self.instrument = instrument
         if vehicle_load is None:
             states = {"ccd_count": np.array([ccd_count], dtype='int'),
                       "fep_count": np.array([fep_count], dtype='int'),
@@ -860,7 +861,7 @@ class SimulateSingleObs(ThermalModelRunner):
             # For the focal plane model we need a quaternion.
             if name == "fptemp_11":
                 for i in range(4):
-                    states["q%d" % (i+1)] = q[i]
+                    states["q%d" % (i+1)] = np.array([q[i]])
         else:
             mylog.info("Modeling a %d-chip observation concurrent with " % ccd_count +
                        "the %s vehicle loads." % vehicle_load)
