@@ -37,7 +37,7 @@ class States(TimeSeriesData):
         else:
             state_names = list(table.keys())
         for k in state_names:
-            v = table[k]
+            v = np.asarray(table[k])
             if v.dtype.char in ['S', 'U', 'O']:
                 new_table[k] = APStringArray(v, times)
             else:
