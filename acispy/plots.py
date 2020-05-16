@@ -663,11 +663,11 @@ class DatePlot(CustomDatePlot):
             else:
                 x = ds[field].times.value[mask]
             label = ds.fields[field].display_name
-            ticklocs, fig, ax = plot_cxctime(x, y, fmt=fmt, fig=fig, lw=lw[i],
-                                             ax=ax, color=color[i], ls=ls[i],
-                                             state_codes=state_codes,
-                                             drawstyle=drawstyle,
-                                             label=label)
+            _, fig, ax = plot_cxctime(x, y, fmt=fmt, fig=fig, lw=lw[i],
+                                      ax=ax, color=color[i], ls=ls[i],
+                                      state_codes=state_codes,
+                                      drawstyle=drawstyle,
+                                      label=label)
             self.lines.append(ax.lines[-1])
             self.y[field] = ds[field][mask]
             self.times[field] = ds[field][mask].times
@@ -692,18 +692,19 @@ class DatePlot(CustomDatePlot):
         else:
             ymax *= 0.95
         self.ax.set_ylim(ymin, ymax)
-        units = ds.fields[self.fields[0]].units
-        if self.num_fields > 1:
-            if units == '':
-                ylabel = ''
+        if self.num_fields > 0:
+            units = ds.fields[self.fields[0]].units
+            if self.num_fields > 1:
+                if units == '':
+                    ylabel = ''
+                else:
+                    ylabel = '%s (%s)' % (units_map[units], unit_labels.get(units, units))
+                self.set_ylabel(ylabel)
             else:
-                ylabel = '%s (%s)' % (units_map[units], unit_labels.get(units, units))
-            self.set_ylabel(ylabel)
-        else:
-            ylabel = ds.fields[self.fields[0]].display_name
-            if units != '':
-                ylabel += ' (%s)' % unit_labels.get(units, units)
-            self.set_ylabel(ylabel)
+                ylabel = ds.fields[self.fields[0]].display_name
+                if units != '':
+                    ylabel += ' (%s)' % unit_labels.get(units, units)
+                self.set_ylabel(ylabel)
         if field2 is not None:
             field2 = ds._determine_field(field2)
             self.field2 = field2
