@@ -788,7 +788,7 @@ def find_text_time(time, hours=1.0):
 
 class SimulateSingleObs(ThermalModelRunner):
     """
-    Class for simulating thermal models during ECS runs under constant conditions.
+    Class for simulating thermal models under constant conditions.
 
     Parameters
     ----------
@@ -1044,7 +1044,9 @@ class SimulateSingleObs(ThermalModelRunner):
 
 
 class SimulateECSRun(SimulateSingleObs):
-    pass
+    """
+    Class for simulating thermal models for ECS measurements.
+    """
 
 
 class SimulateCTIRun(SimulateECSRun):
