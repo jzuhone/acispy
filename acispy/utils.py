@@ -5,7 +5,6 @@ import numpy as np
 import logging
 import sys
 import os
-import warnings
 
 
 acispyLogger = logging.getLogger("acispy")
@@ -220,22 +219,15 @@ def find_state_keys(states):
     return state_keys
 
 
-class KadiWrapper:
-    def __init__(self):
-        for m in list(sys.modules.keys()):
-            if m.startswith('kadi'):
-                del sys.modules[m]
+def plotdate2cxctime(dates):
+    """
+    Convert input CXC time (sec) to the time base required for the matplotlib
+    plot_date function (days since start of year 1).
 
-    @property
-    def events(self):
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            from kadi import events
-        return events
+    :param times: iterable list of times
+    :rtype: plot_date times
+    """
 
-    @property
-    def commands(self):
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            from kadi import commands
-            return commands
+    # Find the cxctime of first time and use a relative offset from there
+    cxctime0 = DateTime(dates[0], format='plotdate').secs
+    return (np.asarray(dates) - dates[0]) * 86400. + cxctime0
