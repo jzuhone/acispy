@@ -444,6 +444,8 @@ class ThermalModelRunner(ModelDataset):
 
         tstart_secs = DateTime(tstart).secs
 
+        self.no_earth_heat = getattr(self, "no_earth_heat", False)
+
         if states is not None:
             if "tstart" not in states:
                 states["tstart"] = DateTime(states["datestart"]).secs
@@ -589,6 +591,8 @@ class ThermalModelRunner(ModelDataset):
         if no_eclipse:
             model.comp["eclipse"].set_data(False)
         check_obj._calc_model_supp(model, state_times, states, ephem, None)
+        if self.name == "fptemp_11" and self.no_earth_heat:
+            model.comp["earthheat__fptemp"].k = 0.0
         model.make()
         model.calc()
         return model
@@ -835,7 +839,7 @@ class SimulateSingleObs(ThermalModelRunner):
     def __init__(self, name, tstart, tstop, T_init, pitch, ccd_count,
                  vehicle_load=None, simpos=-99616.0, off_nominal_roll=0.0, 
                  dh_heater=0, fep_count=None, clocking=1, q=None, instrument=None,
-                 model_spec=None, no_limit=False):
+                 model_spec=None, no_limit=False, no_earth_heat=False):
         if name in short_name_rev:
             name = short_name_rev[name]
         if name == "fptemp_11" and instrument is None:
@@ -863,6 +867,7 @@ class SimulateSingleObs(ThermalModelRunner):
         self.dateend = dateend
         self.T_init = Quantity(T_init, "deg_C")
         self.instrument = instrument
+        self.no_earth_heat = no_earth_heat
         if vehicle_load is None:
             states = {"ccd_count": np.array([ccd_count], dtype='int'),
                       "fep_count": np.array([fep_count], dtype='int'),
