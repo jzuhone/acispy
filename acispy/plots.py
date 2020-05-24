@@ -242,11 +242,19 @@ class CustomDatePlot(ACISPlot):
         self.times = dates
         self.y = values
 
-    def time_ticks(self, offset, dt, dt_minor=None):
+    def time_ticks(self, offset, dt):
+        """
+        Change the tick marks to be times in kiloseconds
+        instead of year:doy:hh:mm:ss.
+
+        Parameters
+        ----------
+        offset : string
+            The date/time string that will be the zero-point.
+        dt : float
+            The time between major ticks in kiloseconds.
+        """
         from matplotlib.ticker import AutoMinorLocator
-        if dt_minor is None:
-            dt_minor = 0.2*dt
-        pd_dt_minor = dt_minor*1000.0/86400.0
         offset = DateTime(offset).secs*1.0e-3
         tmax = plotdate2cxctime(self.ax.get_xlim())[-1]*1.0e-3-offset
         ticks = np.arange(0.0, tmax, dt)
