@@ -3,7 +3,7 @@ from Ska.Matplotlib import plot_cxctime, pointpair, \
 from matplotlib import font_manager
 import matplotlib.pyplot as plt
 from matplotlib.dates import num2date
-from acispy.utils import ensure_list, plotdate2cxctime
+from acispy.utils import ensure_list
 from Chandra.Time import DateTime, date2secs
 from datetime import datetime
 from collections import OrderedDict
@@ -241,28 +241,6 @@ class CustomDatePlot(ACISPlot):
             label.set_fontproperties(fontProperties)
         self.times = dates
         self.y = values
-
-    def time_ticks(self, offset, dt):
-        """
-        Change the tick marks to be times in kiloseconds
-        instead of year:doy:hh:mm:ss.
-
-        Parameters
-        ----------
-        offset : string
-            The date/time string that will be the zero-point.
-        dt : float
-            The time between major ticks in kiloseconds.
-        """
-        from matplotlib.ticker import AutoMinorLocator
-        offset = DateTime(offset).secs*1.0e-3
-        tmax = plotdate2cxctime(self.ax.get_xlim())[-1]*1.0e-3-offset
-        ticks = np.arange(0.0, tmax, dt)
-        pd_ticks = cxctime2plotdate((ticks+offset)*1.0e3)
-        self.ax.set_xticks(pd_ticks)
-        self.ax.set_xticklabels(ticks)
-        self.ax.xaxis.set_minor_locator(AutoMinorLocator(5))
-        self.ax.set_xlabel("Time (ks)")
 
     def plot_right(self, dates, values, fmt='-b', lw=2, fontsize=18,
                    ls='-', color="magenta", **kwargs):

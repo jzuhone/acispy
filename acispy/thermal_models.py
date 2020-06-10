@@ -11,7 +11,8 @@ from acispy.model import Model
 from acispy.msids import MSIDs
 from acispy.time_series import EmptyTimeSeries
 from acispy.utils import mylog, calc_off_nom_rolls, \
-    get_time, ensure_list, default_states
+    get_time, ensure_list, default_states, \
+    plotdate2cxctime
 import Ska.Numpy
 import Ska.engarchive.fetch_sci as fetch
 from chandra_models import get_xija_model_file
@@ -19,7 +20,8 @@ import matplotlib.pyplot as plt
 from kadi import events
 from acis_thermal_check import calc_pitch_roll
 import importlib
-
+from Ska.Matplotlib import cxctime2plotdate
+from matplotlib import font_manager
 
 short_name = {"1deamzt": "dea",
               "1dpamzt": "dpa",
@@ -478,6 +480,8 @@ class ThermalModelRunner(ModelDataset):
         self.bad_times = getattr(self.xija_model, "bad_times", None)
         self.bad_times_indices = getattr(self.xija_model, "bad_times_indices", None)
 
+        self.times = self.xija_model.times
+
         if isinstance(states, dict):
             states.pop("dh_heater", None)
 
@@ -563,10 +567,6 @@ class ThermalModelRunner(ModelDataset):
                 elif name == "roll":
                     nstate = "off_nominal_roll"
                 states[nstate] = np.array(model.comp[ncomp].dvals)
-            if 'dpa_power' in model.comp:
-                # This is just a hack, we're not
-                # really setting the power to zero.
-                model.comp['dpa_power'].set_data(0.0)
         else:
             if isinstance(states, np.ndarray):
                 state_names = states.dtype.names
@@ -587,6 +587,10 @@ class ThermalModelRunner(ModelDataset):
             if "off_nominal_roll" in state_names:
                 roll = np.array(states["off_nominal_roll"])
                 model.comp["roll"].set_data(roll, state_times)
+        if 'dpa_power' in model.comp:
+            # This is just a hack, we're not
+            # really setting the power to zero.
+            model.comp['dpa_power'].set_data(0.0)
         model.comp[name].set_data(T_init)
         if no_eclipse:
             model.comp["eclipse"].set_data(False)
@@ -836,7 +840,7 @@ class SimulateSingleObs(ThermalModelRunner):
     ...                             14.0, 150., ccd_count=5, off_nominal_roll=-6.0,
     ...                             dh_heater=1)
     """
-    def __init__(self, name, tstart, tstop, T_init, pitch, ccd_count,
+    def __init__(self, name, tstart, hours, T_init, pitch, ccd_count,
                  vehicle_load=None, simpos=-99616.0, off_nominal_roll=0.0, 
                  dh_heater=0, fep_count=None, clocking=1, q=None, instrument=None,
                  model_spec=None, no_limit=False, no_earth_heat=False):
@@ -848,15 +852,14 @@ class SimulateSingleObs(ThermalModelRunner):
                                "temperature prediction!")
         if fep_count is None:
             fep_count = ccd_count
-        tstart = get_time(tstart)
-        tstop = get_time(tstop)
         if q is None and name == "fptemp_11":
             raise RuntimeError("Please supply an attitude quaternion for the focal plane model!")
         self.vehicle_load = vehicle_load
         self.no_limit = no_limit
+        tstart = get_time(tstart)
         datestart = tstart
         tstart = DateTime(tstart).secs
-        tstop = DateTime(tstop).secs
+        tstop = tstart+hours*3600.0+10012.0
         datestop = secs2date(tstop)
         tend = tstop+0.5*(tstop-tstart)
         dateend = secs2date(tend)
@@ -967,7 +970,8 @@ class SimulateSingleObs(ThermalModelRunner):
         else:
             mylog.info("This observation is safe from a thermal perspective.")
 
-    def plot_model(self, no_annotations=False, plot=None, **kwargs):
+    def plot_model(self, no_annotations=False, plot=None, fontsize=18,
+                   **kwargs):
         """
         Plot the simulated model run.
 
@@ -984,7 +988,7 @@ class SimulateSingleObs(ThermalModelRunner):
             field2 = "pitch"
         viol_text = "NOT SAFE" if self.violate else "SAFE"
         dp = DatePlot(self, [("model", self.name)], field2=field2, plot=plot,
-                      **kwargs)
+                      fontsize=fontsize, **kwargs)
         if not self.no_limit:
             if self.name == "fptemp_11":
                 color = {"ACIS-S": "blue", "ACIS-I": "purple"}[self.instrument]
@@ -1016,8 +1020,24 @@ class SimulateSingleObs(ThermalModelRunner):
             ymin = self.T_init.value
         ymin = min(ymin, self.mvals.value.min())-2.0
         ymax = max(self.limit.value+self.margin.value, self.mvals.value.max())+3.0
+        self._time_ticks(dp, ymax, fontsize)
         dp.set_ylim(ymin, ymax)
         return dp
+
+    def _time_ticks(self, dp, ymax, fontsize):
+        from matplotlib.ticker import AutoMinorLocator
+        axt = dp.ax.twiny()
+        xmin, xmax = (plotdate2cxctime(dp.ax.get_xlim())-self.times[0])*1.0e-3
+        axt.plot((self.times-self.times[0])*1.0e-3, 
+                 ymax*np.ones_like(self.times))
+        axt.set_xlim(xmin, xmax)
+        axt.xaxis.set_minor_locator(AutoMinorLocator(5))
+        axt.set_xlabel("Time (ks)", fontdict={"size": fontsize})
+        fontProperties = font_manager.FontProperties(size=fontsize)
+        for label in axt.get_xticklabels():
+            label.set_fontproperties(fontProperties)
+        for label in axt.get_yticklabels():
+            label.set_fontproperties(fontProperties)
 
     def get_temp_at_time(self, t):
         """
