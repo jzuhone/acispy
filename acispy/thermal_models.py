@@ -427,8 +427,8 @@ class ThermalModelRunner(ModelDataset):
     """
     def __init__(self, name, tstart, tstop, states=None, T_init=None,
                  get_msids=True, dt=328.0, model_spec=None,
-                 mask_bad_times=False, ephem_file=None, evolve_method=1,
-                 rk4=0, tl_file=None, no_eclipse=False, compute_model=None):
+                 mask_bad_times=False, ephem_file=None, evolve_method=None,
+                 rk4=None, tl_file=None, no_eclipse=False, compute_model=None):
 
         self.name = name.lower()
         self.sname = short_name[name]
@@ -527,7 +527,7 @@ class ThermalModelRunner(ModelDataset):
         return ephem
 
     def _compute_model(self, name, tstart, tstop, dt, T_init,
-                       evolve_method=1, rk4=0):
+                       evolve_method=None, rk4=None):
         if name == "fptemp_11":
             name = "fptemp"
         model = xija.XijaModel(name, start=tstart, stop=tstop, dt=dt,
@@ -542,7 +542,7 @@ class ThermalModelRunner(ModelDataset):
         return model
 
     def _compute_acis_model(self, name, tstart, tstop, states, dt, T_init,
-                            no_eclipse=False, evolve_method=1, rk4=0):
+                            no_eclipse=False, evolve_method=None, rk4=None):
         import re
         pattern = re.compile("q[1-4]")
         check_obj = getattr(self.model_check, model_classes[self.sname])()
