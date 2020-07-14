@@ -16,7 +16,7 @@ setup(name='acispy',
       classifiers=[
           'Intended Audience :: Science/Research',
           'Operating System :: OS Independent',
-          'Programming Language :: Python :: 3.6'
+          'Programming Language :: Python :: 3'
       ],
       version=versioneer.get_version(),
       cmdclass=versioneer.get_cmdclass(),
