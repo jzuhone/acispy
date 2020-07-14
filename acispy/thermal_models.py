@@ -270,7 +270,7 @@ class ModelDataset(Dataset):
             ymax = min(telem.value[mask].max(), pred.value[mask].max())+2
             yplotlimits = [ymin, ymax]
         if errorplotlimits is None:
-            errorplotlimits = [-15, 15]
+            errorplotlimits = [-5, 5]
         mylimits = {"units": "C"}
         if plot_limits:
             if msid == "fptemp_11":
