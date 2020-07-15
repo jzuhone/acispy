@@ -11,7 +11,7 @@ Thermal Models API
     :inherited-members:
     :exclude-members: keys
 
-.. autoclass:: acispy.thermal_models.ThermalModelFromFiles
+.. autoclass:: acispy.thermal_models.ThermalModelFromRun
     :members:
     :inherited-members:
     :exclude-members: keys
