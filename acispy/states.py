@@ -136,7 +136,6 @@ class States(TimeSeriesData):
 
     def as_array(self):
         dtype = [(k, str(v.dtype)) for k, v in self.table.items()]
-        print(dtype)
         data = np.zeros(len(self), dtype=dtype)
         for k, v in self.table.items():
             data[k] = v.value

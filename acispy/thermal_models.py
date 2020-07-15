@@ -791,8 +791,10 @@ class SimulateSingleObs(ThermalModelRunner):
         The name of the model to simulate. 
     tstart : string
         The start time of the ECS run in YYYY:DOY:HH:MM:SS format.
-    tstop : string
-        The stop time of the ECS run in YYYY:DOY:HH:MM:SS format.
+    hours : integer or float
+        The length of the ECS measurement in hours. NOTE that the 
+        actual length of the ECS run is hours + 10 ks + 12 s, as
+        per the ECS CAP.
     T_init : float
         The starting temperature for the model in degrees C.
     pitch : float
@@ -823,8 +825,8 @@ class SimulateSingleObs(ThermalModelRunner):
 
     Examples
     --------
-    >>> dea_run = SimulateSingleObs("1deamzt", "2016:201:05:12:03", "2016:201:05:12:03",
-    ...                             14.0, 150., ccd_count=5, off_nom_roll=-6.0,
+    >>> dea_run = SimulateSingleObs("1deamzt", "2016:201:05:12:03", 24, 14.0,
+    ...                             150., ccd_count=5, off_nom_roll=-6.0,
     ...                             dh_heater=1)
     """
     def __init__(self, name, tstart, hours, T_init, pitch, ccd_count,
@@ -852,6 +854,7 @@ class SimulateSingleObs(ThermalModelRunner):
         dateend = secs2date(tend)
         self.datestart = datestart
         self.datestop = datestop
+        self.hours = hours
         self.tstart = Quantity(tstart, "s")
         self.tstop = Quantity(tstop, "s")
         self.dateend = dateend
@@ -894,6 +897,7 @@ class SimulateSingleObs(ThermalModelRunner):
         mylog.info("Run Parameters")
         mylog.info("--------------")
         mylog.info("Start Datestring: %s" % datestart)
+        mylog.info("Length of ECS run in hours: %s" % hours)
         mylog.info("Stop Datestring: %s" % datestop)
         mylog.info("Initial Temperature: %g degrees C" % T_init)
         mylog.info("CCD Count: %d" % ccd_count)

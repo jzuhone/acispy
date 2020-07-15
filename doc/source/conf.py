@@ -17,6 +17,8 @@ import sys
 import os
 import acispy
 
+os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
+
 sys.path.insert(0, os.path.abspath('../../'))
 
 import sphinx_bootstrap_theme
