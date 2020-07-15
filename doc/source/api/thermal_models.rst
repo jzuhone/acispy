@@ -6,11 +6,6 @@ Thermal Models API
     :inherited-members:
     :exclude-members: keys
 
-.. autoclass:: acispy.thermal_models.SimulateCTIRun
-    :members:
-    :inherited-members:
-    :exclude-members: keys
-
 .. autoclass:: acispy.thermal_models.ThermalModelFromLoad
     :members:
     :inherited-members:
@@ -21,7 +16,12 @@ Thermal Models API
     :inherited-members:
     :exclude-members: keys
 
-.. autoclass:: acispy.thermal_models.SimulateCTIRun
+.. autoclass:: acispy.thermal_models.SimulateSingleObs
+    :members:
+    :inherited-members:
+    :exclude-members: keys
+
+.. autoclass:: acispy.thermal_models.SimulateECSRun
     :members:
     :inherited-members:
     :exclude-members: keys
