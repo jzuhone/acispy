@@ -203,6 +203,7 @@ class APStringArray(object):
         if mask is None:
             mask = np.ones(value.size, dtype='bool')
         self.mask = mask
+        self.dtype = self.value.dtype
 
     def __getitem__(self, item):
         idxs, t = find_indices(item, self.times.value)

@@ -482,8 +482,6 @@ class ThermalModelRunner(ModelDataset):
         self.bad_times = getattr(self.xija_model, "bad_times", None)
         self.bad_times_indices = getattr(self.xija_model, "bad_times_indices", None)
 
-        self.times = self.xija_model.times
-
         if isinstance(states, dict):
             states.pop("dh_heater", None)
 
@@ -1015,9 +1013,10 @@ class SimulateSingleObs(ThermalModelRunner):
     def _time_ticks(self, dp, ymax, fontsize):
         from matplotlib.ticker import AutoMinorLocator
         axt = dp.ax.twiny()
-        xmin, xmax = (plotdate2cxctime(dp.ax.get_xlim())-self.times[0])*1.0e-3
-        axt.plot((self.times-self.times[0])*1.0e-3, 
-                 ymax*np.ones_like(self.times))
+        mtimes = self.xija_model.times
+        xmin, xmax = (plotdate2cxctime(dp.ax.get_xlim())-mtimes[0])*1.0e-3
+        axt.plot((mtimes-mtimes[0])*1.0e-3, 
+                 ymax*np.ones_like(mtimes))
         axt.set_xlim(xmin, xmax)
         axt.xaxis.set_minor_locator(AutoMinorLocator(5))
         axt.set_xlabel("Time (ks)", fontdict={"size": fontsize})

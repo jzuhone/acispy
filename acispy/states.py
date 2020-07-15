@@ -49,7 +49,7 @@ class States(TimeSeriesData):
         times = Quantity([table["tstart"], table["tstop"]], "s")
         for k in state_names:
             v = np.asarray(table[k])
-            if k == "trans_keys":
+            if k == "trans_keys" and v.dtype.char == "O":
                 new_table[k] = APStringArray(
                     np.array([",".join(d) for d in v]), times)
             elif v.dtype.char in ['S', 'U', 'O']:
@@ -135,8 +135,12 @@ class States(TimeSeriesData):
         return state
 
     def as_array(self):
-        dtype = tuple([(k, v.dtype) for k, v in self.table.items()])
-        return np.array(self.table.values(), dtype=dtype)
+        dtype = [(k, str(v.dtype)) for k, v in self.table.items()]
+        print(dtype)
+        data = np.zeros(len(self), dtype=dtype)
+        for k, v in self.table.items():
+            data[k] = v.value
+        return data
 
     @property
     def current_states(self):
