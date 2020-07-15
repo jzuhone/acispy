@@ -1,16 +1,9 @@
 from acispy.units import APQuantity, APStringArray
-from acispy.utils import calc_off_nom_rolls
 import numpy as np
 from itertools import count
 from acis_taco import calc_earth_vis
 
-builtin_deps = {("states", "off_nominal_roll"): [("states", "q1"),
-                                                 ("states", "q2"),
-                                                 ("states", "q3"),
-                                                 ("states", "q4"),
-                                                 ("states", "tstart"),
-                                                 ("states", "tstop")],
-                ("states", "grating"): [("states", "hetg"),
+builtin_deps = {("states", "grating"): [("states", "hetg"),
                                         ("states", "letg")],
                 ("states", "instrument"): [("states", "simpos")],
                 ("msids", "dpa_a_power"): [("msids", "1dp28avo"),
@@ -91,17 +84,6 @@ class FieldContainer(object):
 
 
 def create_builtin_derived_states(dset):
-
-    # Off-nominal roll
-
-    if "off_nominal_roll" not in dset.states:
-        def _off_nominal_roll(ds):
-            return APQuantity(calc_off_nom_rolls(ds.states),
-                              ds.states["q1"].times, "deg")
-
-        dset.add_derived_field("states", "off_nominal_roll", _off_nominal_roll,
-                               "deg", display_name="Off-Nominal Roll",
-                               depends=builtin_deps[("states", "off_nominal_roll")])
 
     # Grating
 

@@ -1,13 +1,12 @@
 from astropy.io import ascii
 import requests
 from acispy.units import get_units
-from acispy.utils import get_time, ensure_list, find_load
-from Chandra.cmd_states import fetch_states, get_states, \
-    get_state0, get_cmds
+from acispy.utils import get_time, ensure_list, find_load, calc_off_nom_rolls
 from acispy.units import APQuantity, APStringArray, Quantity
 from acispy.time_series import TimeSeriesData
-import os
 import numpy as np
+from Chandra.Time import date2secs
+from collections import OrderedDict
 
 cmd_state_codes = {("states", "hetg"): {"RETR": 0, "INSR": 1},
                    ("states", "letg"): {"RETR": 0, "INSR": 1},
@@ -30,19 +29,37 @@ state_dtypes = {"ccd_count": "int",
 class States(TimeSeriesData):
 
     def __init__(self, table):
-        new_table = {}
-        times = Quantity([table["tstart"], table["tstop"]], "s")
+        import numpy.lib.recfunctions as rf
+        new_table = OrderedDict()
         if isinstance(table, np.ndarray):
-            state_names = table.dtype.names
+            state_names = list(table.dtype.names)
+            if "tstart" not in state_names:
+                table = rf.append_fields(
+                    table, ["tstart", "tstop"],
+                    [date2secs(table["datestart"]),
+                     date2secs(table["datestop"])],
+                    usemask=False)
+                state_names += ["tstart", "tstop"]
         else:
             state_names = list(table.keys())
+            if "tstart" not in state_names:
+                table["tstart"] = date2secs(table["datestart"])
+                table["tstop"] = date2secs(table["datestop"])
+                state_names += ["tstart", "tstop"]
+        times = Quantity([table["tstart"], table["tstop"]], "s")
         for k in state_names:
             v = np.asarray(table[k])
-            if v.dtype.char in ['S', 'U', 'O']:
+            if k == "trans_keys":
+                new_table[k] = APStringArray(
+                    np.array([",".join(d) for d in v]), times)
+            elif v.dtype.char in ['S', 'U', 'O']:
                 new_table[k] = APStringArray(v, times)
             else:
                 new_table[k] = APQuantity(v, times, get_units("states", k),
                                           dtype=v.dtype)
+        if "off_nom_roll" not in state_names:
+            v = calc_off_nom_rolls(new_table)
+            new_table["off_nom_roll"] = APQuantity(v, times, "deg", dtype=v.dtype)
         super(States, self).__init__(table=new_table)
 
     @classmethod
@@ -51,12 +68,24 @@ class States(TimeSeriesData):
         cls(table)
 
     @classmethod
-    def from_database(cls, tstart, tstop, states=None, server=None):
+    def from_kadi_states(cls, tstart, tstop, state_keys=None):
+        from kadi.commands import states
         tstart = get_time(tstart)
         tstop = get_time(tstop)
-        if states is not None:
-            states = ensure_list(states)
-        t = fetch_states(tstart, tstop, vals=states, server=server)
+        if state_keys is not None:
+            state_keys = ensure_list(state_keys)
+        t = states.get_states(tstart, tstop, state_keys=state_keys,
+                              merge_identical=True).as_array()
+        return cls(t)
+
+    @classmethod
+    def from_database(cls, tstart, tstop, state_keys=None, server=None):
+        from Chandra.cmd_states import fetch_states
+        tstart = get_time(tstart)
+        tstop = get_time(tstop)
+        if state_keys is not None:
+            state_keys = ensure_list(state_keys)
+        t = fetch_states(tstart, tstop, vals=state_keys, server=server)
         return cls(t)
 
     @classmethod
@@ -82,24 +111,32 @@ class States(TimeSeriesData):
         return cls(table)
 
     @classmethod
-    def from_commands(cls, tstart, tstop, cmds=None):
-        import Ska.DBI
+    def from_commands(cls, tstart, tstop, cmds=None, state_keys=None):
+        from kadi import commands
+        from kadi.commands import states
         tstart = get_time(tstart)
         tstop = get_time(tstop)
-        server = os.path.join(os.environ['SKA'], 'data', 'cmd_states', 'cmd_states.db3')
-        db = Ska.DBI.DBI(dbi='sqlite', server=server, user='aca_read', database='aca')
         if cmds is None:
-            cmds = get_cmds(tstart, tstop, db)
-        state0 = get_state0(tstart, db, datepar='datestart', date_margin=None)
-        t = get_states(state0, cmds)
+            cmds = commands.get_cmds(tstart, tstop)
+        continuity = states.get_continuity(tstart, state_keys)
+        t = states.get_states(cmds=cmds, continuity=continuity,
+                              state_keys=state_keys,
+                              merge_identical=True).as_array()
         return cls(t)
 
     def get_states(self, time):
+        """
+        Get the commanded states at a given *time*.
+        """
         time = get_time(time, 'secs')
         state = {}
         for key in self.keys():
             state[key] = self[key][time]
         return state
+
+    def as_array(self):
+        dtype = tuple([(k, v.dtype) for k, v in self.table.items()])
+        return np.array(self.table.values(), dtype=dtype)
 
     @property
     def current_states(self):

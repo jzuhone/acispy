@@ -10,17 +10,14 @@ from acispy.states import States
 from acispy.model import Model
 from acispy.msids import MSIDs
 from acispy.time_series import EmptyTimeSeries
-from acispy.utils import mylog, calc_off_nom_rolls, \
-    get_time, ensure_list, default_states, \
-    plotdate2cxctime
+from acispy.utils import mylog, \
+    get_time, ensure_list, plotdate2cxctime
 import Ska.Numpy
 import Ska.engarchive.fetch_sci as fetch
 from chandra_models import get_xija_model_file
 import matplotlib.pyplot as plt
 from kadi import events
-from acis_thermal_check import calc_pitch_roll
 import importlib
-from Ska.Matplotlib import cxctime2plotdate
 from matplotlib import font_manager
 
 short_name = {"1deamzt": "dea",
@@ -138,7 +135,7 @@ class ModelDataset(Dataset):
             If True, an existing file with the same name will be overwritten.
         """
         states_to_map = ["vid_board", "pitch", "clocking", "simpos",
-                         "ccd_count", "fep_count", "off_nominal_roll"]
+                         "ccd_count", "fep_count", "off_nom_roll"]
         out = []
         for i, msid in enumerate(self.model.keys()):
             if i == 0:
@@ -419,7 +416,7 @@ class ThermalModelRunner(ModelDataset):
     ...           "fep_count": np.array([5,6,1]),
     ...           "clocking": np.array([1]*3),
     ...           "vid_board": np.array([1]*3),
-    ...           "off_nominal_roll": np.array([0.0]*3),
+    ...           "off_nom_roll": np.array([0.0]*3),
     ...           "simpos": np.array([-99616.0]*3)}
     >>> dpa_model = ThermalModelRunner("dpa", "2015:002:00:00:00",
     ...                                "2016:005:00:00:00", states=states,
@@ -449,15 +446,20 @@ class ThermalModelRunner(ModelDataset):
         self.no_earth_heat = getattr(self, "no_earth_heat", False)
 
         if states is not None:
-            if "tstart" not in states:
-                states["tstart"] = DateTime(states["datestart"]).secs
-                states["tstop"] = DateTime(states["datestop"]).secs
-            num_states = states["tstart"].size
-            if "letg" not in states:
-                states["letg"] = np.array(["RETR"]*num_states)
-            if "hetg" not in states:
-                states["hetg"] = np.array(["RETR"]*num_states)
-            states_obj = States(states)
+            if isinstance(states, States):
+                states_obj = states
+                states = states.as_array()
+            else:
+                if "tstart" not in states:
+                    states["tstart"] = DateTime(states["datestart"]).secs
+                if "tstop" not in states:
+                    states["tstop"] = DateTime(states["datestop"]).secs
+                num_states = states["tstart"].size
+                if "letg" not in states:
+                    states["letg"] = np.array(["RETR"]*num_states)
+                if "hetg" not in states:
+                    states["hetg"] = np.array(["RETR"]*num_states)
+                states_obj = States(states)
         else:
             states_obj = EmptyTimeSeries()
 
@@ -544,6 +546,7 @@ class ThermalModelRunner(ModelDataset):
     def _compute_acis_model(self, name, tstart, tstop, states, dt, T_init,
                             no_eclipse=False, evolve_method=None, rk4=None):
         import re
+        from acis_thermal_check import calc_pitch_roll
         pattern = re.compile("q[1-4]")
         check_obj = getattr(self.model_check, model_classes[self.sname])()
         if name == "fptemp_11":
@@ -565,7 +568,7 @@ class ThermalModelRunner(ModelDataset):
                 if pattern.match(n):
                     ncomp = f'aoattqt{n[-1]}'
                 elif name == "roll":
-                    nstate = "off_nominal_roll"
+                    nstate = "off_nom_roll"
                 states[nstate] = np.array(model.comp[ncomp].dvals)
         else:
             if isinstance(states, np.ndarray):
@@ -584,8 +587,8 @@ class ThermalModelRunner(ModelDataset):
                 model.comp[st].set_data(np.array(states[st]), state_times)
             if 'dh_heater' in model.comp:
                 model.comp['dh_heater'].set_data(states.get("dh_heater", 0), state_times)
-            if "off_nominal_roll" in state_names:
-                roll = np.array(states["off_nominal_roll"])
+            if "off_nom_roll" in state_names:
+                roll = np.array(states["off_nom_roll"])
                 model.comp["roll"].set_data(roll, state_times)
         if 'dpa_power' in model.comp:
             # This is just a hack, we're not
@@ -606,7 +609,7 @@ class ThermalModelRunner(ModelDataset):
                          dt=328.0, model_spec=None, mask_bad_times=False, 
                          ephem_file=None, get_msids=True, no_eclipse=False):
         """
-        Class for running Xija thermal models.
+        Run a xija thermal model using a states.dat file. 
 
         Parameters
         ----------
@@ -624,13 +627,10 @@ class ThermalModelRunner(ModelDataset):
             If set, bad times from the data are included in the array masks
             and plots. Default: False
         """
-        states = ascii.read(states_file)
-        states_dict = dict((k, states[k]) for k in states.colnames)
-        if "off_nominal_roll" not in states.colnames:
-            states_dict["off_nominal_roll"] = calc_off_nom_rolls(states)
-        tstart = get_time(states_dict['tstart'][0])
-        tstop = get_time(states_dict['tstop'][-1])
-        return cls(name, tstart, tstop, states=states_dict, T_init=T_init,
+        states = States.from_load_file(states_file)
+        tstart = get_time(states['tstart'].value[0])
+        tstop = get_time(states['tstop'].value[-1])
+        return cls(name, tstart, tstop, states=states, T_init=T_init,
                    dt=dt, model_spec=model_spec, mask_bad_times=mask_bad_times,
                    ephem_file=ephem_file, get_msids=get_msids, no_eclipse=no_eclipse)
 
@@ -638,10 +638,7 @@ class ThermalModelRunner(ModelDataset):
     def from_database(cls, name, tstart, tstop, T_init, server=None, get_msids=True,
                       dt=328.0, model_spec=None, mask_bad_times=False,
                       ephem_file=None, no_eclipse=False, compute_model=None):
-        from Chandra.cmd_states import fetch_states
-        t = fetch_states(tstart, tstop, server=server)
-        states = dict((k, t[k]) for k in t.dtype.names)
-        states["off_nominal_roll"] = calc_off_nom_rolls(states)
+        states = States.from_database(tstart, tstop, server=server)
         return cls(name, tstart, tstop, states=states, T_init=T_init, dt=dt,
                    model_spec=model_spec, mask_bad_times=mask_bad_times,
                    ephem_file=ephem_file, get_msids=get_msids, 
@@ -653,8 +650,7 @@ class ThermalModelRunner(ModelDataset):
                       ephem_file=None, no_eclipse=False, compute_model=None):
         tstart = get_time(tstart)
         tstop = get_time(tstop)
-        t = States.from_commands(tstart, tstop, cmds)
-        states = {k: t[k].value for k in t.keys()}
+        states = States.from_commands(tstart, tstop, cmds)
         return cls(name, tstart, tstop, states=states, T_init=T_init, dt=dt,
                    model_spec=model_spec, mask_bad_times=mask_bad_times,
                    ephem_file=ephem_file, get_msids=get_msids, no_eclipse=no_eclipse,
@@ -664,20 +660,9 @@ class ThermalModelRunner(ModelDataset):
     def from_kadi(cls, name, tstart, tstop, T_init, get_msids=True, dt=328.0,
                   model_spec=None, mask_bad_times=False, ephem_file=None,
                   no_eclipse=False, compute_model=None):
-        from kadi.commands import states as get_states
         tstart = get_time(tstart)
         tstop = get_time(tstop)
-        t = get_states(tstart, tstop)
-        states = {}
-        for k in default_states:
-            if k == "tstart":
-                states[k] = date2secs(t["datestart"].data)
-            elif k == "tstop":
-                states[k] = date2secs(t["datestop"].data)
-            elif k == "trans_keys":
-                states[k] = np.array([",".join(d) for d in t["trans_keys"].data])
-            else:
-                states[k] = t[k].data
+        states = States.from_kadi_states(tstart, tstop)
         return cls(name, tstart, tstop, states=states, T_init=T_init, dt=dt,
                    model_spec=model_spec, mask_bad_times=mask_bad_times,
                    ephem_file=ephem_file, get_msids=get_msids, no_eclipse=no_eclipse,
@@ -687,8 +672,8 @@ class ThermalModelRunner(ModelDataset):
     def from_backstop(cls, name, backstop_file, T_init, model_spec=None, dt=328.0,
                       mask_bad_times=False, ephem_file=None, get_msids=True,
                       no_eclipse=False, compute_model=None):
-        import Ska.ParseCM
-        bs_cmds = Ska.ParseCM.read_backstop(backstop_file)
+        import parse_cm
+        bs_cmds = parse_cm.read_backstop_as_list(backstop_file)
         tstart = bs_cmds[0]['time']
         tstop = bs_cmds[-1]['time']
         return cls.from_commands(name, tstart, tstop, bs_cmds, T_init, dt=dt,
@@ -728,7 +713,8 @@ class ThermalModelRunner(ModelDataset):
 
     def make_power_plot(self, figfile=None, fig=None, use_ccd_count=False):
         """
-        Make a plot which shows the ACIS state power coefficients.
+        Make a plot which shows the ACIS state power coefficients, vs. either
+        FEP or CCD count.
 
         Parameters
         ----------
@@ -738,6 +724,9 @@ class ThermalModelRunner(ModelDataset):
         fig : :class:`~matplotlib.figure.Figure`, optional
             A Figure instance to plot in. Default: None, one will be
             created if not provided.
+        use_ccd_count : boolean, optional
+            If True, plot the CCD count on the x-axis. Primarily useful for the
+            1DEAMZT model. Default: False
         """
         plt.rc("font", size=18)
         plt.rc("axes", linewidth=2)
@@ -819,7 +808,7 @@ class SimulateSingleObs(ThermalModelRunner):
         and the values from the vehicle load will be used.
     simpos : float, optional
         The SIM position at which to run the model. Default: -99616.0
-    off_nominal_roll : float, optional
+    off_nom_roll : float, optional
         The off-nominal roll in degrees for the model. Default: 0.0
     dh_heater: integer, optional
         Flag to set whether (1) or not (0) the detector housing heater is on. 
@@ -837,11 +826,11 @@ class SimulateSingleObs(ThermalModelRunner):
     Examples
     --------
     >>> dea_run = SimulateSingleObs("1deamzt", "2016:201:05:12:03", "2016:201:05:12:03",
-    ...                             14.0, 150., ccd_count=5, off_nominal_roll=-6.0,
+    ...                             14.0, 150., ccd_count=5, off_nom_roll=-6.0,
     ...                             dh_heater=1)
     """
     def __init__(self, name, tstart, hours, T_init, pitch, ccd_count,
-                 vehicle_load=None, simpos=-99616.0, off_nominal_roll=0.0, 
+                 vehicle_load=None, simpos=-99616.0, off_nom_roll=0.0, 
                  dh_heater=0, fep_count=None, clocking=1, q=None, instrument=None,
                  model_spec=None, no_limit=False, no_earth_heat=False):
         if name in short_name_rev:
@@ -884,7 +873,7 @@ class SimulateSingleObs(ThermalModelRunner):
                       "tstop": np.array([tend]),
                       "hetg": np.array(["RETR"]),
                       "letg": np.array(["RETR"]),
-                      "off_nominal_roll": np.array([off_nominal_roll]),
+                      "off_nom_roll": np.array([off_nom_roll]),
                       "dh_heater": np.array([dh_heater], dtype='int')}
             # For the focal plane model we need a quaternion.
             if name == "fptemp_11":
@@ -895,7 +884,6 @@ class SimulateSingleObs(ThermalModelRunner):
                        "the %s vehicle loads." % vehicle_load)
             states = dict((k, state.value) for (k, state) in
                           States.from_load_page(vehicle_load).table.items())
-            states["off_nominal_roll"] = calc_off_nom_rolls(states)
             ecs_run_idxs = states["tstart"] < tstop
             states["ccd_count"][ecs_run_idxs] = ccd_count
             states["fep_count"][ecs_run_idxs] = fep_count
@@ -914,10 +902,10 @@ class SimulateSingleObs(ThermalModelRunner):
         mylog.info("FEP Count: %d" % fep_count)
         if vehicle_load is None:
             disp_pitch = pitch
-            disp_roll = off_nominal_roll
+            disp_roll = off_nom_roll
         else:
             pitches = states["pitch"][ecs_run_idxs]
-            rolls = states["off_nominal_roll"][ecs_run_idxs]
+            rolls = states["off_nom_roll"][ecs_run_idxs]
             disp_pitch = "Min: %g, Max: %g" % (pitches.min(), pitches.max())
             disp_roll = "Min: %g, Max: %g" % (rolls.min(), rolls.max())
         mylog.info("Pitch: %s" % disp_pitch)
@@ -1072,7 +1060,3 @@ class SimulateECSRun(SimulateSingleObs):
     """
     Class for simulating thermal models for ECS measurements.
     """
-
-
-class SimulateCTIRun(SimulateECSRun):
-    pass

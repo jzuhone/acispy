@@ -43,7 +43,7 @@ if args.maude:
     ds = acispy.MaudeData(args.tstart, args.tstop, msids)
 else:
     ds = acispy.EngArchiveData(args.tstart, args.tstop,
-                               msids, interpolate_msids=True,
+                               msids, stat='5min',
                                filter_bad=True)
 
 if x_field[0] == "states" and y_field[0] != "states":

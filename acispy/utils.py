@@ -86,7 +86,7 @@ default_states = ["ccd_count", "clocking", "ra", "dec", "dither", "fep_count",
                   "hetg", "letg", "obsid", "pcad_mode", "pitch", "power_cmd",
                   "roll", "si_mode", "simfa_pos", "simpos", "q1", "q2", "q3",
                   "q4", "trans_keys", "vid_board", "datestart", "datestop",
-                  "tstart", "tstop"]
+                  "off_nom_roll"]
 
 state_labels = {"ccd_count": "CCD Count",
                 "clocking": "Clocking",
@@ -108,9 +108,13 @@ state_labels = {"ccd_count": "CCD Count",
                 "q2": "q2",
                 "q3": "q3",
                 "q4": "q4",
+                "targ_q1": "target q1",
+                "targ_q2": "target q2",
+                "targ_q3": "target q3",
+                "targ_q4": "target q4",
                 "trans_keys": None,
                 "vid_board": 'Video Board',
-                "off_nominal_roll": "Off-Nominal Roll",
+                "off_nom_roll": "Off-Nominal Roll",
                 "tstart": "Start Time",
                 "tstop": "Stop Time",
                 "datestart": "Start Date",
@@ -194,10 +198,7 @@ def convert_state_code(ds, field):
     return np.array([ds.state_codes[field].get(val, -1) for val in ds[field]])
 
 
-if os.path.exists("/data/acis"):
-    lr_root = "/data/acis/LoadReviews"
-else:
-    lr_root = "/Users/jzuhone/acis/LoadReviews"
+lr_root = "/data/acis/LoadReviews"
 
 
 def find_load(load_name):
@@ -208,15 +209,6 @@ def find_load(load_name):
     if len(load_name) == 7:
         load_name = load_week + load_letter
     return load_name
-
-
-def find_state_keys(states):
-    state_keys = [state for state in states if state in default_states]
-    if len(state_keys) == 0:
-        state_keys = None
-    if "off_nominal_roll" in states:
-        state_keys += ["q1", "q2", "q3", "q4"]
-    return state_keys
 
 
 def plotdate2cxctime(dates):

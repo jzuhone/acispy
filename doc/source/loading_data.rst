@@ -27,13 +27,13 @@ of commanded states are also loaded.
     msids = ["1deamzt", "1dpamzt"]
     ds = EngArchiveData(tstart, tstop, msids)
 
-By default, the MSIDs are not at identical time values. You can enforce that
-the MSID data is interpolated to a common set of times by passing in the keyword
-argument ``interpolate_msids=True``:
+By default, the MSIDs are at identical time values of 328 s (or roughly 5 min). 
+You can change this to daily values by setting the ``stat`` keyword argument to 
+``"daily"`` or to the values at every time available by setting ``stat=None``:
 
 .. code-block:: python
 
-    ds = EngArchiveData(tstart, tstop, msids, interpolate_msids=True)
+    ds = EngArchiveData(tstart, tstop, msids, stat=None)
 
 Additional options are provided for filtering out bad data and choosing the
 time cadence for MSIDs; for details see the API doc entry for 

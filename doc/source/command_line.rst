@@ -112,7 +112,7 @@ Plot one MSID and two states in three different panels.
 
 .. code-block:: bash
 
-    [~]$ plot_10day_tl 1pdeaat,pitch,off_nominal_roll
+    [~]$ plot_10day_tl 1pdeaat,pitch,off_nom_roll
 
 Returns:
 
@@ -154,7 +154,7 @@ Example
 
 .. code-block:: bash
 
-    [~]$ plot_model MAR0716A 1dpamzt --y2_axis=off_nominal_roll
+    [~]$ plot_model MAR0716A 1dpamzt --y2_axis=off_nom_roll
     
 Returns:
 
@@ -200,7 +200,7 @@ Returns:
 .. code-block:: text
 
     usage: simulate_ecs_run [-h] [--vehicle_load VEHICLE_LOAD] [--simpos SIMPOS]
-                            [--off_nominal_roll OFF_NOMINAL_ROLL]
+                            [--off_nom_roll OFF_NOM_ROLL]
                             [--dh_heater DH_HEATER]
                             component tstart tstop T_init pitch ccd_count
 
@@ -223,7 +223,7 @@ Returns:
                             ignored and the values from the vehicle load will be
                             used.
       --simpos SIMPOS       The SIM position. Default: -99616.0
-      --off_nominal_roll OFF_NOMINAL_ROLL
+      --off_nom_roll OFF_NOM_ROLL
                             The off-nominal roll. Default: 0.0
       --dh_heater DH_HEATER
                             Is the DH heater on (1) or off (0)? Default: 0/off.
@@ -242,7 +242,7 @@ To run the 1DPAMZT model with the following conditions:
 
 .. code-block:: bash
 
-    [~]$ simulate_ecs_run dpa 2015:100:12:45:30 2015:101:12:45:30 10.0 150. 6 --off_nominal_roll 12.0
+    [~]$ simulate_ecs_run dpa 2015:100:12:45:30 2015:101:12:45:30 10.0 150. 6 --off_nom_roll 12.0
 
 Returns:
 
@@ -281,7 +281,7 @@ To run the 1DEAMZT model with the following conditions:
 
 .. code-block:: bash
 
-    [~]$ simulate_ecs_run dea 2017:069:15:40:00 2017:070:10:00:00 7.5 150. 4 --off_nominal_roll 0.0
+    [~]$ simulate_ecs_run dea 2017:069:15:40:00 2017:070:10:00:00 7.5 150. 4 --off_nom_roll 0.0
 
 Returns:
 

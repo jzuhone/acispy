@@ -131,6 +131,7 @@ class Dataset(object):
 
     def write_hdf5(self, filename, overwrite=True):
         import h5py
+        import os
         if os.path.exists(filename) and not overwrite:
             raise IOError("The file %s already exists and overwrite=False!!" % filename)
         f = h5py.File(filename, "w")
@@ -444,17 +445,17 @@ class EngArchiveData(Dataset):
         The stop time in YYYY:DOY:HH:MM:SS format
     msids : list of strings, optional
         List of MSIDs to pull from the engineering archive.
+    get_states : boolean, optional
+        Whether or not to retrieve commanded states from
+        kadi. Default: True
     filter_bad : boolean, optional
         Whether or not to filter out bad values of MSIDs. Default: False.
     stat : string, optional
-        return 5-minute or daily statistics ('5min' or 'daily') Default: '5min'
-        If ``interpolate_msids=True`` this setting is ignored.
-    interpolate_msids : boolean, optional
-        If True, MSIDs are interpolated to a common time sequence with uniform
-        timesteps of 328 seconds. Default: False
-    server : string, optional
-         DBI server or HDF5 file to grab states from. Default: None, which will
-         grab the states from the main commanded states database.
+        return 5-minute or daily statistics ('5min' or 'daily'), or 
+        None for raw data. Default: '5min'
+    state_keys : list of strings, optional
+        The states to pull from kadi. If not specified, a default set will
+        be pulled.
 
     Examples
     --------
@@ -465,15 +466,14 @@ class EngArchiveData(Dataset):
     >>> ds = EngArchiveData(tstart, tstop, msids)
     """
     def __init__(self, tstart, tstop, msids, get_states=True, 
-                 filter_bad=False, stat=None, interpolate_msids=False, 
-                 server=None):
+                 filter_bad=False, stat='5min', state_keys=None):
         tstart = get_time(tstart)
         tstop = get_time(tstop)
         msids = MSIDs.from_database(msids, tstart, tstop=tstop,
-                                    filter_bad=filter_bad, stat=stat,
-                                    interpolate=interpolate_msids)
+                                    filter_bad=filter_bad, stat=stat)
         if get_states:
-            states = States.from_database(tstart, tstop, server=server)
+            states = States.from_kadi_states(tstart, tstop, 
+                                             state_keys=state_keys)
         else:
             states = EmptyTimeSeries()
         model = EmptyTimeSeries()
@@ -492,18 +492,23 @@ class MaudeData(Dataset):
         The stop time in YYYY:DOY:HH:MM:SS format
     msids : list of strings, optional
         List of MSIDs to pull from the engineering archive.
+    get_states : boolean, optional
+        Whether or not to retrieve commanded states from
+        kadi. Default: True
     user : string, optional
         OCCWEB username to access the MAUDE database with. Default: None,
         which will use the username in the ${HOME}/.netrc file.
     password : string, optional
         OCCWEB password to access the MAUDE database with. Default: None,
         which will use the password in the ${HOME}/.netrc file.
-    server : string, optional
-        DBI server or HDF5 file to grab states from. Default: None, which will
-        grab the states from the main commanded states database.
+    state_keys : list of strings, optional
+        The states to pull from kadi. If not specified, a default set will
+        be pulled.
+
     """
-    def __init__(self, tstart, tstop, msids, user=None, password=None, 
-                 server=None, other_msids=None):
+    def __init__(self, tstart, tstop, msids, get_states=True, 
+                 user=None, password=None, other_msids=None, 
+                 state_keys=None):
         tstart = get_time(tstart)
         tstop = get_time(tstop)
         msids = MSIDs.from_maude(msids, tstart, tstop=tstop, user=user,
@@ -511,7 +516,11 @@ class MaudeData(Dataset):
         if other_msids is not None:
             msids2 = MSIDs.from_database(other_msids, tstart, tstop)
             msids = CombinedMSIDs([msids, msids2])
-        states = States.from_database(tstart, tstop, server=server)
+        if get_states:
+            states = States.from_kadi_states(tstart, tstop,
+                                             state_keys=state_keys)
+        else:
+            states = EmptyTimeSeries()
         model = EmptyTimeSeries()
         super(MaudeData, self).__init__(msids, states, model)
 
@@ -556,25 +565,31 @@ class TracelogData(Dataset):
     tend : string
         The stop time in YYYY:DOY:HH:MM:SS format.  Default: None, which
         will read from the beginning of the tracelog.
-    server : string, optional
-        DBI server or HDF5 file to grab states from. Default: None, which will
-        grab the states from the main commanded states database.
+    get_states : boolean, optional
+        Whether or not to retrieve commanded states from
+        kadi. Default: True
+    state_keys : list of strings, optional
+        The states to pull from kadi. If not specified, a default set will
+        be pulled.
 
     Examples
     --------
     >>> from acispy import TracelogData
     >>> ds = TracelogData("acisENG10d_00985114479.70.tl")
     """
-    def __init__(self, filenames, tbegin=None, tend=None, server=None,
-                 other_msids=None):
+    def __init__(self, filenames, tbegin=None, tend=None,
+                 other_msids=None, get_states=True, state_keys=None):
         msids = _parse_tracelogs(tbegin, tend, filenames, other_msids)
         tmin = 1.0e55
         tmax = -1.0e55
         for v in msids.values():
             tmin = min(v.times[0].value, tmin)
             tmax = max(v.times[-1].value, tmax)
-        states = States.from_database(secs2date(tmin), secs2date(tmax), 
-                                      server=server)
+        if get_states:
+            states = States.from_kadi_states(tmin, tmax,
+                                             state_keys=state_keys)
+        else:
+            states = EmptyTimeSeries()
         model = EmptyTimeSeries()
         super(TracelogData, self).__init__(msids, states, model)
 
@@ -592,15 +607,19 @@ class EngineeringTracelogData(TracelogData):
     tend : string
         The stop time in YYYY:DOY:HH:MM:SS format.  Default: None, which
         will read from the beginning of the tracelog.
-    server : string, optional
-        DBI server or HDF5 file to grab states from. Default: None, which will
-        grab the states from the main commanded states database.
+    get_states : boolean, optional
+        Whether or not to retrieve commanded states from
+        kadi. Default: True
+    state_keys : list of strings, optional
+        The states to pull from kadi. If not specified, a default set will
+        be pulled.
     """
-    def __init__(self, tbegin=None, tend=None, server=None, other_msids=None):
+    def __init__(self, tbegin=None, tend=None, other_msids=None, 
+                 get_states=True, state_keys=None):
         filename = "/data/acis/eng_plots/acis_eng_10day.tl"
-        super(EngineeringTracelogData, self).__init__(filename, tbegin=tbegin, tend=tend,
-                                                      server=server, 
-                                                      other_msids=other_msids)
+        super(EngineeringTracelogData, self).__init__(
+            filename, tbegin=tbegin, tend=tend, other_msids=other_msids,
+            get_states=get_states, state_keys=state_keys)
 
 
 class DEAHousekeepingTracelogData(TracelogData):
@@ -616,15 +635,19 @@ class DEAHousekeepingTracelogData(TracelogData):
     tend : string
         The stop time in YYYY:DOY:HH:MM:SS format.  Default: None, which
         will read from the beginning of the tracelog.
-    server : string, optional
-        DBI server or HDF5 file to grab states from. Default: None, which will
-        grab the states from the main commanded states database.
+    get_states : boolean, optional
+        Whether or not to retrieve commanded states from
+        kadi. Default: True
+    state_keys : list of strings, optional
+        The states to pull from kadi. If not specified, a default set will
+        be pulled.
     """
-    def __init__(self, tbegin=None, tend=None, server=None, other_msids=None):
+    def __init__(self, tbegin=None, tend=None, other_msids=None,
+                 get_states=True, state_keys=None):
         filename = "/data/acis/eng_plots/acis_dea_10day.tl"
-        super(DEAHousekeepingTracelogData, self).__init__(filename, tbegin=tbegin,
-                                                          tend=tend, server=server,
-                                                          other_msids=other_msids)
+        super(DEAHousekeepingTracelogData, self).__init__(
+            filename, tbegin=tbegin, tend=tend, other_msids=other_msids,
+            get_states=get_states, state_keys=state_keys)
 
 
 class TenDayTracelogData(TracelogData):
@@ -640,16 +663,20 @@ class TenDayTracelogData(TracelogData):
     tend : string
         The stop time in YYYY:DOY:HH:MM:SS format.  Default: None, which
         will read from the beginning of the tracelog.
-    server : string, optional
-        DBI server or HDF5 file to grab states from. Default: None, which will
-        grab the states from the main commanded states database.
+    get_states : boolean, optional
+        Whether or not to retrieve commanded states from
+        kadi. Default: True
+    state_keys : list of strings, optional
+        The states to pull from kadi. If not specified, a default set will
+        be pulled.
     """
-    def __init__(self, tbegin=None, tend=None, server=None, other_msids=None):
+    def __init__(self, tbegin=None, tend=None, other_msids=None,
+                 get_states=True, state_keys=None):
         filenames = ["/data/acis/eng_plots/acis_eng_10day.tl",
                      "/data/acis/eng_plots/acis_dea_10day.tl"]
-        super(TenDayTracelogData, self).__init__(filenames, tbegin=tbegin,
-                                                 tend=tend, server=server,
-                                                 other_msids=other_msids)
+        super(TenDayTracelogData, self).__init__(
+            filenames, tbegin=tbegin, tend=tend, other_msids=other_msids,
+            get_states=get_states, state_keys=state_keys)
 
 
 class TelemData(Dataset):
@@ -673,24 +700,24 @@ class TelemData(Dataset):
     filter_bad : boolean, optional
         Whether or not to filter out bad values of MSIDs. Default: False.
     stat : string, optional
-        return 5-minute or daily statistics ('5min' or 'daily') Default: '5min'
-        If ``interpolate_msids=True`` this setting is ignored.
-    interpolate_msids : boolean, optional
-        If True, MSIDs are interpolated to a common time sequence with uniform
-        timesteps of 328 seconds. Default: False
+        return 5-minute or daily statistics ('5min' or 'daily'), or 
+        None for raw data. Default: '5min'
     user : string, optional
         OCCWEB username to access the MAUDE database with. Default: None,
         which will use the username in the ${HOME}/.netrc file.
     password : string, optional
         OCCWEB password to access the MAUDE database with. Default: None,
         which will use the password in the ${HOME}/.netrc file.
-    server : string, optional
-        DBI server or HDF5 file to grab states from. Default: None, which will
-        grab the states from the main commanded states database.
+    get_states : boolean, optional
+        Whether or not to retrieve commanded states from
+        kadi. Default: True
+    state_keys : list of strings, optional
+        The states to pull from kadi. If not specified, a default set will
+        be pulled.
     """
-    def __init__(self, tstart, tstop, msids, recent_source="tracelog",
-                 filter_bad=False, stat=None, interpolate_msids=False,
-                 user=None, password=None, server=None):
+    def __init__(self, tstart, tstop, msids, recent_source="maude",
+                 filter_bad=False, stat='5min', user=None, password=None, 
+                 get_states=True, state_keys=None):
         msids = ensure_list(msids)
         tstart = get_time(tstart, fmt='secs')
         tstop = get_time(tstop, fmt='secs')
@@ -701,8 +728,7 @@ class TelemData(Dataset):
         tmid = get_time(tmid, fmt='secs')
         if tmid < tstop:
             msids1 = MSIDs.from_database(msids, tstart, tstop=tmid,
-                                         filter_bad=filter_bad, stat=stat,
-                                         interpolate=interpolate_msids)
+                                         filter_bad=filter_bad, stat=stat)
             if recent_source == "maude":
                 msids2 = MSIDs.from_maude(msids, tmid, tstop=tstop, user=user,
                                           password=password)
@@ -714,8 +740,11 @@ class TelemData(Dataset):
             msids = ConcatenatedMSIDs(msids1, msids2)
         else:
             msids = MSIDs.from_database(msids, tstart, tstop=tstop,
-                                        filter_bad=filter_bad, stat=stat,
-                                        interpolate=interpolate_msids)
-        states = States.from_database(tstart, tstop, server=server)
+                                        filter_bad=filter_bad, stat=stat)
+        if get_states:
+            states = States.from_kadi_states(tstart, tstop,
+                                             state_keys=state_keys)
+        else:
+            states = EmptyTimeSeries()
         model = EmptyTimeSeries()
         super(TelemData, self).__init__(msids, states, model)
