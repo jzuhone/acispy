@@ -1,6 +1,6 @@
-from ._version import get_versions
-__version__ = get_versions()['version']
-del get_versions
+import ska_helpers
+
+__version__ = ska_helpers.get_version(__package__)
 
 from acispy.dataset import EngArchiveData, \
     TracelogData, EngineeringTracelogData, \
