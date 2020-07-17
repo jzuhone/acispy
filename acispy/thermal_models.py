@@ -584,7 +584,8 @@ class ThermalModelRunner(ModelDataset):
             for st in ('ccd_count', 'fep_count', 'vid_board', 'clocking'):
                 model.comp[st].set_data(np.array(states[st]), state_times)
             if 'dh_heater' in model.comp:
-                model.comp['dh_heater'].set_data(states.get("dh_heater", 0), state_times)
+                dhh = states["dh_heater"] if "dh_heater" in state_names else 0
+                model.comp['dh_heater'].set_data(dhh, state_times)
             if "off_nom_roll" in state_names:
                 roll = np.array(states["off_nom_roll"])
                 model.comp["roll"].set_data(roll, state_times)

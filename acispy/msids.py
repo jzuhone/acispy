@@ -9,6 +9,7 @@ from acispy.time_series import TimeSeriesData
 from Chandra.Time import date2secs, DateTime
 import Ska.Numpy
 from acispy.fields import builtin_deps
+from astropy.table import Table
 
 
 def check_depends(msids):
@@ -85,8 +86,8 @@ class MSIDs(TimeSeriesData):
             year = "#YEAR"
         else:
             year = "YEAR"
-        data = ascii.read(filename, guess=False, format='csv',
-                          delimiter=delimiter)
+        data = Table(ascii.read(filename, guess=False, format='csv',
+                                delimiter=delimiter), masked=True)
         mins, hours = np.modf(data["SEC"].data/3600.)
         secs, mins = np.modf(mins*60.)
         secs *= 60.0
