@@ -1038,7 +1038,7 @@ class MultiDatePlot(object):
 
 class HistogramPlot(ACISPlot):
     def __init__(self, ds, field, bins=None, range=None, tstart=None,
-                 tstop=None, cumulative=False, normed=False,
+                 tstop=None, cumulative=False, density=None,
                  figsize=(12, 12), fontsize=18, plot=None, **kwargs):
         self.field = ds._determine_field(field)
         self.xlabel = ds.fields[self.field].display_name
@@ -1052,7 +1052,7 @@ class HistogramPlot(ACISPlot):
         else:
             fig = plot.fig
             ax = plot.ax
-        super(HistogramPlot, self).__init__(fig, ax)
+        super(HistogramPlot, self).__init__(fig, ax, [])
 
         if self.field[0] == "states":
             self.weights = (ds.states["tstop"][slc] -
@@ -1065,7 +1065,7 @@ class HistogramPlot(ACISPlot):
                                                     weights[-1]]), "ks")
 
         hist, bins, patches = self.ax.hist(self.xx.value, bins=bins,
-                                           range=range, normed=normed,
+                                           range=range, density=density,
                                            cumulative=cumulative,
                                            weights=self.weights.value, **kwargs)
 
@@ -1073,9 +1073,9 @@ class HistogramPlot(ACISPlot):
         self.bins = bins
         self.patches = patches
 
-        self._annotate_plot(fontsize, normed, cumulative)
+        self._annotate_plot(fontsize, density, cumulative)
 
-    def _annotate_plot(self, fontsize, normed, cumulative):
+    def _annotate_plot(self, fontsize, density, cumulative):
         fontProperties = font_manager.FontProperties(size=fontsize)
         for label in self.ax.get_xticklabels():
             label.set_fontproperties(fontProperties)
@@ -1084,7 +1084,7 @@ class HistogramPlot(ACISPlot):
         if self.unit != '':
             self.xlabel += ' (%s)' % unit_labels.get(self.unit, self.unit)
         self.ax.set_xlabel(self.xlabel, fontsize=18)
-        if normed:
+        if density:
             self.ylabel = "Fraction of Time"
         else:
             if cumulative:
