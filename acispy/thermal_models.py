@@ -182,7 +182,7 @@ class ModelDataset(Dataset):
                 comps.remove("earth_solid_angle")
             comps.append("ccsdstmf")
             msids = MSIDs.from_database(comps, tstart, tstop=tstop, filter_bad=True,
-                                        interpolate=True, interpolate_times=times)
+                                        interpolate='nearest', interpolate_times=times)
             if msids[comps[0]].times.size != times.size:
                 raise RuntimeError("Lengths of time arrays for model data and MSIDs "
                                    "do not match. You probably ran a model past the "
