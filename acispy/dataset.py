@@ -2,7 +2,6 @@ from acispy.msids import MSIDs, CombinedMSIDs, ConcatenatedMSIDs
 from acispy.states import States, cmd_state_codes
 from acispy.model import Model
 from acispy.units import APQuantity, APStringArray
-from Chandra.Time import secs2date
 from acispy.fields import create_builtin_derived_msids, \
     DerivedField, FieldContainer, OutputFieldFunction, \
     OutputFieldsNotFound, create_builtin_derived_states
@@ -456,6 +455,15 @@ class EngArchiveData(Dataset):
     state_keys : list of strings, optional
         The states to pull from kadi. If not specified, a default set will
         be pulled.
+    interpolate : string, optional
+        Whether or not to interpolate to a common set of times, either
+        "nearest" or "linear" interpolation. If the *interpolate_times* 
+        argument is not set, then the default is to interpolate at 328
+        second intervals. Default: None, indicating no interpolation. 
+    interpolate_times : array_like of times, optional
+        An array-like object of times to interpolate the MSID data
+        to. Default: None, which means that if *interpolate* is not
+        None the MSIDs will be interpolated at 328 second intervals.
 
     Examples
     --------
@@ -466,11 +474,14 @@ class EngArchiveData(Dataset):
     >>> ds = EngArchiveData(tstart, tstop, msids)
     """
     def __init__(self, tstart, tstop, msids, get_states=True, 
-                 filter_bad=False, stat='5min', state_keys=None):
+                 filter_bad=False, stat='5min', state_keys=None, 
+                 interpolate=None, interpolate_times=None):
         tstart = get_time(tstart)
         tstop = get_time(tstop)
         msids = MSIDs.from_database(msids, tstart, tstop=tstop,
-                                    filter_bad=filter_bad, stat=stat)
+                                    filter_bad=filter_bad, stat=stat,
+                                    interpolate=interpolate,
+                                    interpolate_times=interpolate_times)
         if get_states:
             states = States.from_kadi_states(tstart, tstop, 
                                              state_keys=state_keys)

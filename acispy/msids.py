@@ -167,7 +167,7 @@ class MSIDs(TimeSeriesData):
 
     @classmethod
     def from_database(cls, msids, tstart, tstop=None, filter_bad=False,
-                      stat='5min', interpolate=False, interpolate_times=None):
+                      stat='5min', interpolate=None, interpolate_times=None):
         tstart = get_time(tstart)
         tstop = get_time(tstop)
         msids = ensure_list(msids)
@@ -179,21 +179,24 @@ class MSIDs(TimeSeriesData):
         times = {}
         state_codes = {}
         masks = {}
-        if interpolate and interpolate_times is None:
-            # Get the nominal tstart / tstop range
-            max_fetch_tstart = max(msid.times[0] for msid in data.values())
-            min_fetch_tstop = min(msid.times[-1] for msid in data.values())
-            dt = 328.0
-            start = DateTime(tstart).secs if tstart else data.tstart
-            stop = DateTime(tstop).secs if tstop else data.tstop
-            start = max(start, max_fetch_tstart)
-            stop = min(stop, min_fetch_tstop)
-            interpolate_times = np.arange((stop - start) // dt + 1) * dt + start
+        if interpolate is not None:
+            if interpolate_times is None:
+                # Get the nominal tstart / tstop range
+                max_fetch_tstart = max(msid.times[0] for msid in data.values())
+                min_fetch_tstop = min(msid.times[-1] for msid in data.values())
+                dt = 328.0
+                start = DateTime(tstart).secs if tstart else data.tstart
+                stop = DateTime(tstop).secs if tstop else data.tstop
+                start = max(start, max_fetch_tstart)
+                stop = min(stop, min_fetch_tstop)
+                interpolate_times = np.arange((stop - start) // dt + 1) * dt + start
+            else:
+                interpolate_times = DateTime(interpolate_times).secs
         for k, msid in data.items():
-            if interpolate:
+            if interpolate is not None:
                 indexes = Ska.Numpy.interpolate(np.arange(len(msid.times)),
                                                 msid.times, interpolate_times,
-                                                method='nearest', sorted=True)
+                                                method=interpolate, sorted=True)
                 times[k.lower()] = interpolate_times
             else:
                 indexes = slice(None, None, None)
