@@ -38,11 +38,13 @@ unit_labels = {"V": 'V',
 
 
 class ACISPlot(object):
-    def __init__(self, fig, ax, lines):
+    def __init__(self, fig, ax, lines, ax2, lines2):
         self.fig = fig
         self.ax = ax
         self.legend = None
         self.lines = lines
+        self.ax2 = ax2
+        self.lines2 = lines2
 
     def _repr_png_(self):
         canvas = FigureCanvasAgg(self.fig)
@@ -172,6 +174,8 @@ class ACISPlot(object):
 
 
 def get_figure(plot, fig, subplot, figsize):
+    ax2 = None
+    lines2 = []
     if plot is None:
         if fig is None:
             fig = plt.figure(figsize=figsize)
@@ -188,7 +192,10 @@ def get_figure(plot, fig, subplot, figsize):
         else:
             ax = fig.add_subplot(subplot)
         lines = plot.lines
-    return fig, ax, lines
+        if hasattr(plot, "ax2"):
+            ax2 = plot.ax2
+            lines2 = plot.lines2
+    return fig, ax, lines, ax2, lines2
 
 
 class CustomDatePlot(ACISPlot):
@@ -216,7 +223,7 @@ class CustomDatePlot(ACISPlot):
     def __init__(self, dates, values, fmt='-b', lw=2, fontsize=18, ls='-',
                  figsize=(10, 8), color=None, plot=None, fig=None, 
                  subplot=None, **kwargs):
-        fig, ax, lines = get_figure(plot, fig, subplot, figsize)
+        fig, ax, lines, ax2, lines2 = get_figure(plot, fig, subplot, figsize)
         dates = np.asarray(dates)
         if dates.dtype.char in ['S', 'U']:
             dates = date2secs(dates)
@@ -231,7 +238,7 @@ class CustomDatePlot(ACISPlot):
             color = "C{}".format(len(lines))
         ticklocs, fig, ax = plot_cxctime(x, y, fmt=fmt, fig=fig, ax=ax, 
                                          lw=lw, ls=ls, color=color, **kwargs)
-        super(CustomDatePlot, self).__init__(fig, ax, lines)
+        super(CustomDatePlot, self).__init__(fig, ax, lines, ax2, lines2)
         self.lines.append(ax.lines[-1])
         self.ax.set_xlabel("Date", fontdict={"size": fontsize})
         fontProperties = font_manager.FontProperties(size=fontsize)
@@ -621,8 +628,8 @@ class DatePlot(CustomDatePlot):
                  ls2='-', lw2=2, fontsize=18, color=None, color2='magenta',
                  figsize=(10, 8), plot=None, fig=None, subplot=None,
                  plot_bad=False):
-        fig, ax, lines = get_figure(plot, fig, subplot, figsize)
-        super(CustomDatePlot, self).__init__(fig, ax, lines)
+        fig, ax, lines, ax2, lines2 = get_figure(plot, fig, subplot, figsize)
+        super(CustomDatePlot, self).__init__(fig, ax, lines, ax2, lines2)
         fields = ensure_list(fields)
         lw = ensure_list(lw)
         self.num_fields = len(fields)
@@ -709,12 +716,10 @@ class DatePlot(CustomDatePlot):
             field2 = ds._determine_field(field2)
             self.field2 = field2
             src_name2, fd2 = field2
-            if plot is None or not hasattr(plot, "ax2"):
+            if self.ax2 is None:
                 self.ax2 = self.ax.twinx()
                 self.ax2.set_zorder(-10)
                 self.ax.patch.set_visible(False)
-            else:
-                self.ax2 = plot.ax2
             drawstyle = drawstyles.get(fd2, None)
             state_codes = ds.state_codes.get(field2, None)
             if not plot_bad:
@@ -735,6 +740,7 @@ class DatePlot(CustomDatePlot):
             plot_cxctime(x2, y2, fig=fig, ax=self.ax2, ls=ls2,
                          lw=lw2, drawstyle=drawstyle, color=color2,
                          state_codes=state_codes)
+            self.lines2.append(self.ax2.lines[-1])
             self.times[field2] = ds[field2][mask2].times
             self.y[field2] = ds[field2][mask2]
             for label in self.ax2.get_xticklabels():
@@ -1052,7 +1058,7 @@ class HistogramPlot(ACISPlot):
         else:
             fig = plot.fig
             ax = plot.ax
-        super(HistogramPlot, self).__init__(fig, ax, [])
+        super(HistogramPlot, self).__init__(fig, ax, [], None, [])
 
         if self.field[0] == "states":
             self.weights = (ds.states["tstop"][slc] -
@@ -1114,7 +1120,7 @@ class PhasePlot(ACISPlot):
 
         self.ds = ds
 
-        super(PhasePlot, self).__init__(fig, ax, [])
+        super(PhasePlot, self).__init__(fig, ax, [], None, [])
 
     def _annotate_plot(self, fontsize):
         fontProperties = font_manager.FontProperties(size=fontsize)
