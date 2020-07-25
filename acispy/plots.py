@@ -274,7 +274,7 @@ class CustomDatePlot(ACISPlot):
         """
         if dates.dtype.char in ['S', 'U']:
             dates = date2secs(dates)
-        if not hasattr(self, "ax2"):
+        if self.ax2 is None:
             self.ax2 = self.ax.twinx()
             self.ax2.set_zorder(-10)
             self.ax.patch.set_visible(False)
