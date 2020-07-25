@@ -181,12 +181,14 @@ class ModelDataset(Dataset):
             if "earth_solid_angle" in comps:
                 comps.remove("earth_solid_angle")
             comps.append("ccsdstmf")
+            tlast = 1.0e99
+            for comp in comps:
+                tlast = min(fetch.get_time_range(comp, format='secs')[1], tlast)
+            if tstop > tlast:
+                raise RuntimeError("The model extends past the the last date in the "
+                                   "engineering archive. Please set get_msids=False.")
             msids = MSIDs.from_database(comps, tstart, tstop=tstop, filter_bad=True,
                                         interpolate='nearest', interpolate_times=times)
-            if msids[comps[0]].times.size != times.size:
-                raise RuntimeError("Lengths of time arrays for model data and MSIDs "
-                                   "do not match. You probably ran a model past the "
-                                   "end date in the engineering archive!")
         return msids
 
     def make_dashboard_plots(self, msid, tstart=None, tstop=None, yplotlimits=None,
@@ -423,7 +425,7 @@ class ThermalModelRunner(ModelDataset):
     ...                                T_init=10.1)
     """
     def __init__(self, name, tstart, tstop, states=None, T_init=None,
-                 get_msids=True, dt=328.0, model_spec=None,
+                 get_msids=False, dt=328.0, model_spec=None,
                  mask_bad_times=False, ephem_file=None, evolve_method=None,
                  rk4=None, tl_file=None, no_eclipse=False, compute_model=None):
 
@@ -464,7 +466,13 @@ class ThermalModelRunner(ModelDataset):
             states_obj = EmptyTimeSeries()
 
         if T_init is None:
-            T_init = fetch.MSID(self.name, tstart_secs-700., tstart_secs+700.).vals.mean()
+            last_tlm_date = fetch.get_time_range(self.name, format='secs')[1]
+            if tstart_secs+700.0 > last_tlm_date:
+                raise RuntimeError("T_init=None, but the start time of {tstart} "
+                                   "is ahead of the last time in telemetry. "
+                                   "Please specify T_init or choose a different "
+                                   "time.")
+            T_init = fetch.MSID(self.name, tstart_secs-700., tstart_secs).vals[-1]
 
         if compute_model is not None:
             self.xija_model = compute_model(self.name, tstart, tstop, states,
@@ -606,7 +614,7 @@ class ThermalModelRunner(ModelDataset):
     @classmethod
     def from_states_file(cls, name, states_file, T_init,
                          dt=328.0, model_spec=None, mask_bad_times=False, 
-                         ephem_file=None, get_msids=True, no_eclipse=False):
+                         ephem_file=None, get_msids=False, no_eclipse=False):
         """
         Run a xija thermal model using a states.dat file. 
 
@@ -634,7 +642,7 @@ class ThermalModelRunner(ModelDataset):
                    ephem_file=ephem_file, get_msids=get_msids, no_eclipse=no_eclipse)
 
     @classmethod
-    def from_database(cls, name, tstart, tstop, T_init, server=None, get_msids=True,
+    def from_database(cls, name, tstart, tstop, T_init, server=None, get_msids=False,
                       dt=328.0, model_spec=None, mask_bad_times=False,
                       ephem_file=None, no_eclipse=False, compute_model=None):
         states = States.from_database(tstart, tstop, server=server)
@@ -644,7 +652,7 @@ class ThermalModelRunner(ModelDataset):
                    no_eclipse=no_eclipse, compute_model=compute_model)
 
     @classmethod
-    def from_commands(cls, name, tstart, tstop, cmds, T_init, get_msids=True,
+    def from_commands(cls, name, tstart, tstop, cmds, T_init, get_msids=False,
                       dt=328.0, model_spec=None, mask_bad_times=False, 
                       ephem_file=None, no_eclipse=False, compute_model=None):
         tstart = get_time(tstart)
@@ -656,7 +664,7 @@ class ThermalModelRunner(ModelDataset):
                    compute_model=compute_model)
 
     @classmethod
-    def from_kadi(cls, name, tstart, tstop, T_init, get_msids=True, dt=328.0,
+    def from_kadi(cls, name, tstart, tstop, T_init, get_msids=False, dt=328.0,
                   model_spec=None, mask_bad_times=False, ephem_file=None,
                   no_eclipse=False, compute_model=None):
         tstart = get_time(tstart)
@@ -669,7 +677,7 @@ class ThermalModelRunner(ModelDataset):
 
     @classmethod
     def from_backstop(cls, name, backstop_file, T_init, model_spec=None, dt=328.0,
-                      mask_bad_times=False, ephem_file=None, get_msids=True,
+                      mask_bad_times=False, ephem_file=None, get_msids=False,
                       no_eclipse=False, compute_model=None):
         import parse_cm
         bs_cmds = parse_cm.read_backstop_as_list(backstop_file)
