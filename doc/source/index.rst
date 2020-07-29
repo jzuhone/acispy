@@ -18,7 +18,6 @@ Contents:
    derived_fields
    thermal_models
    load_review
-   command_line
    api/index
 
 Indices and tables
