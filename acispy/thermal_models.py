@@ -384,7 +384,7 @@ class ThermalModelRunner(ModelDataset):
     Parameters
     ----------
     name : string
-        The name of the model to simulate. Can be "dea", "dpa", "psmc", or "fep1_mong".
+        The name or MSID of the model to simulate, e.g. "1dpamzt" or "dpa"
     tstart : string
         The start time in YYYY:DOY:HH:MM:SS format.
     tstop : string
@@ -398,6 +398,9 @@ class ThermalModelRunner(ModelDataset):
         The initial temperature for the thermal model run. If None,
         an initial temperature will be determined from telemetry.
         Default: None
+    get_msids : boolean, optional
+        Whether or not to pull data from the engineering archive. 
+        Default: False
     dt : float, optional
         The timestep to use for this run. Default is 328 seconds or is provided
         by the model specification file.
@@ -600,6 +603,8 @@ class ThermalModelRunner(ModelDataset):
         if 'dpa_power' in model.comp:
             # This is just a hack, we're not
             # really setting the power to zero.
+            # But this value has no effect on 
+            # model evolution. 
             model.comp['dpa_power'].set_data(0.0)
         model.comp[name].set_data(T_init)
         if no_eclipse:
@@ -621,7 +626,7 @@ class ThermalModelRunner(ModelDataset):
         Parameters
         ----------
         name : string
-            The name of the model to simulate. Can be "dea", "dpa", "psmc", or "fep1mong".
+            The name or MSID of the model to simulate, e.g. "1dpamzt" or "dpa"
         states_file : string
             A file containing commanded states, in the same format as "states.dat" which is
             outputted by ACIS thermal model runs for loads.
@@ -664,9 +669,35 @@ class ThermalModelRunner(ModelDataset):
                    compute_model=compute_model)
 
     @classmethod
-    def from_kadi(cls, name, tstart, tstop, T_init, get_msids=False, dt=328.0,
+    def from_kadi(cls, name, tstart, tstop, T_init=None, get_msids=False, dt=328.0,
                   model_spec=None, mask_bad_times=False, ephem_file=None,
                   no_eclipse=False, compute_model=None):
+        """
+        Parameters
+        ----------
+        name : string
+            The name or MSID of the model to simulate, e.g. "1dpamzt" or "dpa"
+        tstart : string
+            The start time in YYYY:DOY:HH:MM:SS format.
+        tstop : string
+            The stop time in YYYY:DOY:HH:MM:SS format.
+        T_init : float, optional
+            The initial temperature for the thermal model run. If None,
+            an initial temperature will be determined from telemetry, if possible.
+            Default: None
+        get_msids : boolean, optional
+            Whether or not to pull data from the engineering archive. 
+            Default: False
+        dt : float, optional
+            The timestep to use for this run. Default is 328 seconds or is provided
+            by the model specification file.
+        model_spec : string, optional
+            Path to the model spec JSON file for the model. Default: None, the 
+            standard model path will be used.
+        mask_bad_times : boolean, optional
+            If set, bad times from the data are included in the array masks
+            and plots. Default: False
+        """
         tstart = get_time(tstart)
         tstop = get_time(tstop)
         states = States.from_kadi_states(tstart, tstop)
