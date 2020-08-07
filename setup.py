@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 from setuptools import setup
-import glob
-
-scripts = glob.glob("scripts/*")
 
 setup(name='acispy',
       packages=['acispy'],
@@ -13,7 +10,6 @@ setup(name='acispy',
       author_email='john.zuhone@cfa.harvard.edu',
       url='http://github.com/acisops/acispy',
       install_requires=["numpy>=1.12.1","requests","astropy"],
-      scripts=scripts,
       classifiers=[
           'Intended Audience :: Science/Research',
           'Operating System :: OS Independent',

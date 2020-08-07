@@ -3,13 +3,6 @@
 Activating ACISpy
 =================
 
-.. warning::
-
-    ACISpy and the Ska environment associated with it are currently not 
-    approved for flight, and only the official, flight-approved Ska 
-    environment and its associated packages should be used for conducting
-    load reviews, etc.
-
 On the HEAD LAN, ACISpy is installed into the ACIS Ops Ska Python stack. 
 If you are logged on as ``acisdude``, all you need to do is issue the 
 command ``acisska`` and this Python stack and ACISpy will be loaded into 
@@ -39,5 +32,5 @@ variant of it, add this alias to your ``.cshrc.user``:
 .. warning::
 
     ACISpy should be used in a "clean" terminal window where you are not trying
-    to do anything else (i.e., load reviews, SACGS) as setting up the Ska3 
+    to do anything else (i.e., load reviews, SACGS) as setting up the ska
     environment messes with environment variables and paths. 
