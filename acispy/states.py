@@ -79,13 +79,13 @@ class States(TimeSeriesData):
         return cls(t)
 
     @classmethod
-    def from_database(cls, tstart, tstop, state_keys=None, server=None):
+    def from_database(cls, tstart, tstop, state_keys=None):
         from Chandra.cmd_states import fetch_states
         tstart = get_time(tstart)
         tstop = get_time(tstop)
         if state_keys is not None:
             state_keys = ensure_list(state_keys)
-        t = fetch_states(tstart, tstop, vals=state_keys, server=server)
+        t = fetch_states(tstart, tstop, vals=state_keys)
         return cls(t)
 
     @classmethod
