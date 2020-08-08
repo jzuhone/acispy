@@ -410,10 +410,26 @@ class ThermalModelRunner(ModelDataset):
     mask_bad_times : boolean, optional
         If set, bad times from the data are included in the array masks
         and plots. Default: False
-    server : string 
-         DBI server or HDF5 file. Only used if the commanded states database
-         is used. Default: None
-
+    ephem_file : string, optional
+        An AstroPy ASCII table containing a custom ephemeris. Must have
+        the following columns:
+        times: CXC seconds
+        orbitephem0_x: Chandra orbit ephemeris x-component in units of m
+        orbitephem0_y: Chandra orbit ephemeris y-component in units of m
+        orbitephem0_z: Chandra orbit ephemeris z-component in units of m
+        solarephem0_x: Solar orbit ephemeris x-component in units of m
+        solarephem0_y: Solar orbit ephemeris y-component in units of m
+        solarephem0_z: Solar orbit ephemeris z-component in units of m
+        Default : None, which means the ephemeris will be taken from the
+        cheta archive. 
+    evolve_method : integer, optional
+        Whether to use the old xija core solver (1) or the new one (2).
+        Default: None, which defaults to the value in the model spec
+        file.
+    rk4 : integer, optional
+        Whether to use 4th-order Runge-Kutta (1) instead of 2nd order (0). 
+        Only works with evolve_method=2. Default: None, which defaults 
+        to the value in the model spec file.
     Examples
     --------
     >>> states = {"ccd_count": np.array([5,6,1]),
@@ -428,9 +444,9 @@ class ThermalModelRunner(ModelDataset):
     ...                                T_init=10.1)
     """
     def __init__(self, name, tstart, tstop, states=None, T_init=None,
-                 get_msids=False, dt=328.0, model_spec=None,
+                 other_init=None, get_msids=False, dt=328.0, model_spec=None,
                  mask_bad_times=False, ephem_file=None, evolve_method=None,
-                 rk4=None, tl_file=None, no_eclipse=False, compute_model=None):
+                 rk4=None, tl_file=None, no_eclipse=False, compute_model_supp=None):
 
         self.name = name.lower()
         self.sname = short_name[name]
@@ -443,6 +459,8 @@ class ThermalModelRunner(ModelDataset):
 
         self.ephem_file = ephem_file
  
+        self.compute_model_supp = compute_model_supp
+
         tstart = get_time(tstart)
         tstop = get_time(tstop)
 
@@ -477,16 +495,15 @@ class ThermalModelRunner(ModelDataset):
                                    "time.")
             T_init = fetch.MSID(self.name, tstart_secs-700., tstart_secs).vals[-1]
 
-        if compute_model is not None:
-            self.xija_model = compute_model(self.name, tstart, tstop, states,
-                                            dt, T_init, model_spec, evolve_method, rk4)
-        elif self.name in short_name and states is not None:
+        if self.name in short_name and states is not None:
             self.xija_model = self._compute_acis_model(self.name, tstart, tstop,
-                                                       states, dt, T_init, rk4=rk4,
+                                                       states, dt, T_init, 
+                                                       rk4=rk4, other_init=other_init,
                                                        no_eclipse=no_eclipse,
                                                        evolve_method=evolve_method)
         else:
             self.xija_model = self._compute_model(name, tstart, tstop, dt, T_init,
+                                                  other_init=other_init,
                                                   evolve_method=evolve_method, 
                                                   rk4=rk4)
 
@@ -538,7 +555,7 @@ class ThermalModelRunner(ModelDataset):
         return ephem
 
     def _compute_model(self, name, tstart, tstop, dt, T_init,
-                       evolve_method=None, rk4=None):
+                       other_init=None, evolve_method=None, rk4=None):
         if name == "fptemp_11":
             name = "fptemp"
         model = xija.XijaModel(name, start=tstart, stop=tstop, dt=dt,
@@ -548,15 +565,20 @@ class ThermalModelRunner(ModelDataset):
         for t in ["dea0", "dpa0"]:
             if t in model.comp:
                 model.comp[t].set_data(T_init)
+        if other_init is not None:
+            for k, v in other_init.items():
+                model.comp[k] = v
+        if self.compute_model_supp is not None:
+            self.compute_model_supp(name, tstart, tstop, model)
         model.make()
         model.calc()
         return model
 
     def _compute_acis_model(self, name, tstart, tstop, states, dt, T_init,
-                            no_eclipse=False, evolve_method=None, rk4=None):
+                            other_init=None, no_eclipse=False, 
+                            evolve_method=None, rk4=None):
         import re
         from acis_thermal_check import calc_pitch_roll
-        pattern = re.compile("q[1-4]")
         check_obj = getattr(self.model_check, model_classes[self.sname])()
         if name == "fptemp_11":
             name = "fptemp"
@@ -571,6 +593,7 @@ class ThermalModelRunner(ModelDataset):
             if 'aoattqt1' in model.comp:
                 state_names += ["q1", "q2", "q3", "q4"]
             states = {}
+            pattern = re.compile("q[1-4]")
             for n in state_names:
                 nstate = n
                 ncomp = n
@@ -603,8 +626,8 @@ class ThermalModelRunner(ModelDataset):
         if 'dpa_power' in model.comp:
             # This is just a hack, we're not
             # really setting the power to zero.
-            # But this value has no effect on 
-            # model evolution. 
+            # But this value has no effect on
+            # model evolution.
             model.comp['dpa_power'].set_data(0.0)
         model.comp[name].set_data(T_init)
         if no_eclipse:
@@ -612,16 +635,19 @@ class ThermalModelRunner(ModelDataset):
         check_obj._calc_model_supp(model, state_times, states, ephem, None)
         if self.name == "fptemp_11" and self.no_earth_heat:
             model.comp["earthheat__fptemp"].k = 0.0
+        if other_init is not None:
+            for k, v in other_init.items():
+                model.comp[k] = v
+        if self.compute_model_supp is not None:
+            self.compute_model_supp(name, tstart, tstop, model)
         model.make()
         model.calc()
         return model
 
     @classmethod
-    def from_states_file(cls, name, states_file, T_init,
-                         dt=328.0, model_spec=None, mask_bad_times=False, 
-                         ephem_file=None, get_msids=False, no_eclipse=False):
+    def from_states_file(cls, name, states_file, **kwargs):
         """
-        Run a xija thermal model using a states.dat file. 
+        Run a xija thermal model using a states.dat file.
 
         Parameters
         ----------
@@ -630,49 +656,22 @@ class ThermalModelRunner(ModelDataset):
         states_file : string
             A file containing commanded states, in the same format as "states.dat" which is
             outputted by ACIS thermal model runs for loads.
-        T_init : float
-            The starting temperature for the model in degrees C.
-        model_spec : string, optional
-            Path to the model spec JSON file for the model. Default: None, the
-            standard model path will be used.
-        mask_bad_times : boolean, optional
-            If set, bad times from the data are included in the array masks
-            and plots. Default: False
+
+        All other keyword arguments which are passed to the main
+        :class:`~acispy.thermal_models.ThermalModelRunner`
+        constructor can be passed to this method as well. 
         """
         states = States.from_load_file(states_file)
         tstart = get_time(states['tstart'].value[0])
         tstop = get_time(states['tstop'].value[-1])
-        return cls(name, tstart, tstop, states=states, T_init=T_init,
-                   dt=dt, model_spec=model_spec, mask_bad_times=mask_bad_times,
-                   ephem_file=ephem_file, get_msids=get_msids, no_eclipse=no_eclipse)
+        return cls(name, tstart, tstop, states=states, **kwargs)
 
     @classmethod
-    def from_database(cls, name, tstart, tstop, T_init, server=None, get_msids=False,
-                      dt=328.0, model_spec=None, mask_bad_times=False,
-                      ephem_file=None, no_eclipse=False, compute_model=None):
-        states = States.from_database(tstart, tstop, server=server)
-        return cls(name, tstart, tstop, states=states, T_init=T_init, dt=dt,
-                   model_spec=model_spec, mask_bad_times=mask_bad_times,
-                   ephem_file=ephem_file, get_msids=get_msids, 
-                   no_eclipse=no_eclipse, compute_model=compute_model)
-
-    @classmethod
-    def from_commands(cls, name, tstart, tstop, cmds, T_init, get_msids=False,
-                      dt=328.0, model_spec=None, mask_bad_times=False, 
-                      ephem_file=None, no_eclipse=False, compute_model=None):
-        tstart = get_time(tstart)
-        tstop = get_time(tstop)
-        states = States.from_commands(tstart, tstop, cmds)
-        return cls(name, tstart, tstop, states=states, T_init=T_init, dt=dt,
-                   model_spec=model_spec, mask_bad_times=mask_bad_times,
-                   ephem_file=ephem_file, get_msids=get_msids, no_eclipse=no_eclipse,
-                   compute_model=compute_model)
-
-    @classmethod
-    def from_kadi(cls, name, tstart, tstop, T_init=None, get_msids=False, dt=328.0,
-                  model_spec=None, mask_bad_times=False, ephem_file=None,
-                  no_eclipse=False, compute_model=None):
+    def from_database(cls, name, tstart, tstop, **kwargs):
         """
+        Run a thermal model using states from the commanded
+        states database.
+
         Parameters
         ----------
         name : string
@@ -681,43 +680,51 @@ class ThermalModelRunner(ModelDataset):
             The start time in YYYY:DOY:HH:MM:SS format.
         tstop : string
             The stop time in YYYY:DOY:HH:MM:SS format.
-        T_init : float, optional
-            The initial temperature for the thermal model run. If None,
-            an initial temperature will be determined from telemetry, if possible.
-            Default: None
-        get_msids : boolean, optional
-            Whether or not to pull data from the engineering archive. 
-            Default: False
-        dt : float, optional
-            The timestep to use for this run. Default is 328 seconds or is provided
-            by the model specification file.
-        model_spec : string, optional
-            Path to the model spec JSON file for the model. Default: None, the 
-            standard model path will be used.
-        mask_bad_times : boolean, optional
-            If set, bad times from the data are included in the array masks
-            and plots. Default: False
+
+        All other keyword arguments which are passed to the main
+        :class:`~acispy.thermal_models.ThermalModelRunner`
+        constructor can be passed to this method as well. 
+        """
+        states = States.from_database(tstart, tstop)
+        return cls(name, tstart, tstop, states=states, **kwargs)
+
+    @classmethod
+    def from_commands(cls, name, tstart, tstop, cmds, **kwargs):
+        tstart = get_time(tstart)
+        tstop = get_time(tstop)
+        states = States.from_commands(tstart, tstop, cmds)
+        return cls(name, tstart, tstop, states=states, **kwargs)
+
+    @classmethod
+    def from_kadi(cls, name, tstart, tstop, **kwargs):
+        """
+        Run a thermal model using states from kadi.
+
+        Parameters
+        ----------
+        name : string
+            The name or MSID of the model to simulate, e.g. "1dpamzt" or "dpa"
+        tstart : string
+            The start time in YYYY:DOY:HH:MM:SS format.
+        tstop : string
+            The stop time in YYYY:DOY:HH:MM:SS format.
+
+        All other keyword arguments which are passed to the main
+        :class:`~acispy.thermal_models.ThermalModelRunner`
+        constructor can be passed to this method as well. 
         """
         tstart = get_time(tstart)
         tstop = get_time(tstop)
         states = States.from_kadi_states(tstart, tstop)
-        return cls(name, tstart, tstop, states=states, T_init=T_init, dt=dt,
-                   model_spec=model_spec, mask_bad_times=mask_bad_times,
-                   ephem_file=ephem_file, get_msids=get_msids, no_eclipse=no_eclipse,
-                   compute_model=compute_model)
+        return cls(name, tstart, tstop, states=states, **kwargs)
 
     @classmethod
-    def from_backstop(cls, name, backstop_file, T_init, model_spec=None, dt=328.0,
-                      mask_bad_times=False, ephem_file=None, get_msids=False,
-                      no_eclipse=False, compute_model=None):
+    def from_backstop(cls, name, backstop_file, **kwargs):
         import parse_cm
         bs_cmds = parse_cm.read_backstop_as_list(backstop_file)
         tstart = bs_cmds[0]['time']
         tstop = bs_cmds[-1]['time']
-        return cls.from_commands(name, tstart, tstop, bs_cmds, T_init, dt=dt,
-                                 model_spec=model_spec, get_msids=get_msids,
-                                 mask_bad_times=mask_bad_times, compute_model=compute_model,
-                                 ephem_file=ephem_file, no_eclipse=no_eclipse)
+        return cls.from_commands(name, tstart, tstop, bs_cmds, **kwargs)
 
     def make_solarheat_plot(self, node, figfile=None, fig=None):
         """
