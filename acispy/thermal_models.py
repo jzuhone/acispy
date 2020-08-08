@@ -430,6 +430,16 @@ class ThermalModelRunner(ModelDataset):
         Whether to use 4th-order Runge-Kutta (1) instead of 2nd order (0). 
         Only works with evolve_method=2. Default: None, which defaults 
         to the value in the model spec file.
+    tl_file : string, optional
+        The path to a tracelog file which will supply MSID information
+        if ``use_msids=True``. Default: None
+    no_eclipse : boolean, optional
+        If True, ignore eclipses. Default: False
+    compute_model_supp : callable, optional
+        A function which takes the model name, tstart, tstop,
+        and a XijaModel object, and allows the user to 
+        perform custom operations on the model.
+
     Examples
     --------
     >>> states = {"ccd_count": np.array([5,6,1]),
@@ -652,10 +662,12 @@ class ThermalModelRunner(ModelDataset):
         Parameters
         ----------
         name : string
-            The name or MSID of the model to simulate, e.g. "1dpamzt" or "dpa"
+            The name or MSID of the model to simulate, e.g. 
+            "1dpamzt" or "dpa"
         states_file : string
-            A file containing commanded states, in the same format as "states.dat" which is
-            outputted by ACIS thermal model runs for loads.
+            A file containing commanded states, in the same 
+            format as "states.dat" which is outputted by ACIS 
+            thermal model runs for loads.
 
         All other keyword arguments which are passed to the main
         :class:`~acispy.thermal_models.ThermalModelRunner`
@@ -675,7 +687,8 @@ class ThermalModelRunner(ModelDataset):
         Parameters
         ----------
         name : string
-            The name or MSID of the model to simulate, e.g. "1dpamzt" or "dpa"
+            The name or MSID of the model to simulate, e.g. 
+            "1dpamzt" or "dpa"
         tstart : string
             The start time in YYYY:DOY:HH:MM:SS format.
         tstop : string
@@ -703,7 +716,8 @@ class ThermalModelRunner(ModelDataset):
         Parameters
         ----------
         name : string
-            The name or MSID of the model to simulate, e.g. "1dpamzt" or "dpa"
+            The name or MSID of the model to simulate, e.g. 
+            "1dpamzt" or "dpa"
         tstart : string
             The start time in YYYY:DOY:HH:MM:SS format.
         tstop : string
@@ -711,7 +725,7 @@ class ThermalModelRunner(ModelDataset):
 
         All other keyword arguments which are passed to the main
         :class:`~acispy.thermal_models.ThermalModelRunner`
-        constructor can be passed to this method as well. 
+        constructor can be passed to this method as well.
         """
         tstart = get_time(tstart)
         tstop = get_time(tstop)
@@ -758,20 +772,20 @@ class ThermalModelRunner(ModelDataset):
 
     def make_power_plot(self, figfile=None, fig=None, use_ccd_count=False):
         """
-        Make a plot which shows the ACIS state power coefficients, vs. either
-        FEP or CCD count.
+        Make a plot which shows the ACIS state power coefficients, 
+        vs. either FEP or CCD count.
 
         Parameters
         ----------
         figfile : string, optional
-            The file to write the power coefficient plot to. One will be created
-            if not provided.
+            The file to write the power coefficient plot to.
+            One will be created if not provided.
         fig : :class:`~matplotlib.figure.Figure`, optional
-            A Figure instance to plot in. Default: None, one will be
-            created if not provided.
+            A Figure instance to plot in. Default: None, one 
+            will be created if not provided.
         use_ccd_count : boolean, optional
-            If True, plot the CCD count on the x-axis. Primarily useful for the
-            1DEAMZT model. Default: False
+            If True, plot the CCD count on the x-axis. Primarily 
+            useful for the 1DEAMZT model. Default: False
         """
         plt.rc("font", size=18)
         plt.rc("axes", linewidth=2)
