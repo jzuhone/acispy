@@ -384,7 +384,7 @@ class ThermalModelRunner(ModelDataset):
     Parameters
     ----------
     name : string
-        The name or MSID of the model to simulate, e.g. "1dpamzt" or "dpa"
+        The name of the MSID to simulate, e.g. "1dpamzt"
     tstart : string
         The start time in YYYY:DOY:HH:MM:SS format.
     tstop : string
@@ -662,8 +662,8 @@ class ThermalModelRunner(ModelDataset):
         Parameters
         ----------
         name : string
-            The name or MSID of the model to simulate, e.g. 
-            "1dpamzt" or "dpa"
+            The name of the MSID to simulate, e.g. 
+            "1dpamzt"
         states_file : string
             A file containing commanded states, in the same 
             format as "states.dat" which is outputted by ACIS 
@@ -687,8 +687,7 @@ class ThermalModelRunner(ModelDataset):
         Parameters
         ----------
         name : string
-            The name or MSID of the model to simulate, e.g. 
-            "1dpamzt" or "dpa"
+            The name of the MSID to simulate, e.g. "1dpamzt"
         tstart : string
             The start time in YYYY:DOY:HH:MM:SS format.
         tstop : string
@@ -702,11 +701,22 @@ class ThermalModelRunner(ModelDataset):
         return cls(name, tstart, tstop, states=states, **kwargs)
 
     @classmethod
-    def from_commands(cls, name, tstart, tstop, cmds, **kwargs):
-        tstart = get_time(tstart)
-        tstop = get_time(tstop)
-        states = States.from_commands(tstart, tstop, cmds)
-        return cls(name, tstart, tstop, states=states, **kwargs)
+    def from_commands(cls, name, cmds, **kwargs):
+        """
+
+        Parameters
+        ----------
+        name : string
+            The name of the MSID to simulate, e.g. "1dpamzt"
+        cmds : list of commands or CommandTable 
+            The commands from which to derive states. 
+
+        All other keyword arguments which are passed to the main
+        :class:`~acispy.thermal_models.ThermalModelRunner`
+        constructor can be passed to this method as well.
+        """
+        states = States.from_commands(cmds)
+        return cls(name, states=states, **kwargs)
 
     @classmethod
     def from_kadi(cls, name, tstart, tstop, **kwargs):
@@ -716,8 +726,7 @@ class ThermalModelRunner(ModelDataset):
         Parameters
         ----------
         name : string
-            The name or MSID of the model to simulate, e.g. 
-            "1dpamzt" or "dpa"
+            The name of the MSID to simulate, e.g. "1dpamzt"
         tstart : string
             The start time in YYYY:DOY:HH:MM:SS format.
         tstop : string
@@ -733,12 +742,64 @@ class ThermalModelRunner(ModelDataset):
         return cls(name, tstart, tstop, states=states, **kwargs)
 
     @classmethod
-    def from_backstop(cls, name, backstop_file, **kwargs):
-        import parse_cm
-        bs_cmds = parse_cm.read_backstop_as_list(backstop_file)
-        tstart = bs_cmds[0]['time']
-        tstop = bs_cmds[-1]['time']
-        return cls.from_commands(name, tstart, tstop, bs_cmds, **kwargs)
+    def from_backstop(cls, name, backstop_file, T_init=None, 
+                      other_cmds=None, **kwargs):
+        """
+        Run a thermal model using states derived from a backstop
+        file. Continuity with previous states will be automatically 
+        handled. 
+
+        Parameters
+        ----------
+        name : string
+            The name of the MSID to simulate, e.g. "1dpamzt"
+        backstop_file : string
+            The path to the backstop file. 
+        T_init : float, optional
+            The initial temperature for the thermal model run. If None,
+            an initial temperature will be determined from telemetry.
+            Default: None
+        other_cmds : list of commands or CommandTable
+            Other commands to be included in the list. 
+
+        All other keyword arguments which are passed to the main
+        :class:`~acispy.thermal_models.ThermalModelRunner`
+        constructor can be passed to this method as well.
+        """
+        from kadi import commands
+
+        bs_cmds = commands.get_cmds_from_backstop(backstop_file)
+        bs_dates = bs_cmds["date"]
+        bs_cmds['time'] = DateTime(bs_cmds['date']).secs
+        last_tlm_date = fetch.get_time_range(name, format='date')[1]
+        last_tlm_time = DateTime(last_tlm_date).secs
+        if T_init is None:
+            T_init = fetch.MSID(name, last_tlm_time-3600.0).vals[-1]
+
+        ok = bs_cmds['event_type'] == 'RUNNING_LOAD_TERMINATION_TIME'
+        if np.any(ok):
+            rltt = DateTime(bs_dates[ok][0])
+        else:
+            # Handle the case of old loads (prior to backstop 6.9) where there
+            # is no RLTT.  If the first command is AOACRSTD this indicates the
+            # beginning of a maneuver ATS which may overlap by 3 mins with the
+            # previous loads because of the AOACRSTD command. So move the RLTT
+            # forward by 3 minutes (exactly 180.0 sec). If the first command is
+            # not AOACRSTD then that command time is used as RLTT.
+            if bs_cmds['tlmsid'][0] == 'AOACRSTD':
+                rltt = DateTime(bs_cmds['time'][0] + 180)
+            else:
+                rltt = DateTime(bs_cmds['date'][0])
+
+        # Get non-backstop commands for continuity
+        cmds = commands.get_cmds(last_tlm_date, rltt, inclusive_stop=True)
+        # Add backstop commands
+        cmds = cmds.add_cmds(bs_cmds)
+
+        if other_cmds is not None:
+            cmds = cmds.add_cmds(other_cmds)
+
+        return cls.from_commands(name, cmds, T_init=T_init, **kwargs)
 
     def make_solarheat_plot(self, node, figfile=None, fig=None):
         """
@@ -1124,3 +1185,99 @@ class SimulateECSRun(SimulateSingleObs):
     """
     Class for simulating thermal models for ECS measurements.
     """
+
+
+def make_ecs_cmds(start, startScience, stopScience, pow_cmd):
+    """
+    Make commands for an ECS measurement suitable for inclusion
+    in a thermal model.
+
+    Parameters
+    ----------
+    start : string
+        The date/time string of the first stopScience command.
+    startScience : string
+        The date/time string of the first startScience command.
+    stopScience : string
+        The date/time string of the first startScience command.
+    pow_cmd : string
+        The power command which will be issued to power on the
+        CCDs and FEPs.
+    """
+    from kadi import commands
+    from kadi.update_cmds import fix_nonload_cmds
+    datestart = DateTime(start).date
+    tstart = DateTime(start).sec
+    tpow = tstart+3.0
+    datepow = DateTime(tpow).date
+    cmd_dicts = [
+        {'cmd': u'ACISPKT',
+         'date': datestart,
+         'id': 0,
+         'msid': None,
+         'params': {},
+         'scs': 135,
+         'step': None,
+         'time': tstart,
+         'timeline_id': None,
+         'tlmsid': u'AA0000000',
+         'vcdu': None},
+        {'cmd': u'ACISPKT',
+         'date': datestart,
+         'id': 0,
+         'msid': None,
+         'params': {},
+         'scs': 135,
+         'step': None,
+         'time': tstart,
+         'timeline_id': None,
+         'tlmsid': u'AA0000000',
+         'vcdu': None},
+        {'cmd': u'ACISPKT',
+         'date': datestart,
+         'id': 0,
+         'msid': None,
+         'params': {},
+         'scs': 135,
+         'step': None,
+         'time': tstart,
+         'timeline_id': None,
+         'tlmsid': u'WSPOW00000',
+         'vcdu': None},
+        {'cmd': u'ACISPKT',
+         'date': datepow,
+         'id': 0,
+         'msid': None,
+         'params': {},
+         'scs': 135,
+         'step': None,
+         'time': tpow,
+         'timeline_id': None,
+         'tlmsid': pow_cmd,
+         'vcdu': None},
+        {'cmd': u'ACISPKT',
+         'date': DateTime(startScience).date,
+         'id': 0,
+         'msid': None,
+         'params': {},
+         'scs': 135,
+         'step': None,
+         'time': DateTime(startScience).sec,
+         'timeline_id': None,
+         'tlmsid': u'XTZ0000005',
+         'vcdu': None},
+        {'cmd': u'ACISPKT',
+         'date': DateTime(stopScience).date,
+         'id': 0,
+         'msid': None,
+         'params': {},
+         'scs': 135,
+         'step': None,
+         'time': DateTime(stopScience).sec,
+         'timeline_id': None,
+         'tlmsid': u'AA0000000',
+         'vcdu': None}
+    ]
+    cmd_dicts = fix_nonload_cmds(cmd_dicts)
+    ecs_cmds = commands.CommandTable(cmd_dicts)
+    return ecs_cmds

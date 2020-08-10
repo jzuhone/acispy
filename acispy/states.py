@@ -111,16 +111,9 @@ class States(TimeSeriesData):
         return cls(table)
 
     @classmethod
-    def from_commands(cls, tstart, tstop, cmds=None, state_keys=None):
-        from kadi import commands
+    def from_commands(cls, cmds, state_keys=None):
         from kadi.commands import states
-        tstart = get_time(tstart)
-        tstop = get_time(tstop)
-        if cmds is None:
-            cmds = commands.get_cmds(tstart, tstop)
-        continuity = states.get_continuity(tstart, state_keys)
-        t = states.get_states(cmds=cmds, continuity=continuity,
-                              state_keys=state_keys,
+        t = states.get_states(cmds=cmds, state_keys=state_keys,
                               merge_identical=True).as_array()
         return cls(t)
 
