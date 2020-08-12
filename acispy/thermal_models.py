@@ -77,7 +77,7 @@ model_classes = {
 
 def find_json(name, model_spec):
     if model_spec is None:
-        name = short_name[name]
+        name = short_name.get(name, name)
         model_spec = get_xija_model_file(name)
     elif not os.path.exists(model_spec):
         raise IOError("The JSON file %s does not exist!" % model_spec)
@@ -173,8 +173,10 @@ class ModelDataset(Dataset):
     def _get_msids(self, model, comps, tl_file):
         comps = [comp.lower() for comp in comps]
         times = model[comps[0]].times.value
-        tstart = secs2date(times[0] - 700.0)
-        tstop = secs2date(times[-1] + 700.0)
+        tstart = times[0] - 700.0
+        tstop = times[-1] + 700.0
+        start = secs2date(tstart)
+        stop = secs2date(tstop)
         if tl_file is not None:
             msids = MSIDs.from_tracelog(tl_file, tbegin=tstart, tend=tstop)
         else:
@@ -187,7 +189,7 @@ class ModelDataset(Dataset):
             if tstop > tlast:
                 raise RuntimeError("The model extends past the the last date in the "
                                    "engineering archive. Please set get_msids=False.")
-            msids = MSIDs.from_database(comps, tstart, tstop=tstop, filter_bad=True,
+            msids = MSIDs.from_database(comps, start, tstop=stop, filter_bad=True,
                                         interpolate='nearest', interpolate_times=times)
         return msids
 
@@ -459,7 +461,7 @@ class ThermalModelRunner(ModelDataset):
                  rk4=None, tl_file=None, no_eclipse=False, compute_model_supp=None):
 
         self.name = name.lower()
-        self.sname = short_name[name]
+        self.sname = short_name.get(name, name)
         if self.sname in short_name_rev:
             self.model_check = importlib.import_module(f"{self.sname}_check")
         else:
@@ -529,8 +531,11 @@ class ThermalModelRunner(ModelDataset):
         if 'earthheat__fptemp' in self.xija_model.comp:
             components.append('earthheat__fptemp')
         if states is None:
-            components += ["pitch", "roll", "fep_count", "vid_board", "clocking",
-                           "ccd_count", "sim_z"]
+            for c in ["pitch", "roll", "fep_count", "vid_board", "clocking",
+                      "ccd_count", "sim_z"]:
+                if c in self.xija_model.comp:
+                    components.append(c)
+
         masks = {}
         if mask_bad_times and self.bad_times is not None:
             masks[self.name] = np.ones(self.xija_model.times.shape, dtype='bool')
@@ -577,7 +582,7 @@ class ThermalModelRunner(ModelDataset):
                 model.comp[t].set_data(T_init)
         if other_init is not None:
             for k, v in other_init.items():
-                model.comp[k] = v
+                model.comp[k].set_data(v)
         if self.compute_model_supp is not None:
             self.compute_model_supp(name, tstart, tstop, model)
         model.make()
