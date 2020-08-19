@@ -79,16 +79,6 @@ class States(TimeSeriesData):
         return cls(t)
 
     @classmethod
-    def from_database(cls, tstart, tstop, state_keys=None):
-        from Chandra.cmd_states import fetch_states
-        tstart = get_time(tstart)
-        tstop = get_time(tstop)
-        if state_keys is not None:
-            state_keys = ensure_list(state_keys)
-        t = fetch_states(tstart, tstop, vals=state_keys)
-        return cls(t)
-
-    @classmethod
     def from_load_page(cls, load, comp="DPA"):
         load = find_load(load)
         url = "http://cxc.cfa.harvard.edu/acis/%s_thermPredic/" % comp
