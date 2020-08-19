@@ -16,7 +16,7 @@ import Ska.Numpy
 import Ska.engarchive.fetch_sci as fetch
 from chandra_models import get_xija_model_file
 import matplotlib.pyplot as plt
-from kadi import events
+from kadi import events, commands
 import importlib
 from matplotlib import font_manager
 
@@ -27,7 +27,8 @@ short_name = {"1deamzt": "dea",
               "tmp_fep1_mong": "fep1_mong",
               "tmp_fep1_actel": "fep1_actel",
               "tmp_fep1_fb": "fep1_fb",
-              "tmp_bep_pcb": "bep_pcb"}
+              "tmp_bep_pcb": "bep_pcb",
+              "aca": "aacccdpt"}
 
 short_name_rev = {v: k for k, v in short_name.items()}
 
@@ -684,28 +685,6 @@ class ThermalModelRunner(ModelDataset):
         return cls(name, tstart, tstop, states=states, **kwargs)
 
     @classmethod
-    def from_database(cls, name, tstart, tstop, **kwargs):
-        """
-        Run a thermal model using states from the commanded
-        states database.
-
-        Parameters
-        ----------
-        name : string
-            The name of the MSID to simulate, e.g. "1dpamzt"
-        tstart : string
-            The start time in YYYY:DOY:HH:MM:SS format.
-        tstop : string
-            The stop time in YYYY:DOY:HH:MM:SS format.
-
-        All other keyword arguments which are passed to the main
-        :class:`~acispy.thermal_models.ThermalModelRunner`
-        constructor can be passed to this method as well. 
-        """
-        states = States.from_database(tstart, tstop)
-        return cls(name, tstart, tstop, states=states, **kwargs)
-
-    @classmethod
     def from_commands(cls, name, cmds, **kwargs):
         """
 
@@ -720,31 +699,11 @@ class ThermalModelRunner(ModelDataset):
         :class:`~acispy.thermal_models.ThermalModelRunner`
         constructor can be passed to this method as well.
         """
+        if not isinstance(cmds, commands.CommandTable):
+            cmds = commands.CommandTable(cmds)
         states = States.from_commands(cmds)
-        return cls(name, states=states, **kwargs)
-
-    @classmethod
-    def from_kadi(cls, name, tstart, tstop, **kwargs):
-        """
-        Run a thermal model using states from kadi.
-
-        Parameters
-        ----------
-        name : string
-            The name of the MSID to simulate, e.g. "1dpamzt"
-        tstart : string
-            The start time in YYYY:DOY:HH:MM:SS format.
-        tstop : string
-            The stop time in YYYY:DOY:HH:MM:SS format.
-
-        All other keyword arguments which are passed to the main
-        :class:`~acispy.thermal_models.ThermalModelRunner`
-        constructor can be passed to this method as well.
-        """
-        tstart = get_time(tstart)
-        tstop = get_time(tstop)
-        states = States.from_kadi_states(tstart, tstop)
-        return cls(name, tstart, tstop, states=states, **kwargs)
+        return cls(name, states["datestart"][0], states["datestop"][-1],
+                   states=states, **kwargs)
 
     @classmethod
     def from_backstop(cls, name, backstop_file, T_init=None, 
@@ -771,8 +730,6 @@ class ThermalModelRunner(ModelDataset):
         :class:`~acispy.thermal_models.ThermalModelRunner`
         constructor can be passed to this method as well.
         """
-        from kadi import commands
-
         bs_cmds = commands.get_cmds_from_backstop(backstop_file)
         bs_dates = bs_cmds["date"]
         bs_cmds['time'] = DateTime(bs_cmds['date']).secs
@@ -802,6 +759,8 @@ class ThermalModelRunner(ModelDataset):
         cmds = cmds.add_cmds(bs_cmds)
 
         if other_cmds is not None:
+            if not isinstance(other_cmds, commands.CommandTable):
+                other_cmds = commands.CommandTable(other_cmds)
             cmds = cmds.add_cmds(other_cmds)
 
         return cls.from_commands(name, cmds, T_init=T_init, **kwargs)
