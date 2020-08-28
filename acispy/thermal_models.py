@@ -774,7 +774,7 @@ class ThermalModelRunner(ModelDataset):
             rltt = DateTime(bs_dates[ok][0])
         else:
             # Handle the case of old loads (prior to backstop 6.9) where there
-            # is no RLTT.  If the first command is AOACRSTD this indicates the
+            # is no RLTT. If the first command is AOACRSTD this indicates the
             # beginning of a maneuver ATS which may overlap by 3 mins with the
             # previous loads because of the AOACRSTD command. So move the RLTT
             # forward by 3 minutes (exactly 180.0 sec). If the first command is
@@ -898,7 +898,7 @@ def find_text_time(time, hours=1.0):
     return secs2date(date2secs(time)+hours*3600.0)
 
 
-class SimulateSingleObs(ThermalModelRunner):
+class SimulateSingleState(ThermalModelRunner):
     """
     Class for simulating thermal models under constant conditions.
 
@@ -906,8 +906,10 @@ class SimulateSingleObs(ThermalModelRunner):
     ----------
     name : string
         The name of the model to simulate. 
-    tstart : string
-        The start time of the ECS run in YYYY:DOY:HH:MM:SS format.
+    tstart : string or float
+        The start time of the single-state run.
+    tstop : string or float                                                                                                                                  
+        The stop time of the single-state run.                                                                                                               
     hours : integer or float
         The length of the ECS measurement in hours. NOTE that the 
         actual length of the ECS run is hours + 10 ks + 12 s, as
@@ -930,7 +932,7 @@ class SimulateSingleObs(ThermalModelRunner):
     dh_heater: integer, optional
         Flag to set whether (1) or not (0) the detector housing heater is on. 
         Default: 0
-    ccd_count : integer, optional
+    fep_count : integer, optional
         The number of FEPs which are on. Default: equal to ccd_count.
     clocking : integer, optional
         Set to 0 if you want to simulate a ECS run which doesn't clock, which
@@ -942,39 +944,34 @@ class SimulateSingleObs(ThermalModelRunner):
 
     Examples
     --------
-    >>> dea_run = SimulateSingleObs("1deamzt", "2016:201:05:12:03", 24, 14.0,
-    ...                             150., ccd_count=5, off_nom_roll=-6.0,
-    ...                             dh_heater=1)
+    >>> dea_run = SimulateSingleState("1deamzt", "2016:201:05:12:03", 
+    ...                               "2016:202:05:12:03", 14.0, 150., 5, 
+    ...                               off_nom_roll=-6.0, dh_heater=1)
     """
-    def __init__(self, name, tstart, hours, T_init, pitch, ccd_count,
+    def __init__(self, name, tstart, tstop, T_init, pitch, ccd_count,
                  vehicle_load=None, simpos=-99616.0, off_nom_roll=0.0, 
-                 dh_heater=0, fep_count=None, clocking=1, q=None, instrument=None,
-                 model_spec=None, no_limit=False, no_earth_heat=False):
+                 dh_heater=0, fep_count=None, clocking=1, q=None,
+                 instrument=None, model_spec=None, no_earth_heat=False):
         if name in short_name_rev:
             name = short_name_rev[name]
         if name == "fptemp_11" and instrument is None:
             raise RuntimeError("Must specify either 'ACIS-I' or 'ACIS-S' in "
-                               "'instrument' if you want to test a focal plane " 
-                               "temperature prediction!")
+                               "'instrument' if you want to model the focal plane " 
+                               "temperature!")
         if fep_count is None:
             fep_count = ccd_count
         if q is None and name == "fptemp_11":
             raise RuntimeError("Please supply an attitude quaternion for the focal plane model!")
         self.vehicle_load = vehicle_load
-        self.no_limit = no_limit
-        tstart = get_time(tstart)
-        datestart = tstart
-        tstart = DateTime(tstart).secs
-        tstop = tstart+hours*3600.0+10012.0
-        datestop = secs2date(tstop)
-        tend = tstop+0.5*(tstop-tstart)
-        dateend = secs2date(tend)
+        tstart = DateTime(tstart).sec
+        datestart = DateTime(tstart).date
+        tstop = DateTime(tstop).sec
+        datestop = DateTime(tstop).date
         self.datestart = datestart
         self.datestop = datestop
         self.hours = hours
         self.tstart = Quantity(tstart, "s")
         self.tstop = Quantity(tstop, "s")
-        self.dateend = dateend
         self.T_init = Quantity(T_init, "deg_C")
         self.instrument = instrument
         self.no_earth_heat = no_earth_heat
@@ -986,9 +983,9 @@ class SimulateSingleObs(ThermalModelRunner):
                       "pitch": np.array([pitch]),
                       "simpos": np.array([simpos]),
                       "datestart": np.array([self.datestart]),
-                      "datestop": np.array([self.dateend]),
+                      "datestop": np.array([self.datestop]),
                       "tstart": np.array([self.tstart.value]),
-                      "tstop": np.array([tend]),
+                      "tstop": np.array([self.tstop.value]),
                       "hetg": np.array(["RETR"]),
                       "letg": np.array(["RETR"]),
                       "off_nom_roll": np.array([off_nom_roll]),
@@ -998,23 +995,22 @@ class SimulateSingleObs(ThermalModelRunner):
                 for i in range(4):
                     states["q%d" % (i+1)] = np.array([q[i]])
         else:
-            mylog.info("Modeling a %d-chip observation concurrent with " % ccd_count +
+            mylog.info("Modeling a %d-chip state concurrent with " % ccd_count +
                        "the %s vehicle loads." % vehicle_load)
             states = dict((k, state.value) for (k, state) in
                           States.from_load_page(vehicle_load).table.items())
-            ecs_run_idxs = states["tstart"] < tstop
-            states["ccd_count"][ecs_run_idxs] = ccd_count
-            states["fep_count"][ecs_run_idxs] = fep_count
-            states["clocking"][ecs_run_idxs] = clocking
-            states["vid_board"][ecs_run_idxs] = ccd_count > 0
-        super(SimulateSingleObs, self).__init__(name, datestart, dateend, states,
-                                                T_init, model_spec=model_spec,
-                                                get_msids=False)
+            run_idxs = states["tstart"] < tstop
+            states["ccd_count"][run_idxs] = ccd_count
+            states["fep_count"][run_idxs] = fep_count
+            states["clocking"][run_idxs] = clocking
+            states["vid_board"][run_idxs] = ccd_count > 0
+        super().__init__(name, datestart, datestop, states, T_init,
+                         model_spec=model_spec, get_msids=False)
 
         mylog.info("Run Parameters")
         mylog.info("--------------")
         mylog.info("Start Datestring: %s" % datestart)
-        mylog.info("Length of ECS run in hours: %s" % hours)
+        mylog.info("Length of state in hours: %s" % hours)
         mylog.info("Stop Datestring: %s" % datestop)
         mylog.info("Initial Temperature: %g degrees C" % T_init)
         mylog.info("CCD Count: %d" % ccd_count)
@@ -1023,113 +1019,14 @@ class SimulateSingleObs(ThermalModelRunner):
             disp_pitch = pitch
             disp_roll = off_nom_roll
         else:
-            pitches = states["pitch"][ecs_run_idxs]
-            rolls = states["off_nom_roll"][ecs_run_idxs]
+            pitches = states["pitch"][run_idxs]
+            rolls = states["off_nom_roll"][run_idxs]
             disp_pitch = "Min: %g, Max: %g" % (pitches.min(), pitches.max())
             disp_roll = "Min: %g, Max: %g" % (rolls.min(), rolls.max())
         mylog.info("Pitch: %s" % disp_pitch)
         mylog.info("SIM Position: %g" % simpos)
         mylog.info("Off-nominal Roll: %s" % disp_roll)
         mylog.info("Detector Housing Heater: %s" % {0: "OFF", 1: "ON"}[dh_heater])
-
-        mylog.info("Model Result")
-        mylog.info("------------")
-
-        if self.name == "fptemp_11":
-            limit = limits[self.name][instrument]
-            margin = 0.0
-        else:
-            limit = limits[self.name]
-            margin = margins[self.name]
-        if self.name in low_limits:
-            self.low_limit = Quantity(low_limits[self.name], "deg_C")
-        else:
-            self.low_limit = None
-        self.limit = Quantity(limit, "deg_C")
-        self.margin = Quantity(margin, 'deg_C')
-        self.limit_time = None
-        self.limit_date = None
-        self.duration = None
-        self.violate = False
-        if self.no_limit:
-            return
-        viols = self.mvals.value > self.limit.value
-        if np.any(viols):
-            idx = np.where(viols)[0][0]
-            self.limit_time = self.times('model', self.name)[idx]
-            self.limit_date = secs2date(self.limit_time)
-            self.duration = Quantity((self.limit_time.value-tstart)*0.001, "ks")
-            msg = "The limit of %g degrees C will be reached at %s, " % (self.limit.value, self.limit_date)
-            msg += "after %g ksec." % self.duration.value
-            mylog.info(msg)
-            if self.limit_time < self.tstop:
-                self.violate = True
-                viol_time = "before"
-            else:
-                self.violate = False
-                viol_time = "after"
-            mylog.info("The limit is reached %s the end of the observation." % viol_time)
-        else:
-            mylog.info("The limit of %g degrees C is never reached." % self.limit.value)
-
-        if self.violate:
-            mylog.warning("This observation is NOT safe from a thermal perspective.")
-        else:
-            mylog.info("This observation is safe from a thermal perspective.")
-
-    def plot_model(self, no_annotations=False, plot=None, fontsize=18,
-                   **kwargs):
-        """
-        Plot the simulated model run.
-
-        Parameters
-        ----------
-        no_annotations : boolean, optional
-            If True, don't put lines or text on the plot. Shouldn't be
-            used if you're actually trying to determine if a ECS run is
-            safe. Default: False
-        """
-        if self.vehicle_load is None:
-            field2 = None
-        else:
-            field2 = "pitch"
-        viol_text = "NOT SAFE" if self.violate else "SAFE"
-        dp = DatePlot(self, [("model", self.name)], field2=field2, plot=plot,
-                      fontsize=fontsize, **kwargs)
-        if not self.no_limit:
-            if self.name == "fptemp_11":
-                color = {"ACIS-S": "blue", "ACIS-I": "purple"}[self.instrument]
-                dp.add_hline(self.limit.value, ls='--', lw=2, color=color)
-            else:
-                dp.add_hline(self.limit.value, ls='-', lw=2, color='g')
-                dp.add_hline(self.limit.value+self.margin.value, ls='-', lw=2, color='gold')
-                if self.low_limit is not None:
-                    dp.add_hline(self.low_limit.value, ls='-', lw=2, color='g')
-                    dp.add_hline(self.low_limit.value - self.margin.value, ls='-', lw=2, color='gold')
-        if not no_annotations:
-            if not self.no_limit:
-                dp.add_text(find_text_time(self.datestop, hours=4.0), self.T_init.value + 2.0,
-                            viol_text, fontsize=22, color='black')
-            dp.add_vline(self.datestart, ls='--', lw=2, color='b')
-            dp.add_text(find_text_time(self.datestart), self.limit.value - 2.0,
-                        "START", color='blue', rotation="vertical")
-            dp.add_vline(self.datestop, ls='--', lw=2, color='b')
-            dp.add_text(find_text_time(self.datestop), self.limit.value - 12.0,
-                        "END", color='blue', rotation="vertical")
-            if self.limit_date is not None:
-                dp.add_vline(self.limit_date, ls='--', lw=2, color='r')
-                dp.add_text(find_text_time(self.limit_date), self.limit.value-2.0,
-                            "VIOLATION", color='red', rotation="vertical")
-        dp.set_xlim(find_text_time(self.datestart, hours=-1.0), self.dateend)
-        if self.low_limit is not None:
-            ymin = self.low_limit.value-self.margin.value
-        else:
-            ymin = self.T_init.value
-        ymin = min(ymin, self.mvals.value.min())-2.0
-        ymax = max(self.limit.value+self.margin.value, self.mvals.value.max())+3.0
-        self._time_ticks(dp, ymax, fontsize)
-        dp.set_ylim(ymin, ymax)
-        return dp
 
     def _time_ticks(self, dp, ymax, fontsize):
         from matplotlib.ticker import AutoMinorLocator
@@ -1176,7 +1073,146 @@ class SimulateSingleObs(ThermalModelRunner):
         raise NotImplementedError
 
 
-class SimulateECSRun(SimulateSingleObs):
+class SimulateECSRun(SimulateSingleState):
     """
     Class for simulating thermal models for ECS measurements.
+
+    name : string
+        The name of the model to simulate.                                                                                                                    
+    tstart : string or float                                                                                                                              
+        The start time of the single-state run.                                                                                                           
+    hours : integer or float                                                                                                                                  
+        The length of the ECS measurement in hours. NOTE that the                                                                                             
+        actual length of the ECS run is hours + 10 ks + 12 s, as                                                                                              
+        per the ECS CAP.                                                                                                                                      
+    T_init : float                                                                                                                                         
+        The starting temperature for the model in degrees C.                                                                                                 
+    pitch : float                                                                                                                                             
+        The pitch at which to run the model in degrees.                                                                                                       
+    ccd_count : integer                                                                                                                                       
+        The number of CCDs to clock.                                                                                                                          
+    vehicle_load : string, optional                                                                                                                           
+        If a vehicle load is running, specify it here, e.g. "SEP0917C".                                                                                   
+        Default: None, meaning no vehicle load. If this parameter is set,                                                                                     
+        the input values of pitch and off-nominal roll will be ignored                                                                                       
+        and the values from the vehicle load will be used.                                                                                                 
+    off_nom_roll : float, optional                                                                                                                         
+        The off-nominal roll in degrees for the model. Default: 0.0         
+    dh_heater: integer, optional                                                                                                                           
+        Flag to set whether (1) or not (0) the detector housing heater is on.                                                                                 
+        Default: 0 
+    model_spec : string, optional 
+        Path to the model spec JSON file for the model. Default: None, the
+        standard model path will be used.                                                                                                                   
+
+    Examples                                                                                                                                                  
+    --------                                                                                                                                                  
+    >>> dea_run = SimulateECSRun("1deamzt", "2016:201:05:12:03", 24, 14.0,                                                                               
+    ...                          150., 5, off_nom_roll=-6.0, dh_heater=1)                  
     """
+    def __init__(self, name, tstart, hours, T_init, pitch, ccd_count,
+                 vehicle_load=None, off_nom_roll=0.0, dh_heater=0,
+                 q=None, instrument=None, model_spec=None):
+        tstart = DateTime(tstart).sec
+        tend = tstart+hours*3600.0+10012.0
+        tstop = tend+0.5*(tend-tstart)
+        super().__init__(name, tstart, tstop, T_init, pitch, ccd_count,
+                         vehicle_load=vehicle_load, off_nom_roll=off_nom_roll,
+                         dh_heater=dh_heater, q=q, instrument=instrument,
+                         model_spec=model_spec)
+
+        self.tend = tend
+        self.dateend = secs2date(tend)
+        
+        mylog.info("Model Result")
+        mylog.info("------------")
+
+        if self.name == "fptemp_11":
+            limit = limits[self.name][instrument]
+            margin = 0.0
+        else:
+            limit = limits[self.name]
+            margin = margins[self.name]
+        if self.name in low_limits:
+            self.low_limit = Quantity(low_limits[self.name], "deg_C")
+        else:
+            self.low_limit = None
+        self.limit = Quantity(limit, "deg_C")
+        self.margin = Quantity(margin, 'deg_C')
+        self.limit_time = None
+        self.limit_date = None
+        self.duration = None
+        self.violate = False
+        self.hours = hours
+        viols = self.mvals.value > self.limit.value
+        if np.any(viols):
+            idx = np.where(viols)[0][0]
+            self.limit_time = self.times('model', self.name)[idx]
+            self.limit_date = secs2date(self.limit_time)
+            self.duration = Quantity((self.limit_time.value-tstart)*0.001, "ks")
+            msg = "The limit of %g degrees C will be reached at %s, " % (self.limit.value, self.limit_date)
+            msg += "after %g ksec." % self.duration.value
+            mylog.info(msg)
+            if self.limit_time < self.tstop:
+                self.violate = True
+                viol_time = "before"
+            else:
+                self.violate = False
+                viol_time = "after"
+            mylog.info("The limit is reached %s the end of the observation." % viol_time)
+        else:
+            mylog.info("The limit of %g degrees C is never reached." % self.limit.value)
+
+        if self.violate:
+            mylog.warning("This observation is NOT safe from a thermal perspective.")
+        else:
+            mylog.info("This observation is safe from a thermal perspective.")
+
+    def plot_model(self, plot=None, fontsize=18, **kwargs):
+        """
+        Plot the simulated ECS run.
+
+        Parameters
+        ----------
+        plot : :class:`~acispy.plots.DatePlot` or :class:`~acispy.plots.CustomDatePlot`, optional
+            An existing DatePlot to add this plot to. Default: None, one 
+            will be created if not provided.
+        fontsize : integer, optional
+            The font size for the labels in the plot. Default: 18 pt.
+        """
+        if self.vehicle_load is None:
+            field2 = None
+        else:
+            field2 = "pitch"
+        viol_text = "NOT SAFE" if self.violate else "SAFE"
+        dp = DatePlot(self, [("model", self.name)], field2=field2, plot=plot,
+                      fontsize=fontsize, **kwargs)
+        if self.name == "fptemp_11":
+            color = {"ACIS-S": "blue", "ACIS-I": "purple"}[self.instrument]
+            dp.add_hline(self.limit.value, ls='--', lw=2, color=color)
+        else:
+            dp.add_hline(self.limit.value, ls='-', lw=2, color='g')
+            dp.add_hline(self.limit.value+self.margin.value, ls='-', lw=2, color='gold')
+            if self.low_limit is not None:
+                dp.add_hline(self.low_limit.value, ls='-', lw=2, color='g')
+                dp.add_hline(self.low_limit.value - self.margin.value, ls='-', lw=2, color='gold')
+        dp.add_vline(self.datestart, ls='--', lw=2, color='b')
+        dp.add_text(find_text_time(self.datestart), self.limit.value - 2.0,
+                    "START", color='blue', rotation="vertical")
+        dp.add_vline(self.dateend, ls='--', lw=2, color='b')
+        dp.add_text(find_text_time(self.dateend), self.limit.value - 12.0,
+                    "END", color='blue', rotation="vertical")
+        if self.limit_date is not None:
+            dp.add_vline(self.limit_date, ls='--', lw=2, color='r')
+            dp.add_text(find_text_time(self.limit_date), self.limit.value-2.0,
+                        "VIOLATION", color='red', rotation="vertical")
+        dp.set_xlim(find_text_time(self.datestart, hours=-1.0), self.datestop)
+        if self.low_limit is not None:
+            ymin = self.low_limit.value-self.margin.value
+        else:
+            ymin = self.T_init.value
+        ymin = min(ymin, self.mvals.value.min())-2.0
+        ymax = max(self.limit.value+self.margin.value, self.mvals.value.max())+3.0
+        self._time_ticks(dp, ymax, fontsize)
+        dp.set_ylim(ymin, ymax)
+        return dp
