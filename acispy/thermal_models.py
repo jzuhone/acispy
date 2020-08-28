@@ -14,7 +14,6 @@ from acispy.utils import mylog, \
     get_time, ensure_list, plotdate2cxctime
 import Ska.Numpy
 import Ska.engarchive.fetch_sci as fetch
-from chandra_models import get_xija_model_file
 import matplotlib.pyplot as plt
 from kadi import events, commands
 import importlib
@@ -88,9 +87,16 @@ model_classes = {
 def find_json(name, model_spec):
     msg = f"The JSON file {model_spec} does not exist! Please " \
           f"specify a JSON file using the 'model_spec' keyword argument."
+    msg2 = f"acispy is looking for the 'chandra_models' package to " \
+           f"find a model spec file, but it is not installed! Either " \
+           f"install it, or specify a file with the 'model_spec' argument."
     if model_spec is None:
         name = short_name.get(name, name)
         try:
+            try:
+                from chandra_models import get_xija_model_file
+            except ImportError:
+                raise ImportError(msg2)
             model_spec = get_xija_model_file(name)
         except ValueError:
             raise IOError(msg)
