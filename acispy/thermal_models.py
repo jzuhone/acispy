@@ -28,7 +28,7 @@ short_name = {"1deamzt": "dea",
               "tmp_fep1_actel": "fep1_actel",
               "tmp_fep1_fb": "fep1_fb",
               "tmp_bep_pcb": "bep_pcb",
-              "aca": "aacccdpt"}
+              "aacccdpt": "aca"}
 
 short_name_rev = {v: k for k, v in short_name.items()}
 
@@ -57,6 +57,14 @@ low_limits = {
     'tmp_bep_pcb': 4.5
 }
 
+acis_models = ["1deamzt",
+               "1dpamzt",
+               "1pdeaat",
+               "fptemp_11",
+               "tmp_fep1_mong",
+               "tmp_fep1_actel",
+               "tmp_bep_pcb"]
+
 margins = {'1deamzt': 2.0,
            '1dpamzt': 2.0,
            '1pdeaat': 4.5,
@@ -77,11 +85,16 @@ model_classes = {
 
 
 def find_json(name, model_spec):
+    msg = f"The JSON file {model_spec} does not exist! Please " \
+          f"specify a JSON file using the 'model_spec' keyword argument."
     if model_spec is None:
         name = short_name.get(name, name)
-        model_spec = get_xija_model_file(name)
+        try:
+            model_spec = get_xija_model_file(name)
+        except ValueError:
+            raise IOError(msg)
     elif not os.path.exists(model_spec):
-        raise IOError("The JSON file %s does not exist!" % model_spec)
+        raise IOError(msg)
     return model_spec
 
 
@@ -436,8 +449,6 @@ class ThermalModelRunner(ModelDataset):
     tl_file : string, optional
         The path to a tracelog file which will supply MSID information
         if ``use_msids=True``. Default: None
-    no_eclipse : boolean, optional
-        If True, ignore eclipses. Default: False
     compute_model_supp : callable, optional
         A function which takes the model name, tstart, tstop,
         and a XijaModel object, and allows the user to 
@@ -459,11 +470,11 @@ class ThermalModelRunner(ModelDataset):
     def __init__(self, name, tstart, tstop, states=None, T_init=None,
                  other_init=None, get_msids=False, dt=328.0, model_spec=None,
                  mask_bad_times=False, ephem_file=None, evolve_method=None,
-                 rk4=None, tl_file=None, no_eclipse=False, compute_model_supp=None):
+                 rk4=None, tl_file=None, compute_model_supp=None):
 
         self.name = name.lower()
         self.sname = short_name.get(name, name)
-        if self.sname in short_name_rev:
+        if self.name in acis_models:
             self.model_check = importlib.import_module(f"{self.sname}_check")
         else:
             self.model_check = None
@@ -478,7 +489,10 @@ class ThermalModelRunner(ModelDataset):
         tstop = get_time(tstop)
 
         tstart_secs = DateTime(tstart).secs
+        tstop_secs = DateTime(tstop).secs
 
+        last_ecl_time = fetch.get_time_range("aoeclips", format='sec')[1]
+        self.no_eclipse = tstop_secs > last_ecl_time
         self.no_earth_heat = getattr(self, "no_earth_heat", False)
 
         if states is not None:
@@ -508,15 +522,14 @@ class ThermalModelRunner(ModelDataset):
                                    "time.")
             T_init = fetch.MSID(self.name, tstart_secs-700., tstart_secs).vals[-1]
 
-        if self.name in short_name and states is not None:
+        if self.name in acis_models and states is not None:
             self.xija_model = self._compute_acis_model(self.name, tstart, tstop,
                                                        states, dt, T_init, 
                                                        rk4=rk4, other_init=other_init,
-                                                       no_eclipse=no_eclipse,
                                                        evolve_method=evolve_method)
         else:
             self.xija_model = self._compute_model(name, tstart, tstop, dt, T_init,
-                                                  other_init=other_init,
+                                                  states, other_init=other_init,
                                                   evolve_method=evolve_method, 
                                                   rk4=rk4)
 
@@ -570,7 +583,7 @@ class ThermalModelRunner(ModelDataset):
                                                     e["times"][idxs], times)
         return ephem
 
-    def _compute_model(self, name, tstart, tstop, dt, T_init,
+    def _compute_model(self, name, tstart, tstop, dt, T_init, states,
                        other_init=None, evolve_method=None, rk4=None):
         if name == "fptemp_11":
             name = "fptemp"
@@ -584,6 +597,17 @@ class ThermalModelRunner(ModelDataset):
         if other_init is not None:
             for k, v in other_init.items():
                 model.comp[k].set_data(v)
+        if states is not None:
+            if isinstance(states, np.ndarray):
+                state_names = states.dtype.names
+            else:
+                state_names = list(states.keys())
+            state_times = date2secs(np.array([states["datestart"], states["datestop"]]))
+            for k in state_names:
+                if k in model.comp:
+                    model.comp[k].set_data(states[k], state_times)
+        if self.no_eclipse:
+            model.comp["eclipse"].set_data(False)
         if self.compute_model_supp is not None:
             self.compute_model_supp(name, tstart, tstop, model)
         model.make()
@@ -591,8 +615,7 @@ class ThermalModelRunner(ModelDataset):
         return model
 
     def _compute_acis_model(self, name, tstart, tstop, states, dt, T_init,
-                            other_init=None, no_eclipse=False, 
-                            evolve_method=None, rk4=None):
+                            other_init=None, evolve_method=None, rk4=None):
         import re
         from acis_thermal_check import calc_pitch_roll
         check_obj = getattr(self.model_check, model_classes[self.sname])()
@@ -646,7 +669,7 @@ class ThermalModelRunner(ModelDataset):
             # model evolution.
             model.comp['dpa_power'].set_data(0.0)
         model.comp[name].set_data(T_init)
-        if no_eclipse:
+        if self.no_eclipse:
             model.comp["eclipse"].set_data(False)
         check_obj._calc_model_supp(model, state_times, states, ephem, None)
         if self.name == "fptemp_11" and self.no_earth_heat:
@@ -706,7 +729,7 @@ class ThermalModelRunner(ModelDataset):
                    states=states, **kwargs)
 
     @classmethod
-    def from_backstop(cls, name, backstop_file, T_init=None, 
+    def from_backstop(cls, name, backstop_file, days=3, T_init=None, 
                       other_cmds=None, **kwargs):
         """
         Run a thermal model using states derived from a backstop
@@ -719,6 +742,8 @@ class ThermalModelRunner(ModelDataset):
             The name of the MSID to simulate, e.g. "1dpamzt"
         backstop_file : string
             The path to the backstop file. 
+        days : float
+
         T_init : float, optional
             The initial temperature for the thermal model run. If None,
             an initial temperature will be determined from telemetry.
@@ -735,8 +760,9 @@ class ThermalModelRunner(ModelDataset):
         bs_cmds['time'] = DateTime(bs_cmds['date']).secs
         last_tlm_date = fetch.get_time_range(name, format='date')[1]
         last_tlm_time = DateTime(last_tlm_date).secs
+        tstart = min(last_tlm_time-3600.0, bs_cmds['time'][0]-days*86400.)
         if T_init is None:
-            T_init = fetch.MSID(name, last_tlm_time-3600.0).vals[-1]
+            T_init = fetch.MSID(name, tstart).vals[-1]
 
         ok = bs_cmds['event_type'] == 'RUNNING_LOAD_TERMINATION_TIME'
         if np.any(ok):
@@ -754,7 +780,7 @@ class ThermalModelRunner(ModelDataset):
                 rltt = DateTime(bs_cmds['date'][0])
 
         # Get non-backstop commands for continuity
-        cmds = commands.get_cmds(last_tlm_date, rltt, inclusive_stop=True)
+        cmds = commands.get_cmds(tstart, rltt, inclusive_stop=True)
         # Add backstop commands
         cmds = cmds.add_cmds(bs_cmds)
 
@@ -978,7 +1004,7 @@ class SimulateSingleObs(ThermalModelRunner):
             states["vid_board"][ecs_run_idxs] = ccd_count > 0
         super(SimulateSingleObs, self).__init__(name, datestart, dateend, states,
                                                 T_init, model_spec=model_spec,
-                                                get_msids=False, no_eclipse=True)
+                                                get_msids=False)
 
         mylog.info("Run Parameters")
         mylog.info("--------------")
@@ -1151,28 +1177,30 @@ class SimulateECSRun(SimulateSingleObs):
     """
 
 
-def make_ecs_cmds(start, startScience, stopScience, pow_cmd):
+def make_ecs_cmds(begin_cmds, si_mode, stopScience=None):
     """
     Make commands for an ECS measurement suitable for inclusion
     in a thermal model.
 
     Parameters
     ----------
-    start : string
+    begin_cmds : string
         The date/time string of the first stopScience command.
     startScience : string
         The date/time string of the first startScience command.
     stopScience : string
         The date/time string of the first startScience command.
-    pow_cmd : string
-        The power command which will be issued to power on the
-        CCDs and FEPs.
+    si_mode : string
+        The si_mode to be used for the ECS run.
     """
     from kadi import commands
     from kadi.update_cmds import fix_nonload_cmds
+    cmd_info = {"TE_007AC": ("WSPOW0CF3F", 63.0),
+                "TE_00C60": ("WSPOW08F3E", 63.0),
+                "TE_00C62": ("WSPOW08E1E", 63.0)}
     datestart = DateTime(start).date
     tstart = DateTime(start).sec
-    tpow = tstart+3.0
+    tpow = tstart+cmd_info[si_mode][1]
     datepow = DateTime(tpow).date
     cmd_dicts = [
         {'cmd': u'ACISPKT',
@@ -1217,7 +1245,7 @@ def make_ecs_cmds(start, startScience, stopScience, pow_cmd):
          'step': None,
          'time': tpow,
          'timeline_id': None,
-         'tlmsid': pow_cmd,
+         'tlmsid': cmd_info[si_mode][0],
          'vcdu': None},
         {'cmd': u'ACISPKT',
          'date': DateTime(startScience).date,
