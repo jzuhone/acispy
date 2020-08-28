@@ -30,6 +30,7 @@ short_name = {"1deamzt": "dea",
               "tmp_bep_pcb": "bep_pcb",
               "aacccdpt": "aca"}
 
+
 short_name_rev = {v: k for k, v in short_name.items()}
 
 full_name = {"1deamzt": "DEA",
@@ -743,7 +744,6 @@ class ThermalModelRunner(ModelDataset):
         backstop_file : string
             The path to the backstop file. 
         days : float
-
         T_init : float, optional
             The initial temperature for the thermal model run. If None,
             an initial temperature will be determined from telemetry.
@@ -763,7 +763,6 @@ class ThermalModelRunner(ModelDataset):
         tstart = min(last_tlm_time-3600.0, bs_cmds['time'][0]-days*86400.)
         if T_init is None:
             T_init = fetch.MSID(name, tstart).vals[-1]
-
         ok = bs_cmds['event_type'] == 'RUNNING_LOAD_TERMINATION_TIME'
         if np.any(ok):
             rltt = DateTime(bs_dates[ok][0])
