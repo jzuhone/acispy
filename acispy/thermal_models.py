@@ -523,7 +523,7 @@ class ThermalModelRunner(ModelDataset):
         if T_init is None:
             last_tlm_date = fetch.get_time_range(self.name, format='secs')[1]
             if tstart_secs+700.0 > last_tlm_date:
-                raise RuntimeError("T_init=None, but the start time of {tstart} "
+                raise RuntimeError(f"T_init=None, but the start time of {tstart} "
                                    "is ahead of the last time in telemetry. "
                                    "Please specify T_init or choose a different "
                                    "time.")
@@ -572,8 +572,8 @@ class ThermalModelRunner(ModelDataset):
         super(ThermalModelRunner, self).__init__(msids_obj, states_obj, model_obj)
 
     def _get_ephemeris(self, tstart, tstop, times):
-        msids = ['orbitephem0_{}'.format(axis) for axis in "xyz"]
-        msids += ['solarephem0_{}'.format(axis) for axis in "xyz"]
+        msids = [f"orbitephem0_{axis}" for axis in "xyz"]
+        msids += [f"solarephem0_{axis}" for axis in "xyz"]
         ephem = {}
         if self.ephem_file is None:
             e = fetch.MSIDset(msids, tstart - 2000.0, tstop + 2000.0)
@@ -582,7 +582,6 @@ class ThermalModelRunner(ModelDataset):
                                                     times)
         else:
             e = ascii.read(self.ephem_file)
-            msids = ['orbitephem0_{}'.format(axis) for axis in "xyz"]
             idxs = np.logical_and(e["times"] >= tstart - 2000.0,
                                   e["times"] <= tstop + 2000.0)
             for msid in msids:
@@ -820,7 +819,7 @@ class ThermalModelRunner(ModelDataset):
         try:
             comp = self.xija_model.comp["solarheat__%s" % node]
         except KeyError:
-            raise KeyError("%s does not have a SolarHeat component!" % node)
+            raise KeyError(f"{node} does not have a SolarHeat component!")
         comp.plot_solar_heat__pitch(fig, ax)
         if figfile is not None:
             fig.savefig(figfile)
@@ -920,11 +919,6 @@ class SimulateSingleState(ThermalModelRunner):
         The pitch at which to run the model in degrees. 
     ccd_count : integer
         The number of CCDs to clock.
-    vehicle_load : string, optional
-        If a vehicle load is running, specify it here, e.g. "SEP0917C".
-        Default: None, meaning no vehicle load. If this parameter is set,
-        the input values of pitch and off-nominal roll will be ignored
-        and the values from the vehicle load will be used.
     simpos : float, optional
         The SIM position at which to run the model. Default: -99616.0
     off_nom_roll : float, optional
@@ -949,9 +943,9 @@ class SimulateSingleState(ThermalModelRunner):
     ...                               off_nom_roll=-6.0, dh_heater=1)
     """
     def __init__(self, name, tstart, tstop, T_init, pitch, ccd_count,
-                 vehicle_load=None, simpos=-99616.0, off_nom_roll=0.0, 
-                 dh_heater=0, fep_count=None, clocking=1, q=None,
-                 instrument=None, model_spec=None, no_earth_heat=False):
+                 simpos=-99616.0, off_nom_roll=0.0, dh_heater=0, 
+                 fep_count=None, clocking=1, q=None, instrument=None, 
+                 model_spec=None, no_earth_heat=False):
         if name in short_name_rev:
             name = short_name_rev[name]
         if name == "fptemp_11" and instrument is None:
@@ -969,85 +963,72 @@ class SimulateSingleState(ThermalModelRunner):
         datestop = DateTime(tstop).date
         self.datestart = datestart
         self.datestop = datestop
-        self.hours = hours
         self.tstart = Quantity(tstart, "s")
         self.tstop = Quantity(tstop, "s")
         self.T_init = Quantity(T_init, "deg_C")
         self.instrument = instrument
         self.no_earth_heat = no_earth_heat
-        if vehicle_load is None:
-            states = {"ccd_count": np.array([ccd_count], dtype='int'),
-                      "fep_count": np.array([fep_count], dtype='int'),
-                      "clocking": np.array([clocking], dtype='int'),
-                      'vid_board': np.array([ccd_count > 0], dtype='int'),
-                      "pitch": np.array([pitch]),
-                      "simpos": np.array([simpos]),
-                      "datestart": np.array([self.datestart]),
-                      "datestop": np.array([self.datestop]),
-                      "tstart": np.array([self.tstart.value]),
-                      "tstop": np.array([self.tstop.value]),
-                      "hetg": np.array(["RETR"]),
-                      "letg": np.array(["RETR"]),
-                      "off_nom_roll": np.array([off_nom_roll]),
-                      "dh_heater": np.array([dh_heater], dtype='int')}
-            # For the focal plane model we need a quaternion.
-            if name == "fptemp_11":
-                for i in range(4):
-                    states["q%d" % (i+1)] = np.array([q[i]])
-        else:
-            mylog.info("Modeling a %d-chip state concurrent with " % ccd_count +
-                       "the %s vehicle loads." % vehicle_load)
-            states = dict((k, state.value) for (k, state) in
-                          States.from_load_page(vehicle_load).table.items())
-            run_idxs = states["tstart"] < tstop
-            states["ccd_count"][run_idxs] = ccd_count
-            states["fep_count"][run_idxs] = fep_count
-            states["clocking"][run_idxs] = clocking
-            states["vid_board"][run_idxs] = ccd_count > 0
+        self.load = None
+        states = self._setup_states(ccd_count, fep_count, clocking, pitch, 
+                                    off_nom_roll, simpos, dh_heater)
         super().__init__(name, datestart, datestop, states, T_init,
                          model_spec=model_spec, get_msids=False)
 
         mylog.info("Run Parameters")
         mylog.info("--------------")
-        mylog.info("Start Datestring: %s" % datestart)
-        mylog.info("Length of state in hours: %s" % hours)
-        mylog.info("Stop Datestring: %s" % datestop)
-        mylog.info("Initial Temperature: %g degrees C" % T_init)
-        mylog.info("CCD Count: %d" % ccd_count)
-        mylog.info("FEP Count: %d" % fep_count)
-        if vehicle_load is None:
-            disp_pitch = pitch
-            disp_roll = off_nom_roll
-        else:
-            pitches = states["pitch"][run_idxs]
-            rolls = states["off_nom_roll"][run_idxs]
-            disp_pitch = "Min: %g, Max: %g" % (pitches.min(), pitches.max())
-            disp_roll = "Min: %g, Max: %g" % (rolls.min(), rolls.max())
-        mylog.info("Pitch: %s" % disp_pitch)
-        mylog.info("SIM Position: %g" % simpos)
-        mylog.info("Off-nominal Roll: %s" % disp_roll)
-        mylog.info("Detector Housing Heater: %s" % {0: "OFF", 1: "ON"}[dh_heater])
+        mylog.info(f"Start Datestring: {datestart}")
+        if hasattr(self, "hours"):
+            mylog.info(f"Length of state in hours: {self.hours}")
+        mylog.info(f"Stop Datestring: {datestop}")
+        mylog.info(f"Initial Temperature: {T_init} degrees C")
+        mylog.info(f"CCD Count: {ccd_count}")
+        mylog.info(f"FEP Count: {fep_count}")
+        if self.load is None:
+            mylog.info(f"Pitch: {pitch}")
+            mylog.info(f"Off-nominal Roll: {off_nom_roll}")
+        mylog.info(f"SIM Position: {simpos}")
+        dhh = {0: "OFF", 1: "ON"}[dh_heater]
+        mylog.info(f"Detector Housing Heater: {dhh}")
 
-    def _time_ticks(self, dp, ymax, fontsize):
-        from matplotlib.ticker import AutoMinorLocator
-        axt = dp.ax.twiny()
-        mtimes = self.xija_model.times
-        xmin, xmax = (plotdate2cxctime(dp.ax.get_xlim())-mtimes[0])*1.0e-3
-        axt.plot((mtimes-mtimes[0])*1.0e-3, 
-                 ymax*np.ones_like(mtimes))
-        axt.set_xlim(xmin, xmax)
-        axt.xaxis.set_minor_locator(AutoMinorLocator(5))
-        axt.set_xlabel("Time (ks)", fontdict={"size": fontsize})
-        fontProperties = font_manager.FontProperties(size=fontsize)
-        for label in axt.get_xticklabels():
-            label.set_fontproperties(fontProperties)
-        for label in axt.get_yticklabels():
-            label.set_fontproperties(fontProperties)
+    def _setup_states(self, ccd_count, fep_count, clocking, pitch, off_nom_roll, 
+                      simpos, dh_heater, q):
+        if self.load:
+            mylog.info(f"Modeling a {ccd_count}-chip state concurrent with "
+                       f"the {self.load} vehicle loads.")
+            states = dict((k, state.value) for (k, state) in
+                          States.from_load_page(self.load).table.items())
+            run_idxs = states["tstart"] < self.tstop
+            states["ccd_count"][run_idxs] = ccd_count
+            states["fep_count"][run_idxs] = fep_count
+            states["clocking"][run_idxs] = clocking
+            states["vid_board"][run_idxs] = ccd_count > 0
+        else:
+            states = {
+                "ccd_count": np.array([ccd_count], dtype='int'),
+                "fep_count": np.array([fep_count], dtype='int'),
+                "clocking": np.array([clocking], dtype='int'),
+                'vid_board': np.array([ccd_count > 0], dtype='int'),
+                "pitch": np.array([pitch]),
+                "simpos": np.array([simpos]),
+                "datestart": np.array([self.datestart]),
+                "datestop": np.array([self.datestop]),
+                "tstart": np.array([self.tstart.value]),
+                "tstop": np.array([self.tstop.value]),
+                "hetg": np.array(["RETR"]),
+                "letg": np.array(["RETR"]),
+                "off_nom_roll": np.array([off_nom_roll]),
+                "dh_heater": np.array([dh_heater], dtype='int')
+            }
+            # For the focal plane model we need a quaternion.
+            if self.msid == "fptemp_11":
+                for i in range(4):
+                    states[f"q{i+1}"] = np.array([q[i]])
+        return states
 
     def get_temp_at_time(self, t):
         """
         Get the model temperature at a time *t* seconds
-        past the beginning of the ECS run.
+        past the beginning of the single-state run.
         """
         t += self.tstart.value
         return Quantity(np.interp(t, self['model', self.name].times.value,
@@ -1116,10 +1097,11 @@ class SimulateECSRun(SimulateSingleState):
         tstart = DateTime(tstart).sec
         tend = tstart+hours*3600.0+10012.0
         tstop = tend+0.5*(tend-tstart)
+        self.load = vehicle_load
+        self.hours = hours
         super().__init__(name, tstart, tstop, T_init, pitch, ccd_count,
-                         vehicle_load=vehicle_load, off_nom_roll=off_nom_roll,
-                         dh_heater=dh_heater, q=q, instrument=instrument,
-                         model_spec=model_spec)
+                         off_nom_roll=off_nom_roll, dh_heater=dh_heater,
+                         q=q, instrument=instrument, model_spec=model_spec)
 
         self.tend = tend
         self.dateend = secs2date(tend)
@@ -1150,8 +1132,8 @@ class SimulateECSRun(SimulateSingleState):
             self.limit_time = self.times('model', self.name)[idx]
             self.limit_date = secs2date(self.limit_time)
             self.duration = Quantity((self.limit_time.value-tstart)*0.001, "ks")
-            msg = "The limit of %g degrees C will be reached at %s, " % (self.limit.value, self.limit_date)
-            msg += "after %g ksec." % self.duration.value
+            msg = f"The limit of {self.limit.value} degrees C will be reached at {self.limit_date}, "
+            msg += f"after {self.duration.value} ksec."
             mylog.info(msg)
             if self.limit_time < self.tstop:
                 self.violate = True
@@ -1159,14 +1141,30 @@ class SimulateECSRun(SimulateSingleState):
             else:
                 self.violate = False
                 viol_time = "after"
-            mylog.info("The limit is reached %s the end of the observation." % viol_time)
+            mylog.info(f"The limit is reached {viol_time} the end of the observation.")
         else:
-            mylog.info("The limit of %g degrees C is never reached." % self.limit.value)
+            mylog.info(f"The limit of {self.limit_value} degrees C is never reached.")
 
         if self.violate:
             mylog.warning("This observation is NOT safe from a thermal perspective.")
         else:
             mylog.info("This observation is safe from a thermal perspective.")
+
+    def _time_ticks(self, dp, ymax, fontsize):
+        from matplotlib.ticker import AutoMinorLocator
+        axt = dp.ax.twiny()
+        mtimes = self.xija_model.times
+        xmin, xmax = (plotdate2cxctime(dp.ax.get_xlim())-mtimes[0])*1.0e-3
+        axt.plot((mtimes-mtimes[0])*1.0e-3, 
+                 ymax*np.ones_like(mtimes))
+        axt.set_xlim(xmin, xmax)
+        axt.xaxis.set_minor_locator(AutoMinorLocator(5))
+        axt.set_xlabel("Time (ks)", fontdict={"size": fontsize})
+        fontProperties = font_manager.FontProperties(size=fontsize)
+        for label in axt.get_xticklabels():
+            label.set_fontproperties(fontProperties)
+        for label in axt.get_yticklabels():
+            label.set_fontproperties(fontProperties)
 
     def plot_model(self, plot=None, fontsize=18, **kwargs):
         """
