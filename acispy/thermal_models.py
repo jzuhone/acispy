@@ -906,8 +906,8 @@ class SimulateSingleState(ThermalModelRunner):
         The name of the model to simulate. 
     tstart : string or float
         The start time of the single-state run.
-    tstop : string or float                                                                                                                                  
-        The stop time of the single-state run.                                                                                                               
+    tstop : string or float
+        The stop time of the single-state run.
     hours : integer or float
         The length of the ECS measurement in hours. NOTE that the 
         actual length of the ECS run is hours + 10 ks + 12 s, as
@@ -915,7 +915,7 @@ class SimulateSingleState(ThermalModelRunner):
     T_init : float
         The starting temperature for the model in degrees C.
     pitch : float
-        The pitch at which to run the model in degrees. 
+        The pitch at which to run the model in degrees.
     ccd_count : integer
         The number of CCDs to clock.
     simpos : float, optional
@@ -923,7 +923,7 @@ class SimulateSingleState(ThermalModelRunner):
     off_nom_roll : float, optional
         The off-nominal roll in degrees for the model. Default: 0.0
     dh_heater: integer, optional
-        Flag to set whether (1) or not (0) the detector housing heater is on. 
+        Flag to set whether (1) or not (0) the detector housing heater is on.
         Default: 0
     fep_count : integer, optional
         The number of FEPs which are on. Default: equal to ccd_count.
@@ -932,18 +932,18 @@ class SimulateSingleState(ThermalModelRunner):
         you probably don't want to do if you're going to simulate an actual
         ECS run. Default: 1
     model_spec : string, optional
-        Path to the model spec JSON file for the model. Default: None, the 
-        standard model path will be used. 
+        Path to the model spec JSON file for the model. Default: None, the
+        standard model path will be used.
 
     Examples
     --------
-    >>> dea_run = SimulateSingleState("1deamzt", "2016:201:05:12:03", 
-    ...                               "2016:202:05:12:03", 14.0, 150., 5, 
+    >>> dea_run = SimulateSingleState("1deamzt", "2016:201:05:12:03",
+    ...                               "2016:202:05:12:03", 14.0, 150., 5,
     ...                               off_nom_roll=-6.0, dh_heater=1)
     """
     def __init__(self, name, tstart, tstop, T_init, pitch, ccd_count,
-                 simpos=-99616.0, off_nom_roll=0.0, dh_heater=0, 
-                 fep_count=None, clocking=1, q=None, instrument=None, 
+                 simpos=-99616.0, off_nom_roll=0.0, dh_heater=0,
+                 fep_count=None, clocking=1, q=None, instrument=None,
                  model_spec=None, no_earth_heat=False):
         if name in short_name_rev:
             name = short_name_rev[name]
@@ -955,10 +955,9 @@ class SimulateSingleState(ThermalModelRunner):
             fep_count = ccd_count
         if q is None and name == "fptemp_11":
             raise RuntimeError("Please supply an attitude quaternion for the focal plane model!")
-        self.vehicle_load = vehicle_load
-        tstart = DateTime(tstart).sec
+        tstart = DateTime(tstart).secs
         datestart = DateTime(tstart).date
-        tstop = DateTime(tstop).sec
+        tstop = DateTime(tstop).secs
         datestop = DateTime(tstop).date
         self.datestart = datestart
         self.datestop = datestop
@@ -967,9 +966,8 @@ class SimulateSingleState(ThermalModelRunner):
         self.T_init = Quantity(T_init, "deg_C")
         self.instrument = instrument
         self.no_earth_heat = no_earth_heat
-        self.load = None
-        states = self._setup_states(ccd_count, fep_count, clocking, pitch, 
-                                    off_nom_roll, simpos, dh_heater)
+        states = self._setup_states(name, ccd_count, fep_count, clocking, pitch,
+                                    off_nom_roll, simpos, dh_heater, q)
         super().__init__(name, datestart, datestop, states, T_init,
                          model_spec=model_spec, get_msids=False)
 
@@ -989,14 +987,14 @@ class SimulateSingleState(ThermalModelRunner):
         dhh = {0: "OFF", 1: "ON"}[dh_heater]
         mylog.info(f"Detector Housing Heater: {dhh}")
 
-    def _setup_states(self, ccd_count, fep_count, clocking, pitch, off_nom_roll, 
+    def _setup_states(self, name, ccd_count, fep_count, clocking, pitch, off_nom_roll, 
                       simpos, dh_heater, q):
-        if self.load:
+        if getattr(self, "load", None) is not None:
             mylog.info(f"Modeling a {ccd_count}-chip state concurrent with "
                        f"the {self.load} vehicle loads.")
             states = dict((k, state.value) for (k, state) in
                           States.from_load_page(self.load).table.items())
-            run_idxs = states["tstart"] < self.tstop
+            run_idxs = states["tstart"] < self.tstop.value
             states["ccd_count"][run_idxs] = ccd_count
             states["fep_count"][run_idxs] = fep_count
             states["clocking"][run_idxs] = clocking
@@ -1019,7 +1017,7 @@ class SimulateSingleState(ThermalModelRunner):
                 "dh_heater": np.array([dh_heater], dtype='int')
             }
             # For the focal plane model we need a quaternion.
-            if self.msid == "fptemp_11":
+            if name == "fptemp_11":
                 for i in range(4):
                     states[f"q{i+1}"] = np.array([q[i]])
         return states
@@ -1058,42 +1056,42 @@ class SimulateECSRun(SimulateSingleState):
     Class for simulating thermal models for ECS measurements.
 
     name : string
-        The name of the model to simulate.                                                                                                                    
-    tstart : string or float                                                                                                                              
-        The start time of the single-state run.                                                                                                           
-    hours : integer or float                                                                                                                                  
-        The length of the ECS measurement in hours. NOTE that the                                                                                             
-        actual length of the ECS run is hours + 10 ks + 12 s, as                                                                                              
-        per the ECS CAP.                                                                                                                                      
-    T_init : float                                                                                                                                         
-        The starting temperature for the model in degrees C.                                                                                                 
-    pitch : float                                                                                                                                             
-        The pitch at which to run the model in degrees.                                                                                                       
-    ccd_count : integer                                                                                                                                       
-        The number of CCDs to clock.                                                                                                                          
-    vehicle_load : string, optional                                                                                                                           
+        The msid of the model to simulate.
+    tstart : string or float
+        The start time of the single-state run.
+    hours : integer or float
+        The length of the ECS measurement in hours. NOTE that the
+        actual length of the ECS run is hours + 10 ks + 12 s, as
+        per the ECS CAP.
+    T_init : float
+        The starting temperature for the model in degrees C.
+    pitch : float
+        The pitch at which to run the model in degrees.
+    ccd_count : integer
+        The number of CCDs to clock.
+    vehicle_load : string, optional
         If a vehicle load is running, specify it here, e.g. "SEP0917C".                                                                                   
         Default: None, meaning no vehicle load. If this parameter is set,                                                                                     
         the input values of pitch and off-nominal roll will be ignored                                                                                       
         and the values from the vehicle load will be used.                                                                                                 
-    off_nom_roll : float, optional                                                                                                                         
-        The off-nominal roll in degrees for the model. Default: 0.0         
-    dh_heater: integer, optional                                                                                                                           
-        Flag to set whether (1) or not (0) the detector housing heater is on.                                                                                 
-        Default: 0 
-    model_spec : string, optional 
+    off_nom_roll : float, optional
+        The off-nominal roll in degrees for the model. Default: 0.0
+    dh_heater: integer, optional
+        Flag to set whether (1) or not (0) the detector housing heater is on.
+        Default: 0
+    model_spec : string, optional
         Path to the model spec JSON file for the model. Default: None, the
-        standard model path will be used.                                                                                                                   
+        standard model path will be used.
 
-    Examples                                                                                                                                                  
-    --------                                                                                                                                                  
-    >>> dea_run = SimulateECSRun("1deamzt", "2016:201:05:12:03", 24, 14.0,                                                                               
-    ...                          150., 5, off_nom_roll=-6.0, dh_heater=1)                  
+    Examples
+    --------
+    >>> dea_run = SimulateECSRun("1deamzt", "2016:201:05:12:03", 24, 14.0,
+    ...                          150., 5, off_nom_roll=-6.0, dh_heater=1)
     """
     def __init__(self, name, tstart, hours, T_init, pitch, ccd_count,
                  vehicle_load=None, off_nom_roll=0.0, dh_heater=0,
                  q=None, instrument=None, model_spec=None):
-        tstart = DateTime(tstart).sec
+        tstart = DateTime(tstart).secs
         tend = tstart+hours*3600.0+10012.0
         tstop = tend+0.5*(tend-tstart)
         self.load = vehicle_load
@@ -1104,7 +1102,7 @@ class SimulateECSRun(SimulateSingleState):
 
         self.tend = tend
         self.dateend = secs2date(tend)
-        
+
         mylog.info("Model Result")
         mylog.info("------------")
 
@@ -1134,7 +1132,7 @@ class SimulateECSRun(SimulateSingleState):
             msg = f"The limit of {self.limit.value} degrees C will be reached at {self.limit_date}, "
             msg += f"after {self.duration.value} ksec."
             mylog.info(msg)
-            if self.limit_time < self.tstop:
+            if self.limit_time.value < self.tend:
                 self.violate = True
                 viol_time = "before"
             else:
@@ -1142,7 +1140,7 @@ class SimulateECSRun(SimulateSingleState):
                 viol_time = "after"
             mylog.info(f"The limit is reached {viol_time} the end of the observation.")
         else:
-            mylog.info(f"The limit of {self.limit_value} degrees C is never reached.")
+            mylog.info(f"The limit of {self.limit.value} degrees C is never reached.")
 
         if self.violate:
             mylog.warning("This observation is NOT safe from a thermal perspective.")
@@ -1177,13 +1175,15 @@ class SimulateECSRun(SimulateSingleState):
         fontsize : integer, optional
             The font size for the labels in the plot. Default: 18 pt.
         """
-        if self.vehicle_load is None:
+        if self.load is None:
             field2 = None
         else:
             field2 = "pitch"
         viol_text = "NOT SAFE" if self.violate else "SAFE"
         dp = DatePlot(self, [("model", self.name)], field2=field2, plot=plot,
                       fontsize=fontsize, **kwargs)
+        dp.add_text(find_text_time(self.dateend, hours=4.0), self.T_init.value + 2.0,
+                    viol_text, fontsize=22, color='black')
         if self.name == "fptemp_11":
             color = {"ACIS-S": "blue", "ACIS-I": "purple"}[self.instrument]
             dp.add_hline(self.limit.value, ls='--', lw=2, color=color)
