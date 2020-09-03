@@ -830,6 +830,14 @@ class ThermalModelRunner(ModelDataset):
         except KeyError:
             raise KeyError(f"{node} does not have a SolarHeat component!")
         comp.plot_solar_heat__pitch(fig, ax)
+        ax.tick_params(width=2, length=6)
+        for axis in ['top', 'bottom', 'left', 'right']:
+            ax.spines[axis].set_linewidth(2)
+        fontProperties = font_manager.FontProperties(size=18)
+        for label in ax.get_xticklabels():
+            label.set_fontproperties(fontProperties)
+        for label in ax.get_yticklabels():
+            label.set_fontproperties(fontProperties)
         if figfile is not None:
             fig.savefig(figfile)
         return fig
@@ -851,8 +859,6 @@ class ThermalModelRunner(ModelDataset):
             If True, plot the CCD count on the x-axis. Primarily 
             useful for the 1DEAMZT model. Default: False
         """
-        plt.rc("font", size=18)
-        plt.rc("axes", linewidth=2)
         if fig is None:
             fig, ax = plt.subplots(figsize=(10, 10))
         else:
@@ -887,16 +893,24 @@ class ThermalModelRunner(ModelDataset):
                    s=40, color="C1")
         for i, txt in enumerate(not_clocking["name"]):
             ax.text(not_clocking["x"][i] + 0.25, not_clocking["y"][i], txt, 
-                    color="C1")
+                    color="C1", fontdict={"size": 18})
         ax.scatter(either["x"], either["y"], label="Either", s=40, color="C2")
         for i, txt in enumerate(either["name"]):
-            ax.text(either["x"][i] + 0.25, either["y"][i], txt, color="C2")
+            ax.text(either["x"][i] + 0.25, either["y"][i], txt, color="C2", 
+                    fontdict={"size":18})
         ax.tick_params(width=2, length=6)
-        ax.set_xlabel("{} Count".format("CCD" if use_ccd_count else "FEP"))
-        ax.set_ylabel("Coefficient Value")
+        ax.set_xlabel("{} Count".format("CCD" if use_ccd_count else "FEP"), fontsize=18)
+        ax.set_ylabel("Coefficient Value", fontsize=18)
         ax.set_xticks(np.arange(7))
         ax.set_xlim(-0.25, 7.0)
-        ax.legend()
+        ax.legend(fontsize=18)
+        for axis in ['top', 'bottom', 'left', 'right']:
+            ax.spines[axis].set_linewidth(2)
+        fontProperties = font_manager.FontProperties(size=18)
+        for label in ax.get_xticklabels():
+            label.set_fontproperties(fontProperties)
+        for label in ax.get_yticklabels():
+            label.set_fontproperties(fontProperties)
         if figfile is not None:
             fig.savefig(figfile)
         return fig
@@ -1181,6 +1195,8 @@ class SimulateECSRun(SimulateSingleState):
             label.set_fontproperties(fontProperties)
         for label in axt.get_yticklabels():
             label.set_fontproperties(fontProperties)
+        axt.tick_params(which="major", width=2, length=6)
+        axt.tick_params(which="minor", width=2, length=3)
 
     def plot_model(self, plot=None, fontsize=18, **kwargs):
         """

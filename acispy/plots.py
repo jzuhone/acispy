@@ -197,6 +197,8 @@ def get_figure(plot, fig, subplot, figsize):
         if hasattr(plot, "ax2"):
             ax2 = plot.ax2
             lines2 = plot.lines2
+    for axis in ['top', 'bottom', 'left', 'right']:
+        ax.spines[axis].set_linewidth(2)
     return fig, ax, lines, ax2, lines2
 
 
@@ -241,6 +243,8 @@ class CustomDatePlot(ACISPlot):
         ticklocs, fig, ax = plot_cxctime(x, y, fmt=fmt, fig=fig, ax=ax, 
                                          lw=lw, ls=ls, color=color, **kwargs)
         super(CustomDatePlot, self).__init__(fig, ax, lines, ax2, lines2)
+        self.ax.tick_params(which="major", width=2, length=6)
+        self.ax.tick_params(which="minor", width=2, length=3)
         self.lines.append(ax.lines[-1])
         self.ax.set_xlabel("Date", fontdict={"size": fontsize})
         fontProperties = font_manager.FontProperties(size=fontsize)
@@ -289,6 +293,8 @@ class CustomDatePlot(ACISPlot):
             y = np.asarray(values)
         plot_cxctime(x, y, fmt=fmt, fig=self.fig,
                      ax=self.ax2, ls=ls, color=color, lw=lw, **kwargs)
+        self.ax2.tick_params(which="major", width=2, length=6)
+        self.ax2.tick_params(which="minor", width=2, length=3)
         fontProperties = font_manager.FontProperties(size=fontsize)
         for label in self.ax2.get_xticklabels():
             label.set_fontproperties(fontProperties)
@@ -715,6 +721,8 @@ class DatePlot(CustomDatePlot):
                 if units != '':
                     ylabel += f" ({ulabel})"
                 self.set_ylabel(ylabel)
+        self.ax.tick_params(which="major", width=2, length=6)
+        self.ax.tick_params(which="minor", width=2, length=3)
         if field2 is not None:
             field2 = ds._determine_field(field2)
             self.field2 = field2
@@ -723,6 +731,8 @@ class DatePlot(CustomDatePlot):
                 self.ax2 = self.ax.twinx()
                 self.ax2.set_zorder(-10)
                 self.ax.patch.set_visible(False)
+            self.ax2.tick_params(which="major", width=2, length=6)
+            self.ax2.tick_params(which="minor", width=2, length=3)
             drawstyle = drawstyles.get(fd2, None)
             state_codes = ds.state_codes.get(field2, None)
             if not plot_bad:
