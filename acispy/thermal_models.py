@@ -957,12 +957,12 @@ class SimulateSingleState(ThermalModelRunner):
         The start time of the single-state run.
     tstop : string or float
         The stop time of the single-state run.
-    hours : integer or float
-        The length of the ECS measurement in hours. NOTE that the 
-        actual length of the ECS run is hours + 10 ks + 12 s, as
-        per the ECS CAP.
+    states : dict
+        A dictionary of modeled commanded states required for the single-state
+        run. All states must be single values. Any particular states which are
+        not included in 
     T_init : float
-        The starting temperature for the model in degrees C.
+        The starting temperature for the model in degrees C or F.
     pitch : float
         The pitch at which to run the model in degrees.
     ccd_count : integer
@@ -1049,7 +1049,8 @@ class SimulateECSRun(ThermalModelRunner):
     T_init : float
         The starting temperature for the model in degrees C.
     pitch : float
-        The pitch at which to run the model in degrees.
+        The pitch at which to run the model in degrees. If `vehicle_load`
+        is not None, then this parameter will be ignored. 
     ccd_count : integer
         The number of CCDs to clock.
     vehicle_load : string, optional
@@ -1058,7 +1059,8 @@ class SimulateECSRun(ThermalModelRunner):
         the input values of pitch and off-nominal roll will be ignored
         and the values from the vehicle load will be used.
     off_nom_roll : float, optional
-        The off-nominal roll in degrees for the model. Default: 0.0
+        The off-nominal roll in degrees for the model. If `vehicle_load`
+        is not None, then this parameter will be ignored. Default: 0.0
     dh_heater: integer, optional
         Flag to set whether (1) or not (0) the detector housing heater is on.
         Default: 0
