@@ -925,7 +925,7 @@ def make_default_states():
         "ccd_count": np.array([0], dtype='int'),
         "fep_count": np.array([0], dtype='int'),
         "clocking": np.array([0], dtype='int'),
-        "vid_board": np.array([ccd_count > 0], dtype='int'),
+        "vid_board": np.array([0], dtype='int'),
         "pitch": np.array([90.0]),
         "simpos": np.array([-99616.0]),
         "hetg": np.array(["RETR"]),
@@ -1028,7 +1028,7 @@ class SimulateSingleState(ThermalModelRunner):
         raise NotImplementedError
 
 
-class SimulateECSRun(SimulateSingleState):
+class SimulateECSRun(ThermalModelRunner):
     """
     Class for simulating thermal models for ECS measurements.
 
@@ -1077,6 +1077,8 @@ class SimulateECSRun(SimulateSingleState):
         tstart = DateTime(tstart).secs
         tend = tstart+hours*3600.0+10012.0
         tstop = tend+0.5*(tend-tstart)
+        datestart = secs2date(tstart)
+        datestop = secs2date(tstop)
         self.vehicle_load = vehicle_load
         self.hours = hours
         self.no_earth_heat = no_earth_heat
@@ -1085,7 +1087,7 @@ class SimulateECSRun(SimulateSingleState):
                        f"the {self.vehicle_load} vehicle loads.")
             states = dict((k, state.value) for (k, state) in
                           States.from_load_page(self.vehicle_load).table.items())
-            run_idxs = states["tstart"] < self.tstop.value
+            run_idxs = states["tstart"] < tstop
             states["ccd_count"][run_idxs] = ccd_count
             states["fep_count"][run_idxs] = ccd_count
             states["clocking"][run_idxs] = 1
@@ -1101,8 +1103,8 @@ class SimulateECSRun(SimulateSingleState):
                 "vid_board": np.array([1], dtype='int'),
                 "pitch": np.array([pitch]),
                 "simpos": np.array([-99616.0]),
-                "datestart": np.array([secs2date(tstart)]),
-                "datestop": np.array([secs2date(tstop)]),
+                "datestart": np.array([datestart]),
+                "datestop": np.array([datestop]),
                 "tstart": np.array([tstart]),
                 "tstop": np.array([tstop]),
                 "hetg": np.array(["RETR"]),
@@ -1125,8 +1127,7 @@ class SimulateECSRun(SimulateSingleState):
         mylog.info(f"Length of state in hours: {self.hours}")
         mylog.info(f"Stop Datestring: {datestop}")
         mylog.info(f"Initial Temperature: {T_init} degrees C")
-        mylog.info(f"CCD Count: {ccd_count}")
-        mylog.info(f"FEP Count: {fep_count}")
+        mylog.info(f"CCD/FEP Count: {ccd_count}")
         if self.vehicle_load is None:
             mylog.info(f"Pitch: {pitch}")
             mylog.info(f"Off-nominal Roll: {off_nom_roll}")
