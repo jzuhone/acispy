@@ -27,7 +27,10 @@ short_name = {"1deamzt": "dea",
               "tmp_fep1_actel": "fep1_actel",
               "tmp_fep1_fb": "fep1_fb",
               "tmp_bep_pcb": "bep_pcb",
-              "aacccdpt": "aca"}
+              "aacccdpt": "aca",
+              "pftank2t": "pftank2t",
+              "fwdblkhd": "4rt700t",
+              "minusyz": "minusyz"}
 
 short_name_rev = {v: k for k, v in short_name.items()}
 
