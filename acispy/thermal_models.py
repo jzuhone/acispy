@@ -970,12 +970,14 @@ class SimulateSingleState(ThermalModelRunner):
     ...                               "2016:202:05:12:03", 14.0, 150., 5,
     ...                               off_nom_roll=-6.0, dh_heater=1)
     """
-    def __init__(self, name, tstart, tstop, states, T_init, model_spec=None, 
-                 no_earth_heat=False):
+    def __init__(self, name, tstart, tstop, states, T_init, model_spec=None,
+                 dt=328.0, evolve_method=None, rk4=None, no_earth_heat=False):
 
         _states = make_default_states()
         if "ccd_count" in states and "fep_count" not in states:
             states["fep_count"] = states["ccd_count"]
+        if "fep_count" in states and "ccd_count" not in states:
+            states["ccd_count"] = states["fep_count"]
         for name in list(states.keys()):
             if name in _states:
                 _states[name][0] = states[name]
@@ -993,8 +995,8 @@ class SimulateSingleState(ThermalModelRunner):
         _states["tstop"] = np.array([tstop])
         self.no_earth_heat = no_earth_heat
         super().__init__(name, datestart, datestop, states=_states, 
-                         T_init=T_init, model_spec=model_spec, 
-                         get_msids=False)
+                         T_init=T_init, dt=dt, evolve_method=evolve_method, 
+                         rk4=rk4, model_spec=model_spec, get_msids=False)
 
     def write_msids(self, filename, fields, mask_field=None, overwrite=False):
         raise NotImplementedError
@@ -1051,7 +1053,8 @@ class SimulateECSRun(SimulateSingleState):
     """
     def __init__(self, name, tstart, hours, T_init, pitch, ccd_count,
                  vehicle_load=None, off_nom_roll=0.0, dh_heater=0,
-                 q=None, instrument=None, model_spec=None):
+                 q=None, instrument=None, dt=328.0, evolve_method=None, 
+                 rk4=None, model_spec=None, no_earth_heat=False):
         if name == "fptemp_11" and instrument is None:
             raise RuntimeError("Must specify either 'ACIS-I' or 'ACIS-S' in "
                                "'instrument' if you want to model the focal plane "
@@ -1062,6 +1065,7 @@ class SimulateECSRun(SimulateSingleState):
         tstop = tend+0.5*(tend-tstart)
         self.vehicle_load = vehicle_load
         self.hours = hours
+        self.no_earth_heat = no_earth_heat
         if self.vehicle_load is not None:
             mylog.info(f"Modeling a {ccd_count}-chip state concurrent with "
                        f"the {self.vehicle_load} vehicle loads.")
@@ -1098,6 +1102,7 @@ class SimulateECSRun(SimulateSingleState):
                     states[f"q{i+1}"] = np.array([q[i]])
 
         super().__init__(name, tstart, tstop, states=states, T_init=T_init,
+                         dt=dt, evolve_method=evolve_method, rk4=rk4, 
                          model_spec=model_spec)
 
         mylog.info("Run Parameters")
