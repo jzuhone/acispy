@@ -500,7 +500,7 @@ class ThermalModelRunner(ModelDataset):
         tstart_secs = DateTime(tstart).secs
         tstop_secs = DateTime(tstop).secs
 
-        last_ecl_time = fetch.get_time_range("aoeclips", format='sec')[1]
+        last_ecl_time = fetch.get_time_range("aoeclips", format='secs')[1]
         self.no_eclipse = tstop_secs > last_ecl_time
         self.no_earth_heat = getattr(self, "no_earth_heat", False)
 
