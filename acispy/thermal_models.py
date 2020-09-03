@@ -494,11 +494,16 @@ class ThermalModelRunner(ModelDataset):
  
         self.compute_model_supp = compute_model_supp
 
-        tstart = get_time(tstart)
-        tstop = get_time(tstop)
+        tstart = DateTime(tstart).date
+        tstop = DateTime(tstop).date
 
         tstart_secs = DateTime(tstart).secs
         tstop_secs = DateTime(tstop).secs
+
+        self.datestart = tstart
+        self.datestop = tstop
+        self.tstart = Quantity(tstart_secs, "s")
+        self.tstop = Quantity(tstop_secs, "s")
 
         last_ecl_time = fetch.get_time_range("aoeclips", format='secs')[1]
         self.no_eclipse = tstop_secs > last_ecl_time
@@ -530,6 +535,8 @@ class ThermalModelRunner(ModelDataset):
                                    "Please specify T_init or choose a different "
                                    "time.")
             T_init = fetch.MSID(self.name, tstart_secs-700., tstart_secs).vals[-1]
+
+        self.T_init = Quantity(T_init, "deg_C")
 
         if self.name in acis_models and states is not None:
             self.xija_model = self._compute_acis_model(self.name, tstart, tstop,
@@ -899,6 +906,25 @@ def find_text_time(time, hours=1.0):
     return secs2date(date2secs(time)+hours*3600.0)
 
 
+def make_default_states():
+    return {
+        "ccd_count": np.array([0], dtype='int'),
+        "fep_count": np.array([0], dtype='int'),
+        "clocking": np.array([0], dtype='int'),
+        "vid_board": np.array([ccd_count > 0], dtype='int'),
+        "pitch": np.array([90.0]),
+        "simpos": np.array([-99616.0]),
+        "hetg": np.array(["RETR"]),
+        "letg": np.array(["RETR"]),
+        "off_nom_roll": np.array([0.0]),
+        "dh_heater": np.array([0], dtype='int'),
+        "q1": np.array([1.0]),
+        "q2": np.array([0.0]),
+        "q3": np.array([0.0]),
+        "q4": np.array([0.0])
+    }
+
+
 class SimulateSingleState(ThermalModelRunner):
     """
     Class for simulating thermal models under constant conditions.
@@ -944,99 +970,31 @@ class SimulateSingleState(ThermalModelRunner):
     ...                               "2016:202:05:12:03", 14.0, 150., 5,
     ...                               off_nom_roll=-6.0, dh_heater=1)
     """
-    def __init__(self, name, tstart, tstop, T_init, pitch, ccd_count,
-                 simpos=-99616.0, off_nom_roll=0.0, dh_heater=0,
-                 fep_count=None, clocking=1, q=None, instrument=None,
-                 model_spec=None, no_earth_heat=False):
+    def __init__(self, name, tstart, tstop, states, T_init, model_spec=None, 
+                 no_earth_heat=False):
+
+        _states = make_default_states()
+        if "ccd_count" in states and "fep_count" not in states:
+            states["fep_count"] = states["ccd_count"]
+        for name in list(states.keys()):
+            if name in _states:
+                _states[name][0] = states[name]
+            else:
+                raise KeyError(f"You input a state ('{name}') which does not exist!")
         if name in short_name_rev:
             name = short_name_rev[name]
-        if name == "fptemp_11" and instrument is None:
-            raise RuntimeError("Must specify either 'ACIS-I' or 'ACIS-S' in "
-                               "'instrument' if you want to model the focal plane " 
-                               "temperature!")
-        if fep_count is None:
-            fep_count = ccd_count
-        if q is None and name == "fptemp_11":
-            raise RuntimeError("Please supply an attitude quaternion for the focal plane model!")
         tstart = DateTime(tstart).secs
         datestart = DateTime(tstart).date
         tstop = DateTime(tstop).secs
         datestop = DateTime(tstop).date
-        self.datestart = datestart
-        self.datestop = datestop
-        self.tstart = Quantity(tstart, "s")
-        self.tstop = Quantity(tstop, "s")
-        self.T_init = Quantity(T_init, "deg_C")
-        self.instrument = instrument
+        _states["datestart"] = np.array([datestart])
+        _states["datestop"] = np.array([datestop])
+        _states["tstart"] = np.array([tstart])
+        _states["tstop"] = np.array([tstop])
         self.no_earth_heat = no_earth_heat
-        states = self._setup_states(name, ccd_count, fep_count, clocking, pitch,
-                                    off_nom_roll, simpos, dh_heater, q)
-        super().__init__(name, datestart, datestop, states, T_init,
-                         model_spec=model_spec, get_msids=False)
-
-        mylog.info("Run Parameters")
-        mylog.info("--------------")
-        mylog.info(f"Start Datestring: {datestart}")
-        if hasattr(self, "hours"):
-            mylog.info(f"Length of state in hours: {self.hours}")
-        mylog.info(f"Stop Datestring: {datestop}")
-        mylog.info(f"Initial Temperature: {T_init} degrees C")
-        mylog.info(f"CCD Count: {ccd_count}")
-        mylog.info(f"FEP Count: {fep_count}")
-        if self.load is None:
-            mylog.info(f"Pitch: {pitch}")
-            mylog.info(f"Off-nominal Roll: {off_nom_roll}")
-        mylog.info(f"SIM Position: {simpos}")
-        dhh = {0: "OFF", 1: "ON"}[dh_heater]
-        mylog.info(f"Detector Housing Heater: {dhh}")
-
-    def _setup_states(self, name, ccd_count, fep_count, clocking, pitch, off_nom_roll, 
-                      simpos, dh_heater, q):
-        if getattr(self, "load", None) is not None:
-            mylog.info(f"Modeling a {ccd_count}-chip state concurrent with "
-                       f"the {self.load} vehicle loads.")
-            states = dict((k, state.value) for (k, state) in
-                          States.from_load_page(self.load).table.items())
-            run_idxs = states["tstart"] < self.tstop.value
-            states["ccd_count"][run_idxs] = ccd_count
-            states["fep_count"][run_idxs] = fep_count
-            states["clocking"][run_idxs] = clocking
-            states["vid_board"][run_idxs] = ccd_count > 0
-        else:
-            states = {
-                "ccd_count": np.array([ccd_count], dtype='int'),
-                "fep_count": np.array([fep_count], dtype='int'),
-                "clocking": np.array([clocking], dtype='int'),
-                'vid_board': np.array([ccd_count > 0], dtype='int'),
-                "pitch": np.array([pitch]),
-                "simpos": np.array([simpos]),
-                "datestart": np.array([self.datestart]),
-                "datestop": np.array([self.datestop]),
-                "tstart": np.array([self.tstart.value]),
-                "tstop": np.array([self.tstop.value]),
-                "hetg": np.array(["RETR"]),
-                "letg": np.array(["RETR"]),
-                "off_nom_roll": np.array([off_nom_roll]),
-                "dh_heater": np.array([dh_heater], dtype='int')
-            }
-            # For the focal plane model we need a quaternion.
-            if name == "fptemp_11":
-                for i in range(4):
-                    states[f"q{i+1}"] = np.array([q[i]])
-        return states
-
-    def get_temp_at_time(self, t):
-        """
-        Get the model temperature at a time *t* seconds
-        past the beginning of the single-state run.
-        """
-        t += self.tstart.value
-        return Quantity(np.interp(t, self['model', self.name].times.value,
-                                  self['model', self.name].value), "deg_C")
-
-    @property
-    def mvals(self):
-        return self['model', self.name]
+        super().__init__(name, datestart, datestop, states=_states, 
+                         T_init=T_init, model_spec=model_spec, 
+                         get_msids=False)
 
     def write_msids(self, filename, fields, mask_field=None, overwrite=False):
         raise NotImplementedError
@@ -1073,10 +1031,10 @@ class SimulateECSRun(SimulateSingleState):
     ccd_count : integer
         The number of CCDs to clock.
     vehicle_load : string, optional
-        If a vehicle load is running, specify it here, e.g. "SEP0917C".                                                                                   
-        Default: None, meaning no vehicle load. If this parameter is set,                                                                                     
-        the input values of pitch and off-nominal roll will be ignored                                                                                       
-        and the values from the vehicle load will be used.                                                                                                 
+        If a vehicle load is running, specify it here, e.g. "SEP0917C".
+        Default: None, meaning no vehicle load. If this parameter is set,
+        the input values of pitch and off-nominal roll will be ignored
+        and the values from the vehicle load will be used.
     off_nom_roll : float, optional
         The off-nominal roll in degrees for the model. Default: 0.0
     dh_heater: integer, optional
@@ -1094,14 +1052,67 @@ class SimulateECSRun(SimulateSingleState):
     def __init__(self, name, tstart, hours, T_init, pitch, ccd_count,
                  vehicle_load=None, off_nom_roll=0.0, dh_heater=0,
                  q=None, instrument=None, model_spec=None):
+        if name == "fptemp_11" and instrument is None:
+            raise RuntimeError("Must specify either 'ACIS-I' or 'ACIS-S' in "
+                               "'instrument' if you want to model the focal plane "
+                               "temperature!")
+        self.instrument = instrument
         tstart = DateTime(tstart).secs
         tend = tstart+hours*3600.0+10012.0
         tstop = tend+0.5*(tend-tstart)
-        self.load = vehicle_load
+        self.vehicle_load = vehicle_load
         self.hours = hours
-        super().__init__(name, tstart, tstop, T_init, pitch, ccd_count,
-                         off_nom_roll=off_nom_roll, dh_heater=dh_heater,
-                         q=q, instrument=instrument, model_spec=model_spec)
+        if self.vehicle_load is not None:
+            mylog.info(f"Modeling a {ccd_count}-chip state concurrent with "
+                       f"the {self.vehicle_load} vehicle loads.")
+            states = dict((k, state.value) for (k, state) in
+                          States.from_load_page(self.vehicle_load).table.items())
+            run_idxs = states["tstart"] < self.tstop.value
+            states["ccd_count"][run_idxs] = ccd_count
+            states["fep_count"][run_idxs] = ccd_count
+            states["clocking"][run_idxs] = 1
+            states["vid_board"][run_idxs] = 1
+            states["simpos"][run_idxs] = -99616.0
+            states["hetg"][run_idxs] = "RETR"
+            states["letg"][run_idxs] = "RETR"
+        else:
+            states = {
+                "ccd_count": np.array([ccd_count], dtype='int'),
+                "fep_count": np.array([ccd_count], dtype='int'),
+                "clocking": np.array([1], dtype='int'),
+                "vid_board": np.array([1], dtype='int'),
+                "pitch": np.array([pitch]),
+                "simpos": np.array([-99616.0]),
+                "datestart": np.array([secs2date(tstart)]),
+                "datestop": np.array([secs2date(tstop)]),
+                "tstart": np.array([tstart]),
+                "tstop": np.array([tstop]),
+                "hetg": np.array(["RETR"]),
+                "letg": np.array(["RETR"]),
+                "off_nom_roll": np.array([off_nom_roll]),
+                "dh_heater": np.array([dh_heater], dtype='int')
+            }
+            # For the focal plane model we need a quaternion.
+            if name == "fptemp_11":
+                for i in range(4):
+                    states[f"q{i+1}"] = np.array([q[i]])
+
+        super().__init__(name, tstart, tstop, states=states, T_init=T_init,
+                         model_spec=model_spec)
+
+        mylog.info("Run Parameters")
+        mylog.info("--------------")
+        mylog.info(f"Start Datestring: {datestart}")
+        mylog.info(f"Length of state in hours: {self.hours}")
+        mylog.info(f"Stop Datestring: {datestop}")
+        mylog.info(f"Initial Temperature: {T_init} degrees C")
+        mylog.info(f"CCD Count: {ccd_count}")
+        mylog.info(f"FEP Count: {fep_count}")
+        if self.vehicle_load is None:
+            mylog.info(f"Pitch: {pitch}")
+            mylog.info(f"Off-nominal Roll: {off_nom_roll}")
+        dhh = {0: "OFF", 1: "ON"}[dh_heater]
+        mylog.info(f"Detector Housing Heater: {dhh}")
 
         self.tend = tend
         self.dateend = secs2date(tend)
@@ -1178,7 +1189,7 @@ class SimulateECSRun(SimulateSingleState):
         fontsize : integer, optional
             The font size for the labels in the plot. Default: 18 pt.
         """
-        if self.load is None:
+        if self.vehicle_load is None:
             field2 = None
         else:
             field2 = "pitch"
@@ -1216,3 +1227,31 @@ class SimulateECSRun(SimulateSingleState):
         self._time_ticks(dp, ymax, fontsize)
         dp.set_ylim(ymin, ymax)
         return dp
+
+    def get_temp_at_time(self, t):
+        """
+        Get the model temperature at a time *t* seconds
+        past the beginning of the single-state run.
+        """
+        t += self.tstart.value
+        return Quantity(np.interp(t, self['model', self.name].times.value,
+                                  self['model', self.name].value), "deg_C")
+
+    @property
+    def mvals(self):
+        return self['model', self.name]
+
+    def write_msids(self, filename, fields, mask_field=None, overwrite=False):
+        raise NotImplementedError
+
+    def write_states(self, states_file, overwrite=False):
+        raise NotImplementedError
+
+    def write_model(self, filename, overwrite=False):
+        raise NotImplementedError
+
+    def make_dashboard_plots(self, yplotlimits=None, errorplotlimits=None, fig=None):
+        raise NotImplementedError
+
+    def write_model_and_data(self, filename, overwrite=False):
+        raise NotImplementedError
