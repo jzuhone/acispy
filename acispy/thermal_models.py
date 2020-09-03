@@ -123,7 +123,7 @@ class ModelDataset(Dataset):
             If True, an existing file with the same name will be overwritten.
         """
         if os.path.exists(filename) and not overwrite:
-            raise IOError("File %s already exists, but overwrite=False!" % filename)
+            raise IOError(f"File {filename} already exists, but overwrite=False!")
         names = []
         arrays = []
         for i, msid in enumerate(self.model.keys()):
@@ -171,7 +171,7 @@ class ModelDataset(Dataset):
             out.append(("model", msid))
             if ("msids", msid) in self.field_list:
                 self.add_diff_data_model_field(msid)
-                out += [("msids", msid), ("model", "diff_%s" % msid)]
+                out += [("msids", msid), ("model", f"diff_{msid}")]
         msid = list(self.model.keys())[0]
         telem = self["msids", msid]
         mask = np.ones_like(telem.value, dtype='bool')
@@ -819,7 +819,7 @@ class ThermalModelRunner(ModelDataset):
         else:
             ax = fig.add_subplot(111)
         try:
-            comp = self.xija_model.comp["solarheat__%s" % node]
+            comp = self.xija_model.comp[f"solarheat__{node}"]
         except KeyError:
             raise KeyError(f"{node} does not have a SolarHeat component!")
         comp.plot_solar_heat__pitch(fig, ax)

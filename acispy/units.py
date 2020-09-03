@@ -168,7 +168,7 @@ def parse_index(idx, times):
         if isinstance(idx, str):
             idx = DateTime(idx).secs
         if idx < times[0] or idx > times[-1]:
-            raise RuntimeError("The time %s is outside the bounds of this dataset!" % orig_idx)
+            raise RuntimeError(f"The time {orig_idx} is outside the bounds of this dataset!")
         idx = np.searchsorted(times, idx)-1
     return idx
 
@@ -353,7 +353,7 @@ def get_units(ftype, fname):
                 msid_units[fname] = unit
             except KeyError:
                 if fname not in mit_fields:
-                    mylog.warning("Cannot find a unit for MSID %s. " % fname +
+                    mylog.warning(f"Cannot find a unit for MSID {fname}. "
                                   "Setting to dimensionless.")
                 unit = ''
     if unit == "DEG":

@@ -91,10 +91,10 @@ class ACISLoadReview(object):
         self.load_name = find_load(load_name)
         self.load_letter = self.load_name[-1]
         self.load_week = self.load_name[:7]
-        self.load_year = "20%s" % self.load_week[5:7]
+        self.load_year = f"20{self.load_week[5:7]}"
         self.next_year = str(int(self.load_year)+1)
         loaddir = os.path.join(lr_root, self.load_year, self.load_week)
-        oflsdir = os.path.join(loaddir, "ofls%s" % self.load_letter.lower())
+        oflsdir = os.path.join(loaddir, f"ofls{self.load_letter.lower()}")
         self.load_file = os.path.join(oflsdir, lr_file)
         self.events = defaultdict(dict)
         self.start_status = self._get_start_status()
@@ -290,7 +290,7 @@ class ACISLoadReview(object):
         if item in self.events:
             return LoadReviewEvent(item, self.events[item])
         else:
-            raise AttributeError("'LoadReview' object has no attribute '%s'" % item)
+            raise AttributeError(f"'LoadReview' object has no attribute '{item}'")
 
     def _add_annotations(self, plot, annotations, tbegin, tend):
         for i, line in enumerate(plot.ax.lines):

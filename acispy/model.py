@@ -67,7 +67,7 @@ class Model(TimeSeriesData):
     def from_load_page(cls, load, components, time_range=None):
         components = [comp.lower() for comp in components]
         load = find_load(load)
-        mylog.info("Reading model data from the %s load." % load)
+        mylog.info(f"Reading model data from the {load} load.")
         components = ensure_list(components)
         if "fptemp_11" in components:
             components.append("earth_solid_angle")
@@ -87,7 +87,7 @@ class Model(TimeSeriesData):
                 if table_key == "earth_solid_angle":
                     mylog.warning("Could not find the earth solid angles file. Skipping.")
                 else:
-                    mylog.warning("Could not find the model page for '%s'. Skipping." % comp)
+                    mylog.warning(f"Could not find the model page for '{comp}'. Skipping.")
                 continue
             table = ascii.read(u.text)
             if time_range is None:
