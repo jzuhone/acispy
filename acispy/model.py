@@ -75,13 +75,13 @@ class Model(TimeSeriesData):
         for comp in components:
             if comp == "earth_solid_angle":
                 url = "http://cxc.cfa.harvard.edu/acis/FP_thermPredic/"
-                url += "%s/ofls%s/earth_solid_angles.dat" % (load[:-1].upper(), load[-1].lower())
+                url += f"{load[:-1].upper()}/ofls{load[-1].lower()}/earth_solid_angles.dat"
                 table_key = comp
             else:
                 c = comp_map[comp].upper()
                 table_key = "fptemp" if comp == "fptemp_11" else comp
-                url = "http://cxc.cfa.harvard.edu/acis/%s_thermPredic/" % c
-                url += "%s/ofls%s/temperatures.dat" % (load[:-1].upper(), load[-1].lower())
+                url = f"http://cxc.cfa.harvard.edu/acis/{c}_thermPredic/"
+                url += f"{load[:-1].upper()}/ofls{load[-1].lower()}/temperatures.dat"
             u = requests.get(url)
             if not u.ok:
                 if table_key == "earth_solid_angle":
