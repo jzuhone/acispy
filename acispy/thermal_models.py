@@ -830,6 +830,11 @@ class ThermalModelRunner(ModelDataset):
         except KeyError:
             raise KeyError(f"{node} does not have a SolarHeat component!")
         comp.plot_solar_heat__pitch(fig, ax)
+        ax.set_xlabel("Pitch (deg)", fontsize=18)
+        ax.set_ylabel("SolarHeat", fontsize=18)
+        ax.lines[1].set_label("P")
+        ax.lines[3].set_label("P+dP")
+        ax.legend(fontsize=18)
         ax.tick_params(width=2, length=6)
         for axis in ['top', 'bottom', 'left', 'right']:
             ax.spines[axis].set_linewidth(2)
@@ -838,6 +843,7 @@ class ThermalModelRunner(ModelDataset):
             label.set_fontproperties(fontProperties)
         for label in ax.get_yticklabels():
             label.set_fontproperties(fontProperties)
+        ax.title.set_fontsize(18)
         if figfile is not None:
             fig.savefig(figfile)
         return fig
