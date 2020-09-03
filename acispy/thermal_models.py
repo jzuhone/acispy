@@ -894,16 +894,17 @@ class ThermalModelRunner(ModelDataset):
         ax.scatter(clocking["x"], clocking["y"], label="Clocking", s=40,
                    color="C0")
         for i, txt in enumerate(clocking["name"]):
-            ax.text(clocking["x"][i] + 0.25, clocking["y"][i], txt, color="C0")
-        ax.scatter(not_clocking["x"], not_clocking["y"], label="Not Clocking", 
+            ax.text(clocking["x"][i] + 0.25, clocking["y"][i], txt, color="C0",
+                    fontsize=18)
+        ax.scatter(not_clocking["x"], not_clocking["y"], label="Not Clocking",
                    s=40, color="C1")
         for i, txt in enumerate(not_clocking["name"]):
             ax.text(not_clocking["x"][i] + 0.25, not_clocking["y"][i], txt, 
-                    color="C1", fontdict={"size": 18})
+                    color="C1", fontsize=18)
         ax.scatter(either["x"], either["y"], label="Either", s=40, color="C2")
         for i, txt in enumerate(either["name"]):
             ax.text(either["x"][i] + 0.25, either["y"][i], txt, color="C2", 
-                    fontdict={"size":18})
+                    fontsize=18)
         ax.tick_params(width=2, length=6)
         ax.set_xlabel("{} Count".format("CCD" if use_ccd_count else "FEP"), fontsize=18)
         ax.set_ylabel("Coefficient Value", fontsize=18)
