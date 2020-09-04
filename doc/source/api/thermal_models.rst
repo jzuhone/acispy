@@ -16,7 +16,7 @@ Thermal Models API
     :inherited-members:
     :exclude-members: keys
 
-.. autoclass:: acispy.thermal_models.SimulateSingleObs
+.. autoclass:: acispy.thermal_models.SimulateSingleState
     :members:
     :inherited-members:
     :exclude-members: keys

@@ -34,3 +34,8 @@
     :members:
     :inherited-members:
     :exclude-members: keys
+
+.. autoclass:: acispy.dataset.TelemData
+    :members:
+    :inherited-members:
+    :exclude-members: keys
