@@ -992,18 +992,19 @@ class SimulateSingleState(ThermalModelRunner):
     ...                               off_nom_roll=-6.0, dh_heater=1)
     """
     def __init__(self, name, tstart, tstop, states, T_init, model_spec=None,
-                 dt=328.0, evolve_method=None, rk4=None, no_earth_heat=False):
+                 dt=328.0, evolve_method=None, rk4=None, no_earth_heat=False,
+                 other_init=None):
 
         _states = make_default_states()
         if "ccd_count" in states and "fep_count" not in states:
             states["fep_count"] = states["ccd_count"]
         if "fep_count" in states and "ccd_count" not in states:
             states["ccd_count"] = states["fep_count"]
-        for name in list(states.keys()):
-            if name in _states:
-                _states[name][0] = states[name]
+        for k in list(states.keys()):
+            if k in _states:
+                _states[k][0] = states[k]
             else:
-                raise KeyError(f"You input a state ('{name}') which does not exist!")
+                raise KeyError(f"You input a state ('{k}') which does not exist!")
         if name in short_name_rev:
             name = short_name_rev[name]
         tstart = DateTime(tstart).secs
@@ -1017,7 +1018,8 @@ class SimulateSingleState(ThermalModelRunner):
         self.no_earth_heat = no_earth_heat
         super().__init__(name, datestart, datestop, states=_states, 
                          T_init=T_init, dt=dt, evolve_method=evolve_method, 
-                         rk4=rk4, model_spec=model_spec, get_msids=False)
+                         rk4=rk4, model_spec=model_spec, get_msids=False,
+                         other_init=other_init)
 
     def write_msids(self, filename, fields, mask_field=None, overwrite=False):
         raise NotImplementedError
