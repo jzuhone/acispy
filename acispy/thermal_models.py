@@ -423,6 +423,10 @@ class ThermalModelRunner(ModelDataset):
         The initial temperature for the thermal model run. If None,
         an initial temperature will be determined from telemetry.
         Default: None
+    other_init : dict, optional
+        A dictionary of names of nodes (such as pseudo-nodes) and initial
+        values, which can be supplied to initialize these nodes for the
+        start of the model run. Default: None
     get_msids : boolean, optional
         Whether or not to pull data from the engineering archive. 
         Default: False
@@ -964,36 +968,43 @@ class SimulateSingleState(ThermalModelRunner):
         not included in 
     T_init : float
         The starting temperature for the model in degrees C or F.
-    pitch : float
-        The pitch at which to run the model in degrees.
-    ccd_count : integer
-        The number of CCDs to clock.
-    simpos : float, optional
-        The SIM position at which to run the model. Default: -99616.0
-    off_nom_roll : float, optional
-        The off-nominal roll in degrees for the model. Default: 0.0
-    dh_heater: integer, optional
-        Flag to set whether (1) or not (0) the detector housing heater is on.
-        Default: 0
-    fep_count : integer, optional
-        The number of FEPs which are on. Default: equal to ccd_count.
-    clocking : integer, optional
-        Set to 0 if you want to simulate a ECS run which doesn't clock, which
-        you probably don't want to do if you're going to simulate an actual
-        ECS run. Default: 1
     model_spec : string, optional
         Path to the model spec JSON file for the model. Default: None, the
         standard model path will be used.
+    dt : float, optional
+        The timestep to use for this run. Default is 328 seconds or is provided
+        by the model specification file.
+    evolve_method : integer, optional
+        Whether to use the old xija core solver (1) or the new one (2).
+        Default: None, which defaults to the value in the model spec
+        file.
+    rk4 : integer, optional
+        Whether to use 4th-order Runge-Kutta (1) instead of 2nd order (0). 
+        Only works with evolve_method=2. Default: None, which defaults 
+        to the value in the model spec file.
+    no_earth_heat : boolean, optional
+        Ignore the effect of earthshine in the ACIS radiator field of view.
+        This really only might be useful for the ACIS focal plane 
+        temperature model. Default: False
+    other_init : dict, optional
+        A dictionary of names of nodes (such as pseudo-nodes) and initial
+        values, which can be supplied to initialize these nodes for the
+        start of the model run. Default: None
+    compute_model_supp : callable, optional
+        A function which takes the model name, tstart, tstop,
+        and a XijaModel object, and allows the user to 
+        perform custom operations on the model.
 
     Examples
     --------
+    >>> states = {"pitch": 75.0, "off_nom_roll": -6.0, "clocking": 1,
+    ...           "ccd_count": 6, "dh_heater": 1, "simpos": 75624.0,}
     >>> dea_run = SimulateSingleState("1deamzt", "2016:201:05:12:03",
-    ...                               "2016:202:05:12:03", 14.0, 150., 5,
-    ...                               off_nom_roll=-6.0, dh_heater=1)
+    ...                               "2016:202:05:12:03", states, 15.0)
     """
     def __init__(self, name, tstart, tstop, states, T_init, model_spec=None,
                  dt=328.0, evolve_method=None, rk4=None, no_earth_heat=False,
-                 other_init=None):
+                 other_init=None, compute_model_supp=None):
 
         _states = make_default_states()
         if "ccd_count" in states and "fep_count" not in states:
@@ -1019,7 +1030,8 @@ class SimulateSingleState(ThermalModelRunner):
         super().__init__(name, datestart, datestop, states=_states, 
                          T_init=T_init, dt=dt, evolve_method=evolve_method, 
                          rk4=rk4, model_spec=model_spec, get_msids=False,
-                         other_init=other_init)
+                         other_init=other_init, 
+                         compute_model_supp=compute_model_supp)
 
     def write_msids(self, filename, fields, mask_field=None, overwrite=False):
         raise NotImplementedError
@@ -1067,9 +1079,32 @@ class SimulateECSRun(ThermalModelRunner):
     dh_heater: integer, optional
         Flag to set whether (1) or not (0) the detector housing heater is on.
         Default: 0
+    dt : float, optional
+        The timestep to use for this run. Default is 328 seconds or is provided
+        by the model specification file.
+    evolve_method : integer, optional
+        Whether to use the old xija core solver (1) or the new one (2).
+        Default: None, which defaults to the value in the model spec
+        file.
+    rk4 : integer, optional
+        Whether to use 4th-order Runge-Kutta (1) instead of 2nd order (0). 
+        Only works with evolve_method=2. Default: None, which defaults 
+        to the value in the model spec file.
     model_spec : string, optional
         Path to the model spec JSON file for the model. Default: None, the
         standard model path will be used.
+    no_earth_heat : boolean, optional
+        Ignore the effect of earthshine in the ACIS radiator field of view.
+        This really only might be useful for the ACIS focal plane 
+        temperature model. Default: False
+    other_init : dict, optional
+        A dictionary of names of nodes (such as pseudo-nodes) and initial
+        values, which can be supplied to initialize these nodes for the
+        start of the model run. Default: None
+    compute_model_supp : callable, optional
+        A function which takes the model name, tstart, tstop,
+        and a XijaModel object, and allows the user to 
+        perform custom operations on the model.
 
     Examples
     --------
@@ -1078,13 +1113,9 @@ class SimulateECSRun(ThermalModelRunner):
     """
     def __init__(self, name, tstart, hours, T_init, pitch, ccd_count,
                  vehicle_load=None, off_nom_roll=0.0, dh_heater=0,
-                 q=None, instrument=None, dt=328.0, evolve_method=None, 
-                 rk4=None, model_spec=None, no_earth_heat=False):
-        if name == "fptemp_11" and instrument is None:
-            raise RuntimeError("Must specify either 'ACIS-I' or 'ACIS-S' in "
-                               "'instrument' if you want to model the focal plane "
-                               "temperature!")
-        self.instrument = instrument
+                 dt=328.0, evolve_method=None, rk4=None, 
+                 model_spec=None, no_earth_heat=False,
+                 other_init=None, compute_model_supp=None):
         tstart = DateTime(tstart).secs
         tend = tstart+hours*3600.0+10012.0
         tstop = tend+0.5*(tend-tstart)
@@ -1123,14 +1154,10 @@ class SimulateECSRun(ThermalModelRunner):
                 "off_nom_roll": np.array([off_nom_roll]),
                 "dh_heater": np.array([dh_heater], dtype='int')
             }
-            # For the focal plane model we need a quaternion.
-            if name == "fptemp_11":
-                for i in range(4):
-                    states[f"q{i+1}"] = np.array([q[i]])
-
         super().__init__(name, tstart, tstop, states=states, T_init=T_init,
                          dt=dt, evolve_method=evolve_method, rk4=rk4, 
-                         model_spec=model_spec)
+                         model_spec=model_spec, other_init=other_init,
+                         compute_model_supp=compute_model_supp)
 
         mylog.info("Run Parameters")
         mylog.info("--------------")
@@ -1151,12 +1178,8 @@ class SimulateECSRun(ThermalModelRunner):
         mylog.info("Model Result")
         mylog.info("------------")
 
-        if self.name == "fptemp_11":
-            limit = limits[self.name][instrument]
-            margin = 0.0
-        else:
-            limit = limits[self.name]
-            margin = margins[self.name]
+        limit = limits[self.name]
+        margin = margins[self.name]
         if self.name in low_limits:
             self.low_limit = Quantity(low_limits[self.name], "deg_C")
         else:
@@ -1231,15 +1254,11 @@ class SimulateECSRun(ThermalModelRunner):
                       fontsize=fontsize, **kwargs)
         dp.add_text(find_text_time(self.dateend, hours=4.0), self.T_init.value + 2.0,
                     viol_text, fontsize=22, color='black')
-        if self.name == "fptemp_11":
-            color = {"ACIS-S": "blue", "ACIS-I": "purple"}[self.instrument]
-            dp.add_hline(self.limit.value, ls='--', lw=2, color=color)
-        else:
-            dp.add_hline(self.limit.value, ls='-', lw=2, color='g')
-            dp.add_hline(self.limit.value+self.margin.value, ls='-', lw=2, color='gold')
-            if self.low_limit is not None:
-                dp.add_hline(self.low_limit.value, ls='-', lw=2, color='g')
-                dp.add_hline(self.low_limit.value - self.margin.value, ls='-', lw=2, color='gold')
+        dp.add_hline(self.limit.value, ls='-', lw=2, color='g')
+        dp.add_hline(self.limit.value+self.margin.value, ls='-', lw=2, color='gold')
+        if self.low_limit is not None:
+            dp.add_hline(self.low_limit.value, ls='-', lw=2, color='g')
+            dp.add_hline(self.low_limit.value - self.margin.value, ls='-', lw=2, color='gold')
         dp.add_vline(self.datestart, ls='--', lw=2, color='b')
         dp.add_text(find_text_time(self.datestart), self.limit.value - 2.0,
                     "START", color='blue', rotation="vertical")
