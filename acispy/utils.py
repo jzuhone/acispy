@@ -1,4 +1,3 @@
-from Chandra.Time import DateTime
 import Ska.Sun
 import Ska.Numpy
 import numpy as np
@@ -22,14 +21,6 @@ acispyLogger.setLevel(20)
 acispyLogger.propagate = False
 
 mylog = acispyLogger
-
-
-def get_time(time, fmt='date'):
-    if time is "now":
-        time = DateTime()
-    else:
-        time = DateTime(time)
-    return getattr(time, fmt)
 
 
 def ensure_tuple(obj):
@@ -221,7 +212,7 @@ def plotdate2cxctime(dates):
     :param times: iterable list of times
     :rtype: plot_date times
     """
-
+    from cxotime import CxoTime
     # Find the cxctime of first time and use a relative offset from there
-    cxctime0 = DateTime(dates[0], format='plotdate').secs
+    cxctime0 = CxoTime(dates[0], format='plotdate').secs
     return (np.asarray(dates) - dates[0]) * 86400. + cxctime0
