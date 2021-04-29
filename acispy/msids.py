@@ -1,4 +1,4 @@
-from acispy.utils import get_time, mit_trans_table, ensure_list, \
+from acispy.utils import mit_trans_table, ensure_list, \
     get_state_codes
 from acispy.units import get_units, APQuantity, APStringArray, \
     Quantity
@@ -6,11 +6,10 @@ import Ska.engarchive.fetch_sci as fetch
 from astropy.io import ascii
 import numpy as np
 from acispy.time_series import TimeSeriesData
-from Chandra.Time import date2secs, DateTime
 import Ska.Numpy
 from acispy.fields import builtin_deps
 from astropy.table import Table
-
+from cxotime import CxoTime
 
 def check_depends(msids):
     output_msids = []
@@ -67,12 +66,12 @@ class MSIDs(TimeSeriesData):
             tbegin = -1.0e22
         else:
             if isinstance(tbegin, str):
-                tbegin = date2secs(tbegin)
+                tbegin = CxoTime(tbegin).secs
         if tend is None:
             tend = 1.0e22
         else:
             if isinstance(tend, str):
-                tend = date2secs(tend)
+                tend = CxoTime(tend).secs
         f = open(filename, 'r')
         line = f.readline()
         f.close()
@@ -95,7 +94,7 @@ class MSIDs(TimeSeriesData):
                     for y, d, h, m, s in zip(data[year].data,
                                              data["DOY"].data,
                                              hours, mins, secs)]
-        tsecs = date2secs(time_arr)
+        tsecs = CxoTime(time_arr).secs
         idxs = np.logical_and(tsecs >= tbegin, tsecs <= tend)
         table = {}
         times = {}
@@ -132,12 +131,12 @@ class MSIDs(TimeSeriesData):
             tbegin = -1.0e22
         else:
             if isinstance(tbegin, str):
-                tbegin = date2secs(tbegin)
+                tbegin = CxoTime(tbegin).secs
         if tend is None:
             tend = 1.0e22
         else:
             if isinstance(tend, str):
-                tend = date2secs(tend)
+                tend = CxoTime(tend).secs
         f = open(filename, "r")
         header = f.readline().split()
         dtype = []
@@ -168,8 +167,8 @@ class MSIDs(TimeSeriesData):
     @classmethod
     def from_database(cls, msids, tstart, tstop=None, filter_bad=False,
                       stat='5min', interpolate=None, interpolate_times=None):
-        tstart = get_time(tstart)
-        tstop = get_time(tstop)
+        tstart = CxoTime(tstart).date
+        tstop = CxoTime(tstop).date
         msids = ensure_list(msids)
         msids, derived_msids = check_depends(msids)
         msids = [msid.lower() for msid in msids]
@@ -185,13 +184,13 @@ class MSIDs(TimeSeriesData):
                 max_fetch_tstart = max(msid.times[0] for msid in data.values())
                 min_fetch_tstop = min(msid.times[-1] for msid in data.values())
                 dt = 328.0
-                start = DateTime(tstart).secs if tstart else data.tstart
-                stop = DateTime(tstop).secs if tstop else data.tstop
+                start = CxoTime(tstart).secs if tstart else data.tstart
+                stop = CxoTime(tstop).secs if tstop else data.tstop
                 start = max(start, max_fetch_tstart)
                 stop = min(stop, min_fetch_tstop)
                 interpolate_times = np.arange((stop - start) // dt + 1) * dt + start
             else:
-                interpolate_times = DateTime(interpolate_times).secs
+                interpolate_times = CxoTime(interpolate_times).secs
         for k, msid in data.items():
             if interpolate is not None:
                 indexes = Ska.Numpy.interpolate(np.arange(len(msid.times)),
@@ -212,8 +211,8 @@ class MSIDs(TimeSeriesData):
     @classmethod
     def from_maude(cls, msids, tstart, tstop=None, user=None, password=None):
         import maude
-        tstart = get_time(tstart)
-        tstop = get_time(tstop)
+        tstart = CxoTime(tstart).date
+        tstop = CxoTime(tstop).date
         msids = ensure_list(msids)
         msids, derived_msids = check_depends(msids)
         table = {}
