@@ -4,14 +4,14 @@ from matplotlib import font_manager
 import matplotlib.pyplot as plt
 from matplotlib.dates import num2date
 from acispy.utils import ensure_list
-from Chandra.Time import DateTime, date2secs
+from cxotime import CxoTime
 from datetime import datetime
 from collections import OrderedDict
 from matplotlib.backends.backend_agg import \
     FigureCanvasAgg
 from io import BytesIO
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from acispy.utils import convert_state_code, get_time
+from acispy.utils import convert_state_code
 import numpy as np
 from astropy.units import Quantity
 
@@ -228,9 +228,7 @@ class CustomDatePlot(ACISPlot):
                  figsize=(10, 8), color=None, plot=None, fig=None, 
                  subplot=None, **kwargs):
         fig, ax, lines, ax2, lines2 = get_figure(plot, fig, subplot, figsize)
-        dates = np.asarray(dates)
-        if dates.dtype.char in ['S', 'U']:
-            dates = date2secs(dates)
+        dates = CxoTime(dates).secs
         if len(dates.shape) == 2:
             tstart, tstop = np.asarray(dates)
             x = pointpair(tstart, tstop)
@@ -278,8 +276,7 @@ class CustomDatePlot(ACISPlot):
             An existing DatePlot to add this plot to. Default: None, one 
             will be created if not provided.
         """
-        if dates.dtype.char in ['S', 'U']:
-            dates = date2secs(dates)
+        dates = CxoTime(dates).secs
         if self.ax2 is None:
             self.ax2 = self.ax.twinx()
             self.ax2.set_zorder(-10)
@@ -311,9 +308,9 @@ class CustomDatePlot(ACISPlot):
         >>> p.set_xlim("2016:050:12:45:47.324", "2016:056:22:32:01.123")
         """
         if not isinstance(xmin, datetime):
-            xmin = datetime.strptime(DateTime(xmin).iso, datefmt)
+            xmin = datetime.strptime(CxoTime(xmin).iso, datefmt)
         if not isinstance(xmax, datetime):
-            xmax = datetime.strptime(DateTime(xmax).iso, datefmt)
+            xmax = datetime.strptime(CxoTime(xmax).iso, datefmt)
         self.ax.set_xlim(xmin, xmax)
 
     def add_hline(self, y, lw=2, ls='-', color='green', 
@@ -341,11 +338,11 @@ class CustomDatePlot(ACISPlot):
         if xmin is None:
             xmin = 0
         else:
-            xmin = datetime.strptime(DateTime(xmin).iso, datefmt)
+            xmin = datetime.strptime(CxoTime(xmin).iso, datefmt)
         if xmax is None:
             xmax = 1
         else:
-            xmax = datetime.strptime(DateTime(xmax).iso, datefmt)
+            xmax = datetime.strptime(CxoTime(xmax).iso, datefmt)
         self.ax.axhline(y=y, lw=lw, ls=ls, color=color, xmin=xmin,
                         xmax=xmax, label='_nolegend_', **kwargs)
 
@@ -371,7 +368,7 @@ class CustomDatePlot(ACISPlot):
         --------
         >>> p.add_vline("2016:101:12:36:10.102", lw=3, ls='dashed', color='red')
         """
-        time = datetime.strptime(DateTime(time).iso, datefmt)
+        time = datetime.strptime(CxoTime(time).iso, datefmt)
         self.ax.axvline(x=time, lw=lw, ls=ls, color=color, **kwargs, 
                         label='_nolegend_')
 
@@ -401,7 +398,7 @@ class CustomDatePlot(ACISPlot):
         >>> dp.add_text("2016:101:12:36:10.102", 35., "Something happened here!",
         ...             fontsize=15, color='magenta')
         """
-        time = datetime.strptime(DateTime(time).iso, datefmt)
+        time = datetime.strptime(CxoTime(time).iso, datefmt)
         self.ax.text(time, y, text, fontsize=fontsize, color=color,
                      rotation=rotation, **kwargs)
 
@@ -478,7 +475,7 @@ class CustomDatePlot(ACISPlot):
         tmin, tmax = self.ax.get_xlim()
         ybot, ytop = self.ax.get_ylim()
         t = np.linspace(tmin, tmax, 1000)
-        tbegin, tend = cxctime2plotdate(DateTime([datestart, datestop]).secs)
+        tbegin, tend = cxctime2plotdate(CxoTime([datestart, datestop]).secs)
         where = (t >= tbegin) & (t <= tend)
         self.ax.fill_between(t, ybot, ytop, where=where, 
                              color=color, alpha=alpha)
@@ -533,9 +530,9 @@ class CustomDatePlot(ACISPlot):
         """
         tmin, tmax = self.ax.get_xlim()
         if datestart is not None:
-            tmin = cxctime2plotdate(get_time(datestart, 'secs'))
+            tmin = cxctime2plotdate(CxoTime(datestart).secs)
         if datestop is not None:
-            tmax = cxctime2plotdate(get_time(datestop, 'secs'))
+            tmax = cxctime2plotdate(CxoTime(datestop).secs)
         if ds is None:
             ds = getattr(self, "ds", None)
         states = getattr(ds, "states", None)
