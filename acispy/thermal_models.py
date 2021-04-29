@@ -4,13 +4,13 @@ from astropy.io import ascii
 from acispy.dataset import Dataset
 from acispy.plots import DatePlot
 import numpy as np
-from Chandra.Time import secs2date, DateTime, date2secs
+from cxotime import CxoTime
 from acispy.states import States
 from acispy.model import Model
 from acispy.msids import MSIDs
 from acispy.time_series import EmptyTimeSeries
 from acispy.utils import mylog, \
-    get_time, ensure_list, plotdate2cxctime
+    ensure_list, plotdate2cxctime
 import Ska.Numpy
 import Ska.engarchive.fetch_sci as fetch
 import matplotlib.pyplot as plt
@@ -177,10 +177,10 @@ class ModelDataset(Dataset):
         telem = self["msids", msid]
         mask = np.ones_like(telem.value, dtype='bool')
         if tstart is not None:
-            tstart = DateTime(tstart).secs
+            tstart = CxoTime(tstart).secs
             mask[telem.times.value < tstart] = False
         if tstop is not None:
-            tstop = DateTime(tstop).secs
+            tstop = CxoTime(tstop).secs
             mask[telem.times.value > tstop] = False
         if mask_radzones:
             rad_zones = events.rad_zones.filter(start=telem.dates[0],
@@ -199,8 +199,8 @@ class ModelDataset(Dataset):
         times = model[comps[0]].times.value
         tstart = times[0] - 700.0
         tstop = times[-1] + 700.0
-        start = secs2date(tstart)
-        stop = secs2date(tstop)
+        start = CxoTime(tstart).date
+        stop = CxoTime(tstop).date
         if tl_file is not None:
             msids = MSIDs.from_tracelog(tl_file, tbegin=tstart, tend=tstop)
         else:
@@ -269,15 +269,15 @@ class ModelDataset(Dataset):
         pred = self["model", msid]
         mask = np.logical_and(telem.mask, pred.mask)
         if tstart is not None:
-            tstart = DateTime(tstart).secs
+            tstart = CxoTime(tstart).secs
             mask[telem.times.value < tstart] = False
         if tstop is not None:
-            tstop = DateTime(tstop).secs
+            tstop = CxoTime(tstop).secs
             mask[telem.times.value > tstop] = False
         if bad_times is not None:
             for (left, right) in bad_times:
-                idxs = np.logical_and(telem.times.value >= date2secs(left),
-                                      telem.times.value <= date2secs(right))
+                idxs = np.logical_and(telem.times.value >= CxoTime(left).secs,
+                                      telem.times.value <= CxoTime(right).secs)
                 mask[idxs] = False
         if msid == "fptemp_11" and mask_radzones:
             rad_zones = events.rad_zones.filter(start=telem.dates[0],
@@ -501,11 +501,11 @@ class ThermalModelRunner(ModelDataset):
  
         self.compute_model_supp = compute_model_supp
 
-        tstart = DateTime(tstart).date
-        tstop = DateTime(tstop).date
+        tstart = CxoTime(tstart).date
+        tstop = CxoTime(tstop).date
 
-        tstart_secs = DateTime(tstart).secs
-        tstop_secs = DateTime(tstop).secs
+        tstart_secs = CxoTime(tstart).secs
+        tstop_secs = CxoTime(tstop).secs
 
         self.datestart = tstart
         self.datestop = tstop
@@ -521,9 +521,9 @@ class ThermalModelRunner(ModelDataset):
                 states = states.as_array()
             elif isinstance(states, dict):
                 if "tstart" not in states:
-                    states["tstart"] = DateTime(states["datestart"]).secs
+                    states["tstart"] = CxoTime(states["datestart"]).secs
                 if "tstop" not in states:
-                    states["tstop"] = DateTime(states["datestop"]).secs
+                    states["tstop"] = CxoTime(states["datestop"]).secs
                 num_states = states["tstart"].size
                 if "letg" not in states:
                     states["letg"] = np.array(["RETR"] * num_states)
@@ -725,8 +725,8 @@ class ThermalModelRunner(ModelDataset):
         constructor can be passed to this method as well.
         """
         states = States.from_load_file(states_file)
-        tstart = get_time(states['tstart'].value[0])
-        tstop = get_time(states['tstop'].value[-1])
+        tstart = CxoTime(states['tstart'].value[0]).date
+        tstop = CxoTime(states['tstop'].value[-1]).date
         return cls(name, tstart, tstop, states=states, **kwargs)
 
     @classmethod
@@ -931,7 +931,7 @@ class ThermalModelRunner(ModelDataset):
 
 
 def find_text_time(time, hours=1.0):
-    return secs2date(date2secs(time)+hours*3600.0)
+    return CxoTime(CxoTime(time).secs+hours*3600.0).date
 
 
 def make_default_states():
@@ -1122,11 +1122,11 @@ class SimulateECSRun(ThermalModelRunner):
                  dt=328.0, evolve_method=None, rk4=None, 
                  model_spec=None, no_earth_heat=False,
                  other_init=None, compute_model_supp=None):
-        tstart = DateTime(tstart).secs
+        tstart = CxoTime(tstart).secs
         tend = tstart+hours*3600.0+10012.0
         tstop = tend+0.5*(tend-tstart)
-        datestart = secs2date(tstart)
-        datestop = secs2date(tstop)
+        datestart = CxoTime(tstart).date
+        datestop = CxoTime(tstop).date
         self.vehicle_load = vehicle_load
         self.hours = hours
         self.no_earth_heat = no_earth_heat
@@ -1201,7 +1201,7 @@ class SimulateECSRun(ThermalModelRunner):
         if np.any(viols):
             idx = np.where(viols)[0][0]
             self.limit_time = self.times('model', self.name)[idx]
-            self.limit_date = secs2date(self.limit_time)
+            self.limit_date = CxoTime(self.limit_time).date
             self.duration = Quantity((self.limit_time.value-tstart)*0.001, "ks")
             msg = f"The limit of {self.limit.value} degrees C will be reached at {self.limit_date}, "
             msg += f"after {self.duration.value} ksec."
