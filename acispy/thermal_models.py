@@ -469,15 +469,17 @@ class ThermalModelRunner(ModelDataset):
 
     Examples
     --------
-    >>> states = {"ccd_count": np.array([5,6,1]),
-    ...           "pitch": np.array([150.0]*3),
-    ...           "fep_count": np.array([5,6,1]),
-    ...           "clocking": np.array([1]*3),
-    ...           "vid_board": np.array([1]*3),
-    ...           "off_nom_roll": np.array([0.0]*3),
-    ...           "simpos": np.array([-99616.0]*3)}
-    >>> dpa_model = ThermalModelRunner("dpa", "2015:002:00:00:00",
-    ...                                "2016:005:00:00:00", states=states,
+    >>> states = {"ccd_count": np.array([5, 6, 1]),
+    ...           "pitch": np.array([150.0] * 3),
+    ...           "fep_count": np.array([5, 6, 1]),
+    ...           "clocking": np.array([1] * 3),
+    ...           "vid_board": np.array([1] * 3),
+    ...           "off_nom_roll": np.array([0.0] * 3),
+    ...           "simpos": np.array([-99616.0] * 3),
+    ...           "datestart": np.array(["2015:002:00:00:00", "2015:002:12:00:00", "2015:003:12:00:00"]),
+    ...           "datestop": np.array(["2015:002:12:00:00", "2015:003:12:00:00", "2015:005:00:00:00"])}
+    >>> dpa_model = ThermalModelRunner("1dpamzt", "2015:002:00:00:00",
+    ...                                "2015:005:00:00:00", states=states,
     ...                                T_init=10.1)
     """
     def __init__(self, name, tstart, tstop, states=None, T_init=None,

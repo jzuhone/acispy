@@ -1,2 +1,1 @@
-include versioneer.py
-include acispy/_version.py
+include acispy/tests/*
