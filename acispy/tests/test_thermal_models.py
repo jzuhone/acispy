@@ -21,11 +21,11 @@ def test_handmade_states():
               "datestop": np.array(["2015:002:12:00:00", "2015:003:12:00:00", "2015:005:00:00:00"])}
     dpa_model = ThermalModelRunner("1dpamzt", "2015:002:00:00:00",
                                    "2015:005:00:00:00", states=states,
-                                   T_init=13.0)
+                                   T_init=13.0, model_spec=test_dir / "dpa_test_spec.json")
     t = ascii.read(test_dir / "handmade_temp.dat")
-    assert_equal_nounits(t["1dpamzt"], dpa_model["1dpamzt"])
-    assert_equal_nounits(t["time"], dpa_model["1dpamzt"].times)
-    assert_equal_nounits(t["date"], dpa_model["1dpamzt"].dates)
+    assert_equal_nounits(t["1dpamzt"].data, dpa_model["1dpamzt"])
+    assert_equal_nounits(t["time"].data, dpa_model["1dpamzt"].times)
+    assert_equal_nounits(t["date"].data, dpa_model["1dpamzt"].dates)
     for k, v in states.items():
         assert_equal_nounits(dpa_model["states", k], v)
 
