@@ -151,12 +151,12 @@ cti_simodes = ["TE_007AC", "TE_00B26", "TE_007AE",
                "TN_000B4", "TN_000B6"]
 
 
-def get_display_name(type, name):
-    if type.startswith("model"):
+def get_display_name(ftype, name):
+    if ftype.startswith("model"):
         display_name = name.upper() + " Model"
-        if type != "model":
-            display_name += str(type[-1])
-    elif type == "states":
+        if ftype != "model":
+            display_name += str(ftype[-1])
+    elif ftype == "states":
         display_name = state_labels[name]
     else:
         display_name = name.upper()
