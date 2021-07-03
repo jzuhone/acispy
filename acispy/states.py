@@ -33,6 +33,12 @@ class States(TimeSeriesData):
         new_table = OrderedDict()
         if isinstance(table, np.ndarray):
             state_names = list(table.dtype.names)
+            if "date" in state_names:
+                table = rf.append_fields(
+                    table, ['time'],
+                    [date2secs(table["date"])],
+                    usemask=False
+                )
             if "tstart" not in state_names:
                 table = rf.append_fields(
                     table, ["tstart", "tstop"],
@@ -46,7 +52,10 @@ class States(TimeSeriesData):
                 table["tstart"] = date2secs(table["datestart"])
                 table["tstop"] = date2secs(table["datestop"])
                 state_names += ["tstart", "tstop"]
-        times = Quantity([table["tstart"], table["tstop"]], "s")
+        if "tstart" in state_names:
+            times = Quantity([table["tstart"], table["tstop"]], "s")
+        else:
+            times = Quantity(table["time"], "s")
         for k in state_names:
             v = np.asarray(table[k])
             if k == "trans_keys" and v.dtype.char == "O":

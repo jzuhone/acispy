@@ -517,21 +517,17 @@ class ThermalModelRunner(ModelDataset):
 
         if states is not None:
             if isinstance(states, States):
-                states_obj = states
                 states = states.as_array()
-            else:
+            elif isinstance(states, dict):
                 if "tstart" not in states:
                     states["tstart"] = DateTime(states["datestart"]).secs
                 if "tstop" not in states:
                     states["tstop"] = DateTime(states["datestop"]).secs
                 num_states = states["tstart"].size
                 if "letg" not in states:
-                    states["letg"] = np.array(["RETR"]*num_states)
+                    states["letg"] = np.array(["RETR"] * num_states)
                 if "hetg" not in states:
-                    states["hetg"] = np.array(["RETR"]*num_states)
-                states_obj = States(states)
-        else:
-            states_obj = EmptyTimeSeries()
+                    states["hetg"] = np.array(["RETR"] * num_states)
 
         if T_init is None:
             last_tlm_date = fetch.get_time_range(self.name, format='secs')[1]
@@ -554,6 +550,11 @@ class ThermalModelRunner(ModelDataset):
                                                   states, other_init=other_init,
                                                   evolve_method=evolve_method, 
                                                   rk4=rk4)
+
+        if states is None:
+            states = self.xija_model.cmd_states
+            print(states['date'], states['datestart'])
+        states_obj = States(states)
 
         self.bad_times = getattr(self.xija_model, "bad_times", None)
         self.bad_times_indices = getattr(self.xija_model, "bad_times_indices", None)
