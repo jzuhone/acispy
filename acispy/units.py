@@ -182,7 +182,7 @@ def find_indices(item, times):
     return idxs, Quantity(t, "s")
 
 
-class APStringArray(object):
+class APStringArray:
     def __init__(self, value, times, mask=None):
         self.value = value
         self.times = times
@@ -190,6 +190,8 @@ class APStringArray(object):
             mask = np.ones(value.size, dtype='bool')
         self.mask = mask
         self.dtype = self.value.dtype
+        self.size = self.value.size
+        self.shape = self.value.shape
 
     def __getitem__(self, item):
         idxs, t = find_indices(item, self.times.value)
