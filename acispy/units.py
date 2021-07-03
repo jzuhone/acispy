@@ -250,13 +250,6 @@ class APQuantity(Quantity):
         return APQuantity(ret.value, t, unit=self.unit, 
                           dtype=self.dtype, mask=mask)
 
-    def __getslice__(self, i, j):
-        ret = super(APQuantity, self).__getslice__(i, j)
-        t = self.times[i:j]
-        mask = self.mask[i:j]
-        return APQuantity(ret.value, t, unit=self.unit,
-                          dtype=self.dtype, mask=mask)
-
     def to(self, unit, equivalencies=[]):
         ret = super(APQuantity, self).to(unit, equivalencies=equivalencies)
         return APQuantity(ret.value, self.times, unit=ret.unit, mask=self.mask,
