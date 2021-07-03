@@ -1,5 +1,6 @@
 import numpy as np
-from acispy.thermal_models import ThermalModelRunner
+from acispy.thermal_models import ThermalModelRunner, \
+    ThermalModelFromRun, ThermalModelFromLoad
 from pathlib import Path
 from astropy.io import ascii
 from .utils import assert_equal_nounits, assert_allclose_nounits
@@ -61,3 +62,11 @@ def test_states_from_backstop():
     assert_equal_nounits(t["aacccdpt"].data, aca_model["aacccdpt"])
     assert_equal_nounits(t["time"].data, aca_model["aacccdpt"].times)
     assert_equal_nounits(t["date"].data, aca_model["aacccdpt"].dates)
+
+
+def test_load_output():
+    tm1 = ThermalModelFromLoad("JUN2121")
+    tm2 = ThermalModelFromRun(test_dir / "out_dpa")
+    assert_equal_nounits(tm1["1dpamzt"], tm2["1dpamzt"])
+    assert_equal_nounits(tm1["1dpamzt"].times, tm2["1dpamzt"].times)
+    assert_equal_nounits(tm1["1dpamzt"].dates, tm2["1dpamzt"].dates)
