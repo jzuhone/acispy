@@ -2,10 +2,12 @@ import numpy as np
 from acispy.thermal_models import ThermalModelRunner
 from pathlib import Path
 from astropy.io import ascii
-from .utils import assert_equal_nounits
+from .utils import assert_equal_nounits, assert_allclose_nounits
 
 
 test_dir = Path(__file__).resolve().parent
+dpa_spec = test_dir / "dpa_test_spec.json"
+aca_spec = test_dir / "aca_test_spec.json"
 
 
 def test_handmade_states():
@@ -21,7 +23,7 @@ def test_handmade_states():
               "datestop": np.array(["2015:002:12:00:00", "2015:003:12:00:00", "2015:005:00:00:00"])}
     dpa_model = ThermalModelRunner("1dpamzt", "2015:002:00:00:00",
                                    "2015:005:00:00:00", states=states,
-                                   T_init=13.0, model_spec=test_dir / "dpa_test_spec.json")
+                                   T_init=13.0, model_spec=dpa_spec)
     t = ascii.read(test_dir / "handmade_temp.dat")
     assert_equal_nounits(t["1dpamzt"].data, dpa_model["1dpamzt"])
     assert_equal_nounits(t["time"].data, dpa_model["1dpamzt"].times)
@@ -32,24 +34,30 @@ def test_handmade_states():
 
 def test_states_from_commands():
     from kadi import commands
-    # commands as a CommandTable
+    # commands as a CommandTable from kadi
     cmds = commands.get_cmds('2018:001:00:00:00', '2018:002:00:00:00')
-    psmc_model = ThermalModelRunner.from_commands("1pdeaat", cmds)
-    # commands as a list of dicts
+    dpa_model = ThermalModelRunner.from_commands("1dpamzt", cmds)
+    # same commands as a list of dicts
     dict_cmds = cmds.as_list_of_dict()
-    psmc_model2 = ThermalModelRunner.from_commands("1pdeaat", dict_cmds)
-    assert_equal_nounits(psmc_model["1pdeaat"], psmc_model2["1pdeaat"])
-    assert_equal_nounits(psmc_model["ccd_count"], psmc_model2["ccd_count"])
-    assert_equal_nounits(psmc_model["pitch"], psmc_model2["pitch"])
-    # Normal call
-    psmc_model3 = ThermalModelRunner("1pdeaat", "2018:001:00:00:00",
-                                     "2018:002:00:00:00")
-    assert_equal_nounits(psmc_model["1pdeaat"], psmc_model3["1pdeaat"])
-    assert_equal_nounits(psmc_model["ccd_count"], psmc_model3["ccd_count"])
-    assert_equal_nounits(psmc_model["pitch"], psmc_model3["pitch"])
+    dpa_model2 = ThermalModelRunner.from_commands("1dpamzt", dict_cmds)
+    assert_equal_nounits(dpa_model["1dpamzt"], dpa_model2["1dpamzt"])
+    assert_equal_nounits(dpa_model["ccd_count"], dpa_model2["ccd_count"])
+    assert_equal_nounits(dpa_model["pitch"], dpa_model2["pitch"])
+    # Normal call, kadi is called internally by xija
+    dpa_model3 = ThermalModelRunner("1dpamzt", cmds["date"][0],
+                                    cmds["date"][-1])
+    # we do not expect great precision here because the state structures
+    # are slightly different
+    assert_allclose_nounits(dpa_model["1dpamzt"], dpa_model3["1dpamzt"],
+                            rtol=0.02)
 
 
 def test_states_from_backstop():
     backstop = test_dir / "CR229_2202.backstop"
-    tm_aca = ThermalModelRunner.from_backstop("aacccdpt", backstop,
-                                              other_init={"aca0": -10})
+    aca_model = ThermalModelRunner.from_backstop("aacccdpt", backstop,
+                                                 model_spec=aca_spec,
+                                                 other_init={"aca0": -10})
+    t = ascii.read(test_dir / "backstop_temp.dat")
+    assert_equal_nounits(t["aacccdpt"].data, aca_model["aacccdpt"])
+    assert_equal_nounits(t["time"].data, aca_model["aacccdpt"].times)
+    assert_equal_nounits(t["date"].data, aca_model["aacccdpt"].dates)
