@@ -119,6 +119,8 @@ state_labels = {"ccd_count": "CCD Count",
                 "tstop": "Stop Time",
                 "datestart": "Start Date",
                 "datestop": "Stop Date",
+                "date": "Date",
+                "time": "Time",
                 "dh_heater": "Detector Housing Heater"}
 
 mit_trans_table = {"BEP_PCB": "tmp_bep_pcb",
