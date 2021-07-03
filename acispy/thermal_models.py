@@ -553,7 +553,6 @@ class ThermalModelRunner(ModelDataset):
 
         if states is None:
             states = self.xija_model.cmd_states
-            print(states['date'], states['datestart'])
         states_obj = States(states)
 
         self.bad_times = getattr(self.xija_model, "bad_times", None)
