@@ -87,19 +87,13 @@ model_classes = {
 
 
 def find_json(name, model_spec):
+    from xija.get_model_spec import get_xija_model_spec
     msg = f"The JSON file {model_spec} does not exist! Please " \
           f"specify a JSON file using the 'model_spec' keyword argument."
-    msg2 = f"acispy is looking for the 'chandra_models' package to " \
-           f"find a model spec file, but it is not installed! Either " \
-           f"install it, or specify a file with the 'model_spec' argument."
     if model_spec is None:
         name = short_name.get(name, name)
         try:
-            try:
-                from chandra_models import get_xija_model_file
-            except ImportError:
-                raise ImportError(msg2)
-            model_spec = get_xija_model_file(name)
+            model_spec = get_xija_model_spec(name)[0]
         except ValueError:
             raise IOError(msg)
     elif not os.path.exists(model_spec):
@@ -721,7 +715,7 @@ class ThermalModelRunner(ModelDataset):
 
         All other keyword arguments which are passed to the main
         :class:`~acispy.thermal_models.ThermalModelRunner`
-        constructor can be passed to this method as well. 
+        constructor can be passed to this method as well.
         """
         states = States.from_load_file(states_file)
         tstart = get_time(states['tstart'].value[0])
