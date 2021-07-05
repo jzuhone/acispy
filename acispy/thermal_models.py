@@ -1,5 +1,4 @@
 import xija
-import os
 from astropy.units import Quantity
 from astropy.io import ascii
 from acispy.dataset import Dataset
@@ -18,6 +17,8 @@ import matplotlib.pyplot as plt
 from kadi import events, commands
 import importlib
 from matplotlib import font_manager
+from pathlib import Path
+
 
 short_name = {"1deamzt": "dea",
               "1dpamzt": "dpa",
@@ -87,17 +88,23 @@ model_classes = {
 
 
 def find_json(name, model_spec):
-    from xija.get_model_spec import get_xija_model_spec
+    from xija.get_model_spec import get_xija_model_spec, REPO_PATH
     msg = f"The JSON file {model_spec} does not exist! Please " \
           f"specify a JSON file using the 'model_spec' keyword argument."
     if model_spec is None:
         name = short_name.get(name, name)
         try:
-            model_spec = get_xija_model_spec(name)[0]
+            model_spec, version = get_xija_model_spec(name)
         except ValueError:
             raise IOError(msg)
-    elif not os.path.exists(model_spec):
-        raise IOError(msg)
+        mylog.info("chandra_models version = %s", version)
+        model_path = Path(REPO_PATH / 'chandra_models' / 'xija' /
+                          name / f'{name}_spec.json')
+    else:
+        model_path = Path(model_spec).resolve()
+        if not model_path.exists():
+            raise IOError(msg)
+    mylog.info("model_spec = %s", model_path)
     return model_spec
 
 
@@ -116,7 +123,7 @@ class ModelDataset(Dataset):
         overwrite : boolean, optional
             If True, an existing file with the same name will be overwritten.
         """
-        if os.path.exists(filename) and not overwrite:
+        if Path(filename).exists() and not overwrite:
             raise IOError(f"File {filename} already exists, but overwrite=False!")
         names = []
         arrays = []
@@ -333,12 +340,12 @@ class ThermalModelFromRun(ModelDataset):
     ...                          get_msids=True)
     """
     def __init__(self, loc, get_msids=False, tl_file=None):
-        temp_file = os.path.join(loc, "temperatures.dat")
-        state_file = os.path.join(loc, "states.dat")
-        esa_file = os.path.join(loc, "earth_solid_angle.dat")
-        if not os.path.exists(state_file):
+        temp_file = Path(loc / "temperatures.dat")
+        state_file = Path(loc / "states.dat")
+        esa_file = Path(loc / "earth_solid_angle.dat")
+        if not state_file.exists():
             state_file = None
-        if not os.path.exists(esa_file):
+        if not esa_file.exists():
             esa_file = None
         model = Model.from_load_file(temp_file, esa_file=esa_file)
         comps = list(model.keys())
