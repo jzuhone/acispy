@@ -348,8 +348,8 @@ class Dataset(object):
                                        "but '%s', '%s' does not have the same " % field +
                                        "set of times as '%s', '%s'!" % (fields[0][0], fields[0][1]))
         data = dict(("_".join(k), self[k].value[mask]) for k in fields)
-        data["times"] = self.times(*fields[0]).value[mask]
-        data["dates"] = self.dates(*fields[0])[mask]
+        data["time"] = self.times(*fields[0]).value[mask]
+        data["date"] = self.dates(*fields[0])[mask]
         Table(data).write(filename, format='ascii', overwrite=overwrite)
 
     def write_states(self, filename, overwrite=False):
