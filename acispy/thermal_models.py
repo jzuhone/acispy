@@ -946,6 +946,10 @@ def make_default_states():
         "letg": np.array(["RETR"]),
         "off_nom_roll": np.array([0.0]),
         "dh_heater": np.array([0], dtype='int'),
+        "targ_q1": np.array([1.0]),
+        "targ_q2": np.array([0.0]),
+        "targ_q3": np.array([0.0]),
+        "targ_q4": np.array([0.0]),
         "q1": np.array([1.0]),
         "q2": np.array([0.0]),
         "q3": np.array([0.0]),
@@ -968,7 +972,9 @@ class SimulateSingleState(ThermalModelRunner):
     states : dict
         A dictionary of modeled commanded states required for the single-state
         run. All states must be single values. Any particular states which are
-        not included in 
+        not included in this dict will be filled in using the "default" states,
+        which assume zero ACIS CCDs and FEPs, normal Sun, zero off-nominal roll,
+        HRC-S sim position, and no gratings inserted.
     T_init : float
         The starting temperature for the model in degrees C or F.
     model_spec : string, optional
@@ -1040,9 +1046,6 @@ class SimulateSingleState(ThermalModelRunner):
         raise NotImplementedError
 
     def write_states(self, states_file, overwrite=False):
-        raise NotImplementedError
-
-    def write_model(self, filename, overwrite=False):
         raise NotImplementedError
 
     def make_dashboard_plots(self, yplotlimits=None, errorplotlimits=None, fig=None):
@@ -1300,9 +1303,6 @@ class SimulateECSRun(ThermalModelRunner):
         raise NotImplementedError
 
     def write_states(self, states_file, overwrite=False):
-        raise NotImplementedError
-
-    def write_model(self, filename, overwrite=False):
         raise NotImplementedError
 
     def make_dashboard_plots(self, yplotlimits=None, errorplotlimits=None, fig=None):

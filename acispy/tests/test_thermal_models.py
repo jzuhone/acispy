@@ -1,6 +1,7 @@
 import numpy as np
 from acispy.thermal_models import ThermalModelRunner, \
-    ThermalModelFromRun, ThermalModelFromLoad
+    ThermalModelFromRun, ThermalModelFromLoad, \
+    SimulateSingleState, SimulateECSRun
 from pathlib import Path
 from astropy.io import ascii
 from .utils import assert_equal_nounits, assert_allclose_nounits
@@ -12,7 +13,6 @@ aca_spec = test_dir / "aca_test_spec.json"
 
 
 def test_handmade_states():
-    from IPython import embed
     states = {"ccd_count": np.array([5, 6, 1]),
               "pitch": np.array([150.0] * 3),
               "fep_count": np.array([5, 6, 1]),
@@ -86,3 +86,16 @@ def test_specify_path():
     assert_equal_nounits(tm1["1dpamzt"].dates, tm2["1dpamzt"].dates)
     assert_equal_nounits(tm1["ccd_count"], tm2["ccd_count"])
     assert_equal_nounits(tm1["pitch"], tm2["pitch"])
+
+
+def test_single_state():
+    states = {"pitch": 75.0, "off_nom_roll": -6.0, "clocking": 1,
+              "ccd_count": 6, "simpos": 75624.0}
+    tm = SimulateSingleState("1deamzt", "2016:201:05:12:03",
+                             "2016:202:05:12:03", states, 15.0)
+    t = ascii.read(test_dir / "single_state.dat")
+    assert_equal_nounits(t["1deamzt"].data, tm["1deamzt"])
+    assert_equal_nounits(t["time"].data, tm["1deamzt"].times)
+    assert_equal_nounits(t["date"].data, tm["1deamzt"].dates)
+    for k, v in states.items():
+        assert_equal_nounits(tm["states", k][0], v)
