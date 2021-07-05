@@ -70,3 +70,19 @@ def test_load_output():
     assert_equal_nounits(tm1["1dpamzt"], tm2["1dpamzt"])
     assert_equal_nounits(tm1["1dpamzt"].times, tm2["1dpamzt"].times)
     assert_equal_nounits(tm1["1dpamzt"].dates, tm2["1dpamzt"].dates)
+
+
+def test_specify_path():
+    from xija.get_model_spec import REPO_PATH
+    from pathlib import Path
+    model_spec = Path(REPO_PATH / 'chandra_models' / 'xija' /
+                      'dpa' / 'dpa_spec.json')
+    tm1 = ThermalModelRunner("1dpamzt", '2018:001:00:00:00',
+                             '2018:002:00:00:00')
+    tm2 = ThermalModelRunner("1dpamzt", '2018:001:00:00:00',
+                             '2018:002:00:00:00', model_spec=model_spec)
+    assert_equal_nounits(tm1["1dpamzt"], tm2["1dpamzt"])
+    assert_equal_nounits(tm1["1dpamzt"].times, tm2["1dpamzt"].times)
+    assert_equal_nounits(tm1["1dpamzt"].dates, tm2["1dpamzt"].dates)
+    assert_equal_nounits(tm1["ccd_count"], tm2["ccd_count"])
+    assert_equal_nounits(tm1["pitch"], tm2["pitch"])
