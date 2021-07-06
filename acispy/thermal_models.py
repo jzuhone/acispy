@@ -94,7 +94,7 @@ def find_json(name, model_spec):
     if model_spec is None:
         name = short_name.get(name, name)
         try:
-            model_spec, version = get_xija_model_spec(name)
+            model_spec, version = get_xija_model_spec(name, check_version=True)
         except ValueError:
             raise IOError(msg)
         mylog.info("chandra_models version = %s", version)
