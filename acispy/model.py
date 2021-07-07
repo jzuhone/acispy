@@ -6,6 +6,8 @@ from acispy.units import APQuantity, Quantity, get_units
 from acispy.utils import ensure_list
 from acispy.time_series import TimeSeriesData
 import numpy as np
+from cxotime import CxoTime
+
 
 comp_map = {"1deamzt": "dea",
             "1dpamzt": "dpa",
