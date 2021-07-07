@@ -3,13 +3,6 @@ from astropy.units import Quantity
 from acispy.utils import mylog
 import numpy as np
 from Chandra.Time import secs2date, DateTime
-from numpy import \
-    add, subtract, multiply, divide, logaddexp, logaddexp2, true_divide, \
-    power, remainder, mod, arctan2, hypot, bitwise_and, bitwise_or, \
-    bitwise_xor, left_shift, right_shift, greater, greater_equal, less, \
-    less_equal, not_equal, equal, logical_and, logical_or, logical_xor, \
-    maximum, minimum, fmax, fmin, copysign, nextafter, ldexp, fmod
-from distutils.version import LooseVersion
 
 u.imperial.enable()
 
@@ -85,6 +78,7 @@ msid_units = {'1deamzt': 'deg_C',
               '1oahat': 'deg_C',
               '1oahbt': 'deg_C',
               'dp_pitch': 'deg',
+              'pitch': 'deg',
               'tmp_bep_pcb': 'deg_C',
               'tmp_bep_osc': 'deg_C',
               'tmp_fep0_mong': 'deg_C',
@@ -151,14 +145,6 @@ msid_units = {'1deamzt': 'deg_C',
               'solarephem1_vz': 'm/s'
               }
 
-binary_operators = (
-    add, subtract, multiply, divide, logaddexp, logaddexp2, true_divide, power,
-    remainder, mod, arctan2, hypot, bitwise_and, bitwise_or, bitwise_xor,
-    left_shift, right_shift, greater, greater_equal, less, less_equal,
-    not_equal, equal, logical_and, logical_or, logical_xor, maximum, minimum,
-    fmax, fmin, copysign, nextafter, ldexp, fmod,
-)
-
 
 def parse_index(idx, times): 
     if isinstance(idx, (int, np.ndarray)) or idx is None:
@@ -168,7 +154,7 @@ def parse_index(idx, times):
         if isinstance(idx, str):
             idx = DateTime(idx).secs
         if idx < times[0] or idx > times[-1]:
-            raise RuntimeError("The time %s is outside the bounds of this dataset!" % orig_idx)
+            raise RuntimeError(f"The time {orig_idx} is outside the bounds of this dataset!")
         idx = np.searchsorted(times, idx)-1
     return idx
 
@@ -196,7 +182,7 @@ def find_indices(item, times):
     return idxs, Quantity(t, "s")
 
 
-class APStringArray(object):
+class APStringArray:
     def __init__(self, value, times, mask=None):
         self.value = value
         self.times = times
@@ -204,20 +190,13 @@ class APStringArray(object):
             mask = np.ones(value.size, dtype='bool')
         self.mask = mask
         self.dtype = self.value.dtype
+        self.size = self.value.size
+        self.shape = self.value.shape
 
     def __getitem__(self, item):
         idxs, t = find_indices(item, self.times.value)
         mask = self.mask[idxs]
         v = self.value[idxs]
-        if isinstance(v, np.ndarray):
-            return APStringArray(v, t, mask=mask)
-        else:
-            return v
-
-    def __getslice__(self, i, j):
-        v = self.value[i,j]
-        t = self.times[i:j]
-        mask = self.mask[i:j]
         if isinstance(v, np.ndarray):
             return APStringArray(v, t, mask=mask)
         else:
@@ -251,50 +230,26 @@ class APQuantity(Quantity):
         ret.times = times
         return ret
 
-    if LooseVersion(np.__version__) < LooseVersion('1.13.0'):
-
-        def __array_wrap__(self, obj, context=None):
-            ret = super(APQuantity, self).__array_wrap__(obj, context=context)
-            if ret.dtype == 'bool':
-                return ret
-            mask = self.mask
-            if context[0] in binary_operators:
-                mask2 = getattr(context[1][1], "mask", None)
-                if mask2 is not None:
-                    mask = np.logical_and(mask, mask2)
-            ret.mask = mask
-            ret.times = self.times
+    def __array_ufunc__(self, function, method, *inputs, **kwargs):
+        ret = super(APQuantity, self).__array_ufunc__(function,
+                                                      method, *inputs,
+                                                      **kwargs)
+        if ret.dtype == 'bool':
             return ret
-
-    else:
-
-        def __array_ufunc__(self, function, method, *inputs, **kwargs):
-            ret = super(APQuantity, self).__array_ufunc__(function,
-                                                          method, *inputs,
-                                                          **kwargs)
-            if ret.dtype == 'bool':
-                return ret
-            mask = self.mask
-            if len(inputs) == 2:
-                mask2 = getattr(inputs[1], "mask", None)
-                if mask2 is not None:
-                    mask = np.logical_and(mask, mask2)
-            ret.mask = mask
-            ret.times = self.times
-            return ret
+        mask = self.mask
+        if len(inputs) == 2:
+            mask2 = getattr(inputs[1], "mask", None)
+            if mask2 is not None:
+                mask = np.logical_and(mask, mask2)
+        ret.mask = mask
+        ret.times = self.times
+        return ret
 
     def __getitem__(self, item):
         idxs, t = find_indices(item, self.times.value)
         ret = super(APQuantity, self).__getitem__(idxs)
         mask = self.mask[idxs]
         return APQuantity(ret.value, t, unit=self.unit, 
-                          dtype=self.dtype, mask=mask)
-
-    def __getslice__(self, i, j):
-        ret = super(APQuantity, self).__getslice__(i, j)
-        t = self.times[i:j]
-        mask = self.mask[i:j]
-        return APQuantity(ret.value, t, unit=self.unit,
                           dtype=self.dtype, mask=mask)
 
     def to(self, unit, equivalencies=[]):
@@ -353,7 +308,7 @@ def get_units(ftype, fname):
                 msid_units[fname] = unit
             except KeyError:
                 if fname not in mit_fields:
-                    mylog.warning("Cannot find a unit for MSID %s. " % fname +
+                    mylog.warning(f"Cannot find a unit for MSID {fname}. "
                                   "Setting to dimensionless.")
                 unit = ''
     if unit == "DEG":

@@ -16,6 +16,7 @@
 import sys
 import os
 import acispy
+from datetime import datetime
 
 sys.path.insert(0, os.path.abspath('../../'))
 
@@ -24,9 +25,10 @@ html_theme = 'bootstrap'
 html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
 
 html_theme_options = dict(
-        bootswatch_theme = "readable",
-        navbar_sidebarrel = False,
-        globaltoc_depth = 2,
+        bootswatch_theme="readable",
+        navbar_sidebarrel=False,
+        globaltoc_depth=2,
+        body_max_width="none"
 )
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -49,8 +51,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.napoleon',
     'sphinx.ext.autosummary',
-    'RunNotebook.notebook_sphinxext',
-    'RunNotebook.notebookcell_sphinxext',
+    'nbsphinx',
 ]
 
 numpydoc_show_class_members = False
@@ -71,7 +72,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'ACISpy'
-copyright = '2016, John ZuHone'
+copyright = f'{datetime.now().year}, ACIS Operations'
 author = 'John ZuHone'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -307,7 +308,9 @@ texinfo_documents = [
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #texinfo_no_detailmenu = False
 
-intersphinx_mapping = {'http://docs.python.org/': None,
-                       'http://docs.scipy.org/doc/numpy/': None,
-                       'http://matplotlib.sourceforge.net/': None,
+
+intersphinx_mapping = {"https://docs.python.org/3/": None,
+                       "https://numpy.org/doc/stable/": None,
+                       "https://matplotlib.org/stable/": None,
+                       "https://docs.astropy.org/en/stable": None,
                        }

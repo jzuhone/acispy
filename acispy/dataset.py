@@ -69,12 +69,12 @@ class Dataset(object):
         if field not in self._checked_fields:
             if isinstance(field, tuple):
                 if len(field) != 2:
-                    raise RuntimeError("Invalid field specification {}!".format(field))
+                    raise RuntimeError(f"Invalid field specification {format}!")
                 fd = (field[0].lower(), field[1].lower())
                 if fd in self.fields:
                     checked_field = fd
                 else:
-                    raise RuntimeError("Cannot find field {}!".format(field))
+                    raise RuntimeError(f"Cannot find field {field}!")
             elif isinstance(field, str):
                 fd = field.lower()
                 candidates = []
@@ -82,16 +82,16 @@ class Dataset(object):
                     if (ftype, fd) in self.fields:
                         candidates.append((ftype, fd))
                 if len(candidates) > 1:
-                    msg = "Multiple field types for field name %s!\n" % field
+                    msg = f"Multiple field types for field name {field}!\n"
                     for c in candidates:
-                        msg += "    {}\n".format(c)
+                        msg += f"    {c}\n"
                     raise RuntimeError(msg)
                 elif len(candidates) == 0:
-                    raise RuntimeError("Cannot find field {}!".format(field))
+                    raise RuntimeError(f"Cannot find field {field}!")
                 else:
                     checked_field = candidates[0]
             else:
-                raise RuntimeError("Invalid field specification {}!".format(field))
+                raise RuntimeError(f"Invalid field specification {field}!")
         else:
             checked_field = field
         return checked_field
@@ -132,7 +132,7 @@ class Dataset(object):
         import h5py
         import os
         if os.path.exists(filename) and not overwrite:
-            raise IOError("The file %s already exists and overwrite=False!!" % filename)
+            raise IOError(f"The file {filename} already exists and overwrite=False!!")
         f = h5py.File(filename, "w")
         if not self.msids._is_empty:
             gmsids = f.create_group("msids")
@@ -348,8 +348,8 @@ class Dataset(object):
                                        "but '%s', '%s' does not have the same " % field +
                                        "set of times as '%s', '%s'!" % (fields[0][0], fields[0][1]))
         data = dict(("_".join(k), self[k].value[mask]) for k in fields)
-        data["times"] = self.times(*fields[0]).value[mask]
-        data["dates"] = self.dates(*fields[0])[mask]
+        data["time"] = self.times(*fields[0]).value[mask]
+        data["date"] = self.dates(*fields[0])[mask]
         Table(data).write(filename, format='ascii', overwrite=overwrite)
 
     def write_states(self, filename, overwrite=False):

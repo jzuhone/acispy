@@ -118,7 +118,7 @@ class MSIDs(TimeSeriesData):
         bmask = masks["bilevels"]
         bilevels = np.char.strip(table["bilevels"], "b")[bmask]
         for i in range(8):
-            key = "1stat%dst" % (7-i)
+            key = f"1stat{7-i}dst"
             table[key] = np.array(["BAD"]*bmask.size)
             table[key][bmask] = np.array([b[i] for b in bilevels])
             times[key] = times["bilevels"]

@@ -14,10 +14,10 @@ Contents:
    activating
    what_data
    loading_data
-   plotting_data
-   derived_fields
-   thermal_models
-   load_review
+   Plotting_Data
+   Derived_Fields
+   Thermal_Models
+   Load_Review
    api/index
 
 Indices and tables

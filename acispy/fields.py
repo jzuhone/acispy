@@ -31,8 +31,8 @@ class OutputFieldsNotFound(Exception):
         self.ofields = ofields
 
     def __str__(self):
-        return ("Derived field {} depends on the following ".format(self.dfield) +
-                "fields which are not found in this Dataset: {} ".format(self.ofields))
+        return (f"Derived field {self.dfield} depends on the following "
+                f"fields which are not found in this Dataset: {self.ofields} ")
 
 
 class OutputFieldFunction(object):
@@ -162,9 +162,9 @@ def create_builtin_derived_msids(dset):
     if "earth_solid_angle" in dset.msids.derived_msids:
         def _earth_solid_angle(ds):
             # Collect individual MSIDs for use in calc_earth_vis()
-            ephem_xyzs = [ds["msids", "orbitephem0_{}".format(x)]
+            ephem_xyzs = [ds["msids", f"orbitephem0_{x}"]
                           for x in "xyz"]
-            aoattqt_1234s = [ds["msids","aoattqt{}".format(x)]
+            aoattqt_1234s = [ds["msids",f"aoattqt{x}"]
                              for x in range(1, 5)]
             ephems = np.array([x.value for x in ephem_xyzs]).transpose()
             q_atts = np.array([x.value for x in aoattqt_1234s]).transpose()

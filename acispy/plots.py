@@ -15,6 +15,8 @@ from acispy.utils import convert_state_code, get_time
 import numpy as np
 from astropy.units import Quantity
 
+datefmt = "%Y-%m-%d %H:%M:%S.%f"
+
 drawstyles = {"simpos": "steps",
               "pitch": "steps",
               "ccd_count": "steps",
@@ -195,6 +197,8 @@ def get_figure(plot, fig, subplot, figsize):
         if hasattr(plot, "ax2"):
             ax2 = plot.ax2
             lines2 = plot.lines2
+    for axis in ['top', 'bottom', 'left', 'right']:
+        ax.spines[axis].set_linewidth(2)
     return fig, ax, lines, ax2, lines2
 
 
@@ -235,10 +239,12 @@ class CustomDatePlot(ACISPlot):
             x = np.asarray(dates)
             y = np.asarray(values)
         if color is None:
-            color = "C{}".format(len(lines))
+            color = f"C{len(lines)}"
         ticklocs, fig, ax = plot_cxctime(x, y, fmt=fmt, fig=fig, ax=ax, 
                                          lw=lw, ls=ls, color=color, **kwargs)
         super(CustomDatePlot, self).__init__(fig, ax, lines, ax2, lines2)
+        self.ax.tick_params(which="major", width=2, length=6)
+        self.ax.tick_params(which="minor", width=2, length=3)
         self.lines.append(ax.lines[-1])
         self.ax.set_xlabel("Date", fontdict={"size": fontsize})
         fontProperties = font_manager.FontProperties(size=fontsize)
@@ -287,6 +293,8 @@ class CustomDatePlot(ACISPlot):
             y = np.asarray(values)
         plot_cxctime(x, y, fmt=fmt, fig=self.fig,
                      ax=self.ax2, ls=ls, color=color, lw=lw, **kwargs)
+        self.ax2.tick_params(which="major", width=2, length=6)
+        self.ax2.tick_params(which="minor", width=2, length=3)
         fontProperties = font_manager.FontProperties(size=fontsize)
         for label in self.ax2.get_xticklabels():
             label.set_fontproperties(fontProperties)
@@ -303,9 +311,9 @@ class CustomDatePlot(ACISPlot):
         >>> p.set_xlim("2016:050:12:45:47.324", "2016:056:22:32:01.123")
         """
         if not isinstance(xmin, datetime):
-            xmin = datetime.strptime(DateTime(xmin).iso, "%Y-%m-%d %H:%M:%S.%f")
+            xmin = datetime.strptime(DateTime(xmin).iso, datefmt)
         if not isinstance(xmax, datetime):
-            xmax = datetime.strptime(DateTime(xmax).iso, "%Y-%m-%d %H:%M:%S.%f")
+            xmax = datetime.strptime(DateTime(xmax).iso, datefmt)
         self.ax.set_xlim(xmin, xmax)
 
     def add_hline(self, y, lw=2, ls='-', color='green', 
@@ -333,11 +341,11 @@ class CustomDatePlot(ACISPlot):
         if xmin is None:
             xmin = 0
         else:
-            xmin = datetime.strptime(DateTime(xmin).iso, "%Y-%m-%d %H:%M:%S.%f")
+            xmin = datetime.strptime(DateTime(xmin).iso, datefmt)
         if xmax is None:
             xmax = 1
         else:
-            xmax = datetime.strptime(DateTime(xmax).iso, "%Y-%m-%d %H:%M:%S.%f")
+            xmax = datetime.strptime(DateTime(xmax).iso, datefmt)
         self.ax.axhline(y=y, lw=lw, ls=ls, color=color, xmin=xmin,
                         xmax=xmax, label='_nolegend_', **kwargs)
 
@@ -363,7 +371,7 @@ class CustomDatePlot(ACISPlot):
         --------
         >>> p.add_vline("2016:101:12:36:10.102", lw=3, ls='dashed', color='red')
         """
-        time = datetime.strptime(DateTime(time).iso, "%Y-%m-%d %H:%M:%S.%f")
+        time = datetime.strptime(DateTime(time).iso, datefmt)
         self.ax.axvline(x=time, lw=lw, ls=ls, color=color, **kwargs, 
                         label='_nolegend_')
 
@@ -393,7 +401,7 @@ class CustomDatePlot(ACISPlot):
         >>> dp.add_text("2016:101:12:36:10.102", 35., "Something happened here!",
         ...             fontsize=15, color='magenta')
         """
-        time = datetime.strptime(DateTime(time).iso, "%Y-%m-%d %H:%M:%S.%f")
+        time = datetime.strptime(DateTime(time).iso, datefmt)
         self.ax.text(time, y, text, fontsize=fontsize, color=color,
                      rotation=rotation, **kwargs)
 
@@ -701,17 +709,20 @@ class DatePlot(CustomDatePlot):
         self.ax.set_ylim(ymin, ymax)
         if self.num_fields > 0:
             units = ds.fields[self.fields[0]].units
+            ulabel = unit_labels.get(units, units)
             if self.num_fields > 1:
                 if units == '':
                     ylabel = ''
                 else:
-                    ylabel = '%s (%s)' % (units_map[units], unit_labels.get(units, units))
+                    ylabel = f"{units_map[units]} ({ulabel})"
                 self.set_ylabel(ylabel)
             else:
                 ylabel = ds.fields[self.fields[0]].display_name
                 if units != '':
-                    ylabel += ' (%s)' % unit_labels.get(units, units)
+                    ylabel += f" ({ulabel})"
                 self.set_ylabel(ylabel)
+        self.ax.tick_params(which="major", width=2, length=6)
+        self.ax.tick_params(which="minor", width=2, length=3)
         if field2 is not None:
             field2 = ds._determine_field(field2)
             self.field2 = field2
@@ -720,6 +731,8 @@ class DatePlot(CustomDatePlot):
                 self.ax2 = self.ax.twinx()
                 self.ax2.set_zorder(-10)
                 self.ax.patch.set_visible(False)
+            self.ax2.tick_params(which="major", width=2, length=6)
+            self.ax2.tick_params(which="minor", width=2, length=3)
             drawstyle = drawstyles.get(fd2, None)
             state_codes = ds.state_codes.get(field2, None)
             if not plot_bad:
@@ -759,8 +772,9 @@ class DatePlot(CustomDatePlot):
             self.ax2.set_ylim(ymin2, ymax2)
             units2 = ds.fields[field2].units
             ylabel2 = ds.fields[field2].display_name
+            ulabel2 = unit_labels.get(units2, units2)
             if units2 != '':
-                ylabel2 += ' (%s)' % unit_labels.get(units2, units2)
+                ylabel2 += f" ({ulabel2})"
             self.set_ylabel2(ylabel2)
         else:
             self.field2 = None
@@ -1087,8 +1101,9 @@ class HistogramPlot(ACISPlot):
             label.set_fontproperties(fontProperties)
         for label in self.ax.get_yticklabels():
             label.set_fontproperties(fontProperties)
+        ulabel = unit_labels.get(self.unit, self.unit)
         if self.unit != '':
-            self.xlabel += ' (%s)' % unit_labels.get(self.unit, self.unit)
+            self.xlabel += f" ({ulabel})" 
         self.ax.set_xlabel(self.xlabel, fontsize=18)
         if density:
             self.ylabel = "Fraction of Time"
@@ -1128,10 +1143,12 @@ class PhasePlot(ACISPlot):
             label.set_fontproperties(fontProperties)
         for label in self.ax.get_yticklabels():
             label.set_fontproperties(fontProperties)
+        uxlabel = unit_labels.get(self.xunit, self.xunit)
+        uylabel = unit_labels.get(self.yunit, self.yunit)
         if self.xunit != '':
-            self.xlabel += ' (%s)' % unit_labels.get(self.xunit, self.xunit)
+            self.xlabel += f" ({uxlabel})"
         if self.yunit != '':
-            self.ylabel += ' (%s)' % unit_labels.get(self.yunit, self.yunit)
+            self.ylabel += f" ({uylabel})"
         self.set_xlabel(self.xlabel)
         self.set_ylabel(self.ylabel)
         return fontProperties
@@ -1302,7 +1319,8 @@ class PhaseScatterPlot(PhasePlot):
             clabel = self.ds.fields[c_field].display_name
             cunit = self.ds.fields[c_field].units
             if cunit != '':
-                clabel += ' (%s)' % unit_labels.get(cunit, cunit)
+                uclabel = unit_labels.get(cunit, cunit)
+                clabel += f" ({uclabel})"
             divider = make_axes_locatable(self.ax)
             cax = divider.append_axes("right", size="5%", pad=0.05)
             cb = plt.colorbar(self.pp, cax=cax)

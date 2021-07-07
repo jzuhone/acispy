@@ -77,7 +77,7 @@ def ensure_numpy_array(obj):
 
 def calc_off_nom_rolls(states):
     times = np.array(0.5*(states['tstart'] + states['tstop']))
-    atts = np.array([states["q%d" % x] for x in range(1, 5)]).transpose()
+    atts = np.array([states[f"q{x}"] for x in range(1, 5)]).transpose()
     return np.array([Ska.Sun.off_nominal_roll(att, time)
                      for time, att in zip(times, atts)])
 
@@ -119,6 +119,8 @@ state_labels = {"ccd_count": "CCD Count",
                 "tstop": "Stop Time",
                 "datestart": "Start Date",
                 "datestop": "Stop Date",
+                "date": "Date",
+                "time": "Time",
                 "dh_heater": "Detector Housing Heater"}
 
 mit_trans_table = {"BEP_PCB": "tmp_bep_pcb",
@@ -151,12 +153,12 @@ cti_simodes = ["TE_007AC", "TE_00B26", "TE_007AE",
                "TN_000B4", "TN_000B6"]
 
 
-def get_display_name(type, name):
-    if type.startswith("model"):
+def get_display_name(ftype, name):
+    if ftype.startswith("model"):
         display_name = name.upper() + " Model"
-        if type != "model":
-            display_name += str(type[-1])
-    elif type == "states":
+        if ftype != "model":
+            display_name += str(ftype[-1])
+    elif ftype == "states":
         display_name = state_labels[name]
     else:
         display_name = name.upper()
@@ -203,7 +205,7 @@ lr_root = "/data/acis/LoadReviews"
 
 def find_load(load_name):
     load_week = load_name[:7]
-    load_year = "20%s" % load_week[5:7]
+    load_year = f"20{load_week[5:7]}"
     loaddir = os.path.join(lr_root, load_year, load_week)
     load_letter = sorted(os.listdir(loaddir))[-1][-1].upper()
     if len(load_name) == 7:

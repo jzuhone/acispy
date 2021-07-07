@@ -33,6 +33,12 @@ class States(TimeSeriesData):
         new_table = OrderedDict()
         if isinstance(table, np.ndarray):
             state_names = list(table.dtype.names)
+            if "date" in state_names:
+                table = rf.append_fields(
+                    table, ['time'],
+                    [date2secs(table["date"])],
+                    usemask=False
+                )
             if "tstart" not in state_names:
                 table = rf.append_fields(
                     table, ["tstart", "tstop"],
@@ -46,7 +52,10 @@ class States(TimeSeriesData):
                 table["tstart"] = date2secs(table["datestart"])
                 table["tstop"] = date2secs(table["datestop"])
                 state_names += ["tstart", "tstop"]
-        times = Quantity([table["tstart"], table["tstop"]], "s")
+        if "tstart" in state_names:
+            times = Quantity([table["tstart"], table["tstop"]], "s")
+        else:
+            times = Quantity(table["time"], "s")
         for k in state_names:
             v = np.asarray(table[k])
             if k == "trans_keys" and v.dtype.char == "O":
@@ -79,20 +88,10 @@ class States(TimeSeriesData):
         return cls(t)
 
     @classmethod
-    def from_database(cls, tstart, tstop, state_keys=None, server=None):
-        from Chandra.cmd_states import fetch_states
-        tstart = get_time(tstart)
-        tstop = get_time(tstop)
-        if state_keys is not None:
-            state_keys = ensure_list(state_keys)
-        t = fetch_states(tstart, tstop, vals=state_keys, server=server)
-        return cls(t)
-
-    @classmethod
     def from_load_page(cls, load, comp="DPA"):
         load = find_load(load)
-        url = "http://cxc.cfa.harvard.edu/acis/%s_thermPredic/" % comp
-        url += "%s/ofls%s/states.dat" % (load[:-1].upper(), load[-1].lower())
+        url = f"http://cxc.cfa.harvard.edu/acis/{comp}_thermPredic/"
+        url += f"{load[:-1].upper()}/ofls{load[-1].lower()}/states.dat"
         u = requests.get(url)
         t = ascii.read(u.text)
         table = dict((k, t[k].data) for k in t.keys())
@@ -111,16 +110,9 @@ class States(TimeSeriesData):
         return cls(table)
 
     @classmethod
-    def from_commands(cls, tstart, tstop, cmds=None, state_keys=None):
-        from kadi import commands
+    def from_commands(cls, cmds, state_keys=None):
         from kadi.commands import states
-        tstart = get_time(tstart)
-        tstop = get_time(tstop)
-        if cmds is None:
-            cmds = commands.get_cmds(tstart, tstop)
-        continuity = states.get_continuity(tstart, state_keys)
-        t = states.get_states(cmds=cmds, continuity=continuity,
-                              state_keys=state_keys,
+        t = states.get_states(cmds=cmds, state_keys=state_keys,
                               merge_identical=True).as_array()
         return cls(t)
 
