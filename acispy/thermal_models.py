@@ -624,7 +624,8 @@ class ThermalModelRunner(ModelDataset):
                 state_names = states.dtype.names
             else:
                 state_names = list(states.keys())
-            state_times = date2secs(np.array([states["datestart"], states["datestop"]]))
+            state_times = CxoTime(
+                np.array([states["datestart"], states["datestop"]])).secs
             for k in state_names:
                 if k in model.comp:
                     model.comp[k].set_data(states[k], state_times)
@@ -778,15 +779,15 @@ class ThermalModelRunner(ModelDataset):
         """
         bs_cmds = commands.get_cmds_from_backstop(backstop_file)
         bs_dates = bs_cmds["date"]
-        bs_cmds['time'] = DateTime(bs_cmds['date']).secs
+        bs_cmds['time'] = CxoTime(bs_cmds['date']).secs
         last_tlm_date = fetch.get_time_range(name, format='date')[1]
-        last_tlm_time = DateTime(last_tlm_date).secs
+        last_tlm_time = CxoTime(last_tlm_date).secs
         tstart = min(last_tlm_time-3600.0, bs_cmds['time'][0]-days*86400.)
         if T_init is None:
             T_init = fetch.MSID(name, tstart).vals[-1]
         ok = bs_cmds['event_type'] == 'RUNNING_LOAD_TERMINATION_TIME'
         if np.any(ok):
-            rltt = DateTime(bs_dates[ok][0])
+            rltt = CxoTime(bs_dates[ok][0])
         else:
             # Handle the case of old loads (prior to backstop 6.9) where there
             # is no RLTT. If the first command is AOACRSTD this indicates the
@@ -795,9 +796,9 @@ class ThermalModelRunner(ModelDataset):
             # forward by 3 minutes (exactly 180.0 sec). If the first command is
             # not AOACRSTD then that command time is used as RLTT.
             if bs_cmds['tlmsid'][0] == 'AOACRSTD':
-                rltt = DateTime(bs_cmds['time'][0] + 180)
+                rltt = CxoTime(bs_cmds['time'][0] + 180)
             else:
-                rltt = DateTime(bs_cmds['date'][0])
+                rltt = CxoTime(bs_cmds['date'][0])
 
         # Get non-backstop commands for continuity
         cmds = commands.get_cmds(tstart, rltt, inclusive_stop=True)
@@ -840,7 +841,7 @@ class ThermalModelRunner(ModelDataset):
         ax.set_xlabel("Pitch (deg)", fontsize=18)
         ax.set_ylabel("SolarHeat", fontsize=18)
         ax.lines[1].set_label("P")
-        ax.lines[3].set_label("P+dP")
+        ax.lines[2].set_label("P+dP")
         ax.legend(fontsize=18)
         ax.tick_params(width=2, length=6)
         for axis in ['top', 'bottom', 'left', 'right']:
@@ -1027,10 +1028,10 @@ class SimulateSingleState(ThermalModelRunner):
                 raise KeyError(f"You input a state ('{k}') which does not exist!")
         if name in short_name_rev:
             name = short_name_rev[name]
-        tstart = DateTime(tstart).secs
-        datestart = DateTime(tstart).date
-        tstop = DateTime(tstop).secs
-        datestop = DateTime(tstop).date
+        tstart = CxoTime(tstart).secs
+        datestart = CxoTime(tstart).date
+        tstop = CxoTime(tstop).secs
+        datestop = CxoTime(tstop).date
         _states["datestart"] = np.array([datestart])
         _states["datestop"] = np.array([datestop])
         _states["tstart"] = np.array([tstart])
@@ -1179,7 +1180,7 @@ class SimulateECSRun(ThermalModelRunner):
         mylog.info(f"Detector Housing Heater: {dhh}")
 
         self.tend = tend
-        self.dateend = secs2date(tend)
+        self.dateend = CxoTime(tend).date
 
         mylog.info("Model Result")
         mylog.info("------------")

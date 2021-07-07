@@ -11,6 +11,7 @@ from acispy.utils import get_display_name, moving_average, \
 from acispy.units import get_units
 import numpy as np
 import Ska.engarchive.fetch_sci as fetch
+from cxotime import CxoTime
 
 
 class Dataset(object):

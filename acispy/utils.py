@@ -214,5 +214,5 @@ def plotdate2cxctime(dates):
     """
     from cxotime import CxoTime
     # Find the cxctime of first time and use a relative offset from there
-    cxctime0 = CxoTime(dates[0], format='plotdate').secs
+    cxctime0 = CxoTime(dates[0], format='plot_date').secs
     return (np.asarray(dates) - dates[0]) * 86400. + cxctime0
