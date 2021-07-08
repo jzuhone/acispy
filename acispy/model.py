@@ -1,11 +1,13 @@
 import requests
 from astropy.io import ascii
 import Ska.Numpy
-from acispy.utils import get_time, mylog, find_load
+from acispy.utils import mylog, find_load
 from acispy.units import APQuantity, Quantity, get_units
 from acispy.utils import ensure_list
 from acispy.time_series import TimeSeriesData
 import numpy as np
+from cxotime import CxoTime
+
 
 comp_map = {"1deamzt": "dea",
             "1dpamzt": "dpa",
@@ -121,7 +123,7 @@ class Model(TimeSeriesData):
         return cls(table=data)
 
     def get_values(self, time):
-        time = get_time(time, fmt='secs')
+        time = CxoTime(time).secs
         t = Quantity(time, "s")
         values = {}
         for key in self.keys():

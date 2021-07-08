@@ -7,10 +7,11 @@ from acispy.fields import create_builtin_derived_msids, \
     OutputFieldsNotFound, create_builtin_derived_states
 from acispy.time_series import TimeSeriesData, EmptyTimeSeries
 from acispy.utils import get_display_name, moving_average, \
-    ensure_list, get_time
+    ensure_list
 from acispy.units import get_units
 import numpy as np
 import Ska.engarchive.fetch_sci as fetch
+from cxotime import CxoTime
 
 
 class Dataset(object):
@@ -476,8 +477,8 @@ class EngArchiveData(Dataset):
     def __init__(self, tstart, tstop, msids, get_states=True, 
                  filter_bad=False, stat='5min', state_keys=None, 
                  interpolate=None, interpolate_times=None):
-        tstart = get_time(tstart)
-        tstop = get_time(tstop)
+        tstart = CxoTime(tstart).date
+        tstop = CxoTime(tstop).date
         msids = MSIDs.from_database(msids, tstart, tstop=tstop,
                                     filter_bad=filter_bad, stat=stat,
                                     interpolate=interpolate,
@@ -520,8 +521,8 @@ class MaudeData(Dataset):
     def __init__(self, tstart, tstop, msids, get_states=True, 
                  user=None, password=None, other_msids=None, 
                  state_keys=None):
-        tstart = get_time(tstart)
-        tstop = get_time(tstop)
+        tstart = CxoTime(tstart).date
+        tstop = CxoTime(tstop).date
         msids = MSIDs.from_maude(msids, tstart, tstop=tstop, user=user,
                                  password=password)
         if other_msids is not None:
@@ -539,9 +540,9 @@ class MaudeData(Dataset):
 def _parse_tracelogs(tbegin, tend, filenames, other_msids):
     filenames = ensure_list(filenames)
     if tbegin is not None:
-        tbegin = get_time(tbegin)
+        tbegin = CxoTime(tbegin).date
     if tend is not None:
-        tend = get_time(tend)
+        tend = CxoTime(tend).date
     msid_objs = []
     for filename in filenames:
         # Figure out what kind of file this is
@@ -730,13 +731,13 @@ class TelemData(Dataset):
                  filter_bad=False, stat='5min', user=None, password=None, 
                  get_states=True, state_keys=None):
         msids = ensure_list(msids)
-        tstart = get_time(tstart, fmt='secs')
-        tstop = get_time(tstop, fmt='secs')
+        tstart = CxoTime(tstart).secs
+        tstop = CxoTime(tstop).secs
         tmid = 1.0e99
         for msid in msids:
             tm = fetch.get_time_range(msid, format="secs")[-1]
             tmid = min(tmid, tm)
-        tmid = get_time(tmid, fmt='secs')
+        tmid = CxoTime(tmid).secs
         if tmid < tstop:
             msids1 = MSIDs.from_database(msids, tstart, tstop=tmid,
                                          filter_bad=filter_bad, stat=stat)

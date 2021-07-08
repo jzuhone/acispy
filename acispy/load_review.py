@@ -1,14 +1,14 @@
 import os
 from acispy.thermal_models import ThermalModelFromLoad
 from acispy.plots import DatePlot
-from acispy.utils import get_time, mylog, find_load, \
+from acispy.utils import mylog, find_load, \
     lr_root, cti_simodes
 from collections import defaultdict
-from Chandra.Time import date2secs, secs2date
 from Ska.Matplotlib import cxctime2plotdate
 import numpy as np
 from datetime import datetime, timezone
 import bisect
+from cxotime import CxoTime
 
 lr_file = "ACIS-LoadReview.txt"
 
@@ -190,7 +190,7 @@ class ACISLoadReview(object):
                         if event not in self.events:
                             self.events[event] = {"times": []}
                         if event == "comm_ends":
-                            time = secs2date(date2secs(words[0])-1800.0)
+                            time = CxoTime(CxoTime(words[0]).secs-1800.0).date
                         self.events[event]["times"].append(time)
                         if state is not None:
                             if "state" not in self.events[event]:
@@ -212,7 +212,7 @@ class ACISLoadReview(object):
                         "==> DITHER" in line:
                         lines.append(line)
                         line_times.append(time)
-        line_times = date2secs(line_times)
+        line_times = CxoTime(line_times).secs
         if len(self.events["comm_begins"]) > 0:
             lines, line_times = self._fix_comm_times(lines, line_times, comm_durations)
         return lines, line_times
@@ -242,8 +242,8 @@ class ACISLoadReview(object):
         if os.path.getsize(dsnfile) == 0:
             mylog.warning("DSN summary file is empty. Ignoring.")
             return
-        tstart = date2secs(self.first_time)
-        tstop = date2secs(self.last_time)
+        tstart = CxoTime(self.first_time).secs
+        tstop = CxoTime(self.last_time).secs
         bots = []
         eots = []
         new_durations = []
@@ -252,15 +252,15 @@ class ACISLoadReview(object):
                 words = line.strip().split()
                 bot = datetime.strptime("%s:%s:00:00:00" % (words[-4], words[-3].split(".")[0]), "%Y:%j:%H:%M:%S")
                 eot = datetime.strptime("%s:%s:00:00:00" % (words[-2], words[-1].split(".")[0]), "%Y:%j:%H:%M:%S")
-                time_bot = date2secs(bot.strftime("%Y:%j:%H:%M:%S"))+86400.0*(float(words[-3]) % 1)
-                time_eot = date2secs(eot.strftime("%Y:%j:%H:%M:%S"))+86400.0*(float(words[-1]) % 1)
+                time_bot = CxoTime(bot.strftime("%Y:%j:%H:%M:%S")).secs+86400.0*(float(words[-3]) % 1)
+                time_eot = CxoTime(eot.strftime("%Y:%j:%H:%M:%S")).secs+86400.0*(float(words[-1]) % 1)
                 new_durations.append((time_eot-time_bot)/60.0)
                 if tstart <= time_bot <= tstop:
                     bots.append(time_bot)
                 if tstart <= time_eot <= tstop:
                     eots.append(time_eot)
-        self.events["comm_begins"]["times"] = secs2date(bots)
-        self.events["comm_ends"]["times"] = secs2date(eots)
+        self.events["comm_begins"]["times"] = CxoTime(bots).date
+        self.events["comm_ends"]["times"] = CxoTime(eots).date
         self.lines, self.line_times = self._fix_comm_times(self.lines, self.line_times, new_durations)
 
     def _fix_comm_times(self, lines, line_times, comm_durations):
@@ -272,13 +272,13 @@ class ACISLoadReview(object):
                 new_times.append(line_times[i])
         for time in self.events["comm_begins"]["times"]:
             local_time = datetime.strptime(time, "%Y:%j:%H:%M:%S.%f").replace(tzinfo=timezone.utc).astimezone(tz=None)
-            t = date2secs(time)
+            t = CxoTime(time).secs
             idx = bisect.bisect_right(new_times, t)
             new_times.insert(idx, t)
             new_lines.insert(idx, "%s   REAL-TIME COMM BEGINS   %s  EDT" % (time, local_time.strftime("%Y:%j:%H:%M:%S")))
         for i, time in enumerate(self.events["comm_ends"]["times"]):
             local_time = datetime.strptime(time, "%Y:%j:%H:%M:%S.%f").replace(tzinfo=timezone.utc).astimezone(tz=None)
-            t = date2secs(time)
+            t = CxoTime(time).secs
             idx = bisect.bisect_right(new_times, t)
             new_times.insert(idx, t)
             new_lines.insert(idx, "%s   REAL-TIME COMM ENDS     %s  EDT" % (time, local_time.strftime("%Y:%j:%H:%M:%S")))
@@ -311,7 +311,7 @@ class ACISLoadReview(object):
             color = colors[key]
             ls = styles[key]
             for i, t in enumerate(self.events[key]["times"]):
-                tt = date2secs(t)
+                tt = CxoTime(t).secs
                 if tt < tbegin or tt > tend:
                     continue
                 plot.add_vline(t, color=color, ls=ls)
@@ -319,7 +319,7 @@ class ACISLoadReview(object):
                     text = self.events[key]["state"][i]
                     if isinstance(text, tuple):
                         text = text[-1]
-                    tdt = secs2date(tt + 1800.0)
+                    tdt = CxoTime(tt + 1800.0).date
                     ymin, ymax = plot.ax.get_ylim()
                     y = (1.0-offsets[key])*ymin+offsets[key]*ymax
                     plot.add_text(tdt, y, text, fontsize=15,
@@ -343,8 +343,8 @@ class ACISLoadReview(object):
         if tc_start[-1] > tc_end[-1]:
             tc_end.append(self.last_time)
         assert len(tc_start) == len(tc_end)
-        tc_start = date2secs(tc_start)
-        tc_end = date2secs(tc_end)
+        tc_start = CxoTime(tc_start).secs
+        tc_end = CxoTime(tc_end).secs
         ybot, ytop = plot.ax.get_ylim()
         t = np.linspace(tbegin, tend, 500)
         tplot = cxctime2plotdate(t)
@@ -425,9 +425,9 @@ class ACISLoadReview(object):
             tbegin = self.first_time
         if tend is None:
             tend = self.last_time
-        tbegin = get_time(tbegin, 'secs')
-        tend = get_time(tend, 'secs')
+        tbegin = CxoTime(tbegin).secs
+        tend = CxoTime(tend).secs
         if annotations is not None:
             self._add_annotations(dp, annotations.copy(), tbegin, tend)
-        dp.set_xlim(secs2date(tbegin), secs2date(tend))
+        dp.set_xlim(CxoTime(tbegin).date, CxoTime(tend).date)
         return dp

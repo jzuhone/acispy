@@ -2,7 +2,7 @@ import astropy.units as u
 from astropy.units import Quantity
 from acispy.utils import mylog
 import numpy as np
-from Chandra.Time import secs2date, DateTime
+from cxotime import CxoTime
 
 u.imperial.enable()
 
@@ -152,7 +152,7 @@ def parse_index(idx, times):
     else:
         orig_idx = idx
         if isinstance(idx, str):
-            idx = DateTime(idx).secs
+            idx = CxoTime(idx).secs
         if idx < times[0] or idx > times[-1]:
             raise RuntimeError(f"The time {orig_idx} is outside the bounds of this dataset!")
         idx = np.searchsorted(times, idx)-1
@@ -204,7 +204,7 @@ class APStringArray:
 
     @property
     def dates(self):
-        return secs2date(self.times.value)
+        return CxoTime(self.times.value).date
 
     def __repr__(self):
         return self.value.__repr__()
@@ -261,14 +261,14 @@ class APQuantity(Quantity):
     @property
     def dates(self):
         if self._dates is None:
-            self._dates = secs2date(self.times.value)
+            self._dates = CxoTime(self.times.value).date
         return self._dates
 
     def argmax(self, dates=False):
         idx = np.argmax(self.value)
         times = self.times[idx]
         if dates:
-            return secs2date(times)
+            return CxoTime(times).date
         else:
             return times
 
@@ -276,7 +276,7 @@ class APQuantity(Quantity):
         idx = np.argmin(self.value)
         times = self.times[idx]
         if dates:
-            return secs2date(times)
+            return CxoTime(times).date
         else:
             return times
 

@@ -1,12 +1,12 @@
 from astropy.io import ascii
 import requests
 from acispy.units import get_units
-from acispy.utils import get_time, ensure_list, find_load, calc_off_nom_rolls
+from acispy.utils import ensure_list, find_load, calc_off_nom_rolls
 from acispy.units import APQuantity, APStringArray, Quantity
 from acispy.time_series import TimeSeriesData
 import numpy as np
-from Chandra.Time import date2secs
 from collections import OrderedDict
+from cxotime import CxoTime
 
 cmd_state_codes = {("states", "hetg"): {"RETR": 0, "INSR": 1},
                    ("states", "letg"): {"RETR": 0, "INSR": 1},
@@ -36,21 +36,21 @@ class States(TimeSeriesData):
             if "date" in state_names:
                 table = rf.append_fields(
                     table, ['time'],
-                    [date2secs(table["date"])],
+                    [CxoTime(table["date"]).secs],
                     usemask=False
                 )
             if "tstart" not in state_names:
                 table = rf.append_fields(
                     table, ["tstart", "tstop"],
-                    [date2secs(table["datestart"]),
-                     date2secs(table["datestop"])],
+                    [CxoTime(table["datestart"]).secs,
+                     CxoTime(table["datestop"]).secs],
                     usemask=False)
                 state_names += ["tstart", "tstop"]
         else:
             state_names = list(table.keys())
             if "tstart" not in state_names:
-                table["tstart"] = date2secs(table["datestart"])
-                table["tstop"] = date2secs(table["datestop"])
+                table["tstart"] = CxoTime(table["datestart"]).secs
+                table["tstop"] = CxoTime(table["datestop"]).secs
                 state_names += ["tstart", "tstop"]
         if "tstart" in state_names:
             times = Quantity([table["tstart"], table["tstop"]], "s")
@@ -79,8 +79,8 @@ class States(TimeSeriesData):
     @classmethod
     def from_kadi_states(cls, tstart, tstop, state_keys=None):
         from kadi.commands import states
-        tstart = get_time(tstart)
-        tstop = get_time(tstop)
+        tstart = CxoTime(tstart).date
+        tstop = CxoTime(tstop).date
         if state_keys is not None:
             state_keys = ensure_list(state_keys)
         t = states.get_states(tstart, tstop, state_keys=state_keys,
@@ -120,7 +120,7 @@ class States(TimeSeriesData):
         """
         Get the commanded states at a given *time*.
         """
-        time = get_time(time, 'secs')
+        time = CxoTime(time).secs
         state = {}
         for key in self.keys():
             state[key] = self[key][time]
