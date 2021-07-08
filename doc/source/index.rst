@@ -11,7 +11,6 @@ Contents:
 .. toctree::
    :maxdepth: 1
    
-   activating
    what_data
    loading_data
    Plotting_Data
