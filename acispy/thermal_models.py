@@ -340,9 +340,10 @@ class ThermalModelFromRun(ModelDataset):
     ...                          get_msids=True)
     """
     def __init__(self, loc, get_msids=False, tl_file=None):
-        temp_file = Path(loc / "temperatures.dat")
-        state_file = Path(loc / "states.dat")
-        esa_file = Path(loc / "earth_solid_angle.dat")
+        loc = Path(loc)
+        temp_file = loc / "temperatures.dat"
+        state_file = loc / "states.dat"
+        esa_file = loc / "earth_solid_angle.dat"
         if not state_file.exists():
             state_file = None
         if not esa_file.exists():
