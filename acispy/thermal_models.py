@@ -87,14 +87,16 @@ model_classes = {
 }
 
 
-def find_json(name, model_spec):
+def find_json(name, model_spec, repo_path, version):
     from xija.get_model_spec import get_xija_model_spec
     msg = f"The JSON file {model_spec} does not exist! Please " \
           f"specify a JSON file using the 'model_spec' keyword argument."
     if model_spec is None:
         name = short_name.get(name, name)
         try:
-            model_spec, version = get_xija_model_spec(name)
+            model_spec, version = get_xija_model_spec(name,
+                                                      repo_path=repo_path,                                          
+                                                      version=version)
         except ValueError:
             raise IOError(msg)
         mylog.info("Using model for %s from chandra_models version = %s", name, version)
@@ -466,7 +468,16 @@ class ThermalModelRunner(ModelDataset):
         A function which takes the model name, tstart, tstop,
         and a XijaModel object, and allows the user to 
         perform custom operations on the model.
-
+    chandra_models_path : str, optional
+        The path to the chandra_models repository to be used
+        when obtaining a model specification file. Default:
+        $SKA/data/chandra_models
+    chandra_models_version : str, optional
+        The version of the chandra_models repository to be used 
+        when obtaining a model specification file. Can be a 
+        version number or a named branch. Default is to use the
+        latest tagged version. 
+        
     Examples
     --------
     >>> states = {"ccd_count": np.array([5, 6, 1]),
@@ -485,7 +496,8 @@ class ThermalModelRunner(ModelDataset):
     def __init__(self, name, tstart, tstop, states=None, T_init=None,
                  other_init=None, get_msids=False, dt=328.0, model_spec=None,
                  mask_bad_times=False, ephem_file=None, evolve_method=None,
-                 rk4=None, tl_file=None, compute_model_supp=None):
+                 rk4=None, tl_file=None, compute_model_supp=None, 
+                 chandra_models_path=None, chandra_models_version=None):
 
         self.name = name.lower()
         self.sname = short_name.get(name, name)
@@ -494,7 +506,9 @@ class ThermalModelRunner(ModelDataset):
         else:
             self.model_check = None
 
-        self.model_spec = find_json(name, model_spec)
+        self.model_spec = find_json(name, model_spec, 
+                                    repo_path=chandra_models_path,
+                                    version=chandra_models_version)
 
         self.ephem_file = ephem_file
  
