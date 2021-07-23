@@ -88,7 +88,7 @@ model_classes = {
 
 
 def find_json(name, model_spec):
-    from xija.get_model_spec import get_xija_model_spec, REPO_PATH
+    from xija.get_model_spec import get_xija_model_spec
     msg = f"The JSON file {model_spec} does not exist! Please " \
           f"specify a JSON file using the 'model_spec' keyword argument."
     if model_spec is None:
@@ -97,14 +97,12 @@ def find_json(name, model_spec):
             model_spec, version = get_xija_model_spec(name)
         except ValueError:
             raise IOError(msg)
-        mylog.info("chandra_models version = %s", version)
-        model_path = Path(REPO_PATH / 'chandra_models' / 'xija' /
-                          name / f'{name}_spec.json')
+        mylog.info("Using model for %s from chandra_models version = %s", name, version)
     else:
         model_path = Path(model_spec).resolve()
         if not model_path.exists():
             raise IOError(msg)
-    mylog.info("model_spec = %s", model_path)
+        mylog.info("model_spec = %s", model_path)
     return model_spec
 
 
