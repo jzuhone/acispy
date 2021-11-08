@@ -44,7 +44,7 @@ full_name = {"1deamzt": "DEA",
              "tmp_fep1_fb": "FEP1 FB",
              "tmp_bep_pcb": "BEP PCB"}
 
-limits = {'1deamzt': 36.5,
+limits = {'1deamzt': 37.5,
           '1dpamzt': 37.5,
           '1pdeaat': 52.5,
           'tmp_fep1_mong': 47.0,
