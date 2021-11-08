@@ -502,7 +502,8 @@ class ThermalModelRunner(ModelDataset):
         self.name = name.lower()
         self.sname = short_name.get(name, name)
         if self.name in acis_models:
-            self.model_check = importlib.import_module(f"{self.sname}_check")
+            self.model_check = importlib.import_module(
+                f"acis_thermal_check.apps.{self.sname}_check")
         else:
             self.model_check = None
 
@@ -653,7 +654,7 @@ class ThermalModelRunner(ModelDataset):
     def _compute_acis_model(self, name, tstart, tstop, states, dt, T_init,
                             other_init=None, evolve_method=None, rk4=None):
         import re
-        from acis_thermal_check import calc_pitch_roll
+        from acis_thermal_check.utils import calc_pitch_roll
         check_obj = getattr(self.model_check, model_classes[self.sname])()
         if name == "fptemp_11":
             name = "fptemp"
