@@ -477,7 +477,7 @@ class ThermalModelRunner(ModelDataset):
         when obtaining a model specification file. Can be a 
         version number or a named branch. Default is to use the
         latest tagged version. 
-        
+
     Examples
     --------
     >>> states = {"ccd_count": np.array([5, 6, 1]),
@@ -798,7 +798,7 @@ class ThermalModelRunner(ModelDataset):
         last_tlm_time = CxoTime(last_tlm_date).secs
         tstart = min(last_tlm_time-3600.0, bs_cmds['time'][0]-days*86400.)
         if T_init is None:
-            T_init = fetch.MSID(name, tstart).vals[-1]
+            T_init = fetch.MSID(name, tstart-700., tstart).vals[-1]
         ok = bs_cmds['event_type'] == 'RUNNING_LOAD_TERMINATION_TIME'
         if np.any(ok):
             rltt = CxoTime(bs_dates[ok][0])
