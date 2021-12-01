@@ -14,7 +14,7 @@ dea_spec = test_dir / "dea_test_spec.json"
 fp_spec = test_dir / "acisfp_test_spec.json"
 
 
-def test_handmade_states():
+def test_handmade_states(answer_store):
     states = {"ccd_count": np.array([5, 6, 1]),
               "pitch": np.array([150.0] * 3),
               "fep_count": np.array([5, 6, 1]),
@@ -27,31 +27,37 @@ def test_handmade_states():
     dpa_model = ThermalModelRunner("1dpamzt", "2015:002:00:00:00",
                                    "2015:005:00:00:00", states=states,
                                    T_init=13.0, model_spec=dpa_spec)
-    t = ascii.read(test_dir / "handmade_temp.dat")
-    assert_allclose_nounits(t["1dpamzt"].data, dpa_model["1dpamzt"])
-    assert_allclose_nounits(t["time"].data, dpa_model["1dpamzt"].times)
-    assert_equal_nounits(t["date"].data, dpa_model["1dpamzt"].dates)
+    if answer_store:
+        dpa_model.write_model(test_dir / "handmade_temp.dat", overwrite=True)
+    else:
+        t = ascii.read(test_dir / "handmade_temp.dat")
+        assert_allclose_nounits(t["1dpamzt"].data, dpa_model["1dpamzt"])
+        assert_allclose_nounits(t["time"].data, dpa_model["1dpamzt"].times)
+        assert_equal_nounits(t["date"].data, dpa_model["1dpamzt"].dates)
     for k, v in states.items():
         assert_equal_nounits(dpa_model["states", k], v)
 
 
-def test_get_msids():
+def test_get_msids(answer_store):
     fp_model = ThermalModelRunner("fptemp_11", "2020:002:00:00:00", 
                                   "2020:005:00:00:00", get_msids=True, 
                                   model_spec=fp_spec)
     fp_model.map_state_to_msid("ccd_count", "fptemp_11")
     fp_model.map_state_to_msid("pitch", "fptemp_11")
-    t = ascii.read(test_dir / "model_and_data.dat")
-    assert_allclose_nounits(t["model_fptemp_11"].data, 
-                            fp_model["model","fptemp_11"])
-    assert_allclose_nounits(t["msids_fptemp_11"].data, 
-                            fp_model["msids","fptemp_11"])
-    assert_allclose_nounits(t["time"].data, fp_model["model","fptemp_11"].times)
-    assert_equal_nounits(t["date"].data, fp_model["model","fptemp_11"].dates)
-    assert_allclose_nounits(t["model_earth_solid_angle"].data, 
-                            fp_model["model","earth_solid_angle"])
-    assert_equal_nounits(t["msids_ccd_count"].data,
-                         fp_model["msids","ccd_count"])
+    if answer_store:
+        fp_model.write_model_and_data(test_dir / "model_and_data.dat", overwrite=True)
+    else:
+        t = ascii.read(test_dir / "model_and_data.dat")
+        assert_allclose_nounits(t["model_fptemp_11"].data, 
+                                fp_model["model","fptemp_11"])
+        assert_allclose_nounits(t["msids_fptemp_11"].data, 
+                                fp_model["msids","fptemp_11"])
+        assert_allclose_nounits(t["time"].data, fp_model["model","fptemp_11"].times)
+        assert_equal_nounits(t["date"].data, fp_model["model","fptemp_11"].dates)
+        assert_allclose_nounits(t["model_earth_solid_angle"].data, 
+                                fp_model["model","earth_solid_angle"])
+        assert_equal_nounits(t["msids_ccd_count"].data,
+                             fp_model["msids","ccd_count"])
 
 
 def test_states_from_commands():
@@ -74,15 +80,18 @@ def test_states_from_commands():
                             rtol=0.02)
 
 
-def test_states_from_backstop():
+def test_states_from_backstop(answer_store):
     backstop = test_dir / "CR229_2202.backstop"
     aca_model = ThermalModelRunner.from_backstop("aacccdpt", backstop,
                                                  model_spec=aca_spec,
                                                  other_init={"aca0": -10})
-    t = ascii.read(test_dir / "backstop_temp.dat")
-    assert_allclose_nounits(t["aacccdpt"].data, aca_model["aacccdpt"])
-    assert_allclose_nounits(t["time"].data, aca_model["aacccdpt"].times)
-    assert_equal_nounits(t["date"].data, aca_model["aacccdpt"].dates)
+    if answer_store:
+        aca_model.write_model(test_dir / "backstop_temp.dat", overwrite=True)
+    else:
+        t = ascii.read(test_dir / "backstop_temp.dat")
+        assert_allclose_nounits(t["aacccdpt"].data, aca_model["aacccdpt"])
+        assert_allclose_nounits(t["time"].data, aca_model["aacccdpt"].times)
+        assert_equal_nounits(t["date"].data, aca_model["aacccdpt"].dates)
 
 
 def test_load_output():
@@ -109,16 +118,19 @@ def test_specify_path():
     assert_allclose_nounits(tm1["pitch"], tm2["pitch"])
 
 
-def test_single_state():
+def test_single_state(answer_store):
     states = {"pitch": 75.0, "off_nom_roll": -6.0, "clocking": 1,
               "ccd_count": 6, "simpos": 75624.0}
     tm = SimulateSingleState("1deamzt", "2016:201:05:12:03",
                              "2016:202:05:12:03", states, 15.0,
                              model_spec=dea_spec)
-    t = ascii.read(test_dir / "single_state.dat")
-    assert_allclose_nounits(t["1deamzt"].data, tm["1deamzt"])
-    assert_allclose_nounits(t["time"].data, tm["1deamzt"].times)
-    assert_equal_nounits(t["date"].data, tm["1deamzt"].dates)
+    if answer_store:
+        tm.write_model(test_dir / "single_state.dat", overwrite=True)
+    else:
+        t = ascii.read(test_dir / "single_state.dat")
+        assert_allclose_nounits(t["1deamzt"].data, tm["1deamzt"])
+        assert_allclose_nounits(t["time"].data, tm["1deamzt"].times)
+        assert_equal_nounits(t["date"].data, tm["1deamzt"].dates)
     for k, v in states.items():
         assert tm["states", k].size == 1
         if tm['states',k].dtype == np.float64:

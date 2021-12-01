@@ -44,7 +44,7 @@ full_name = {"1deamzt": "DEA",
              "tmp_fep1_fb": "FEP1 FB",
              "tmp_bep_pcb": "BEP PCB"}
 
-limits = {'1deamzt': 36.5,
+limits = {'1deamzt': 37.5,
           '1dpamzt': 37.5,
           '1pdeaat': 52.5,
           'tmp_fep1_mong': 47.0,
@@ -87,24 +87,24 @@ model_classes = {
 }
 
 
-def find_json(name, model_spec):
-    from xija.get_model_spec import get_xija_model_spec, REPO_PATH
+def find_json(name, model_spec, repo_path, version):
+    from xija.get_model_spec import get_xija_model_spec
     msg = f"The JSON file {model_spec} does not exist! Please " \
           f"specify a JSON file using the 'model_spec' keyword argument."
     if model_spec is None:
         name = short_name.get(name, name)
         try:
-            model_spec, version = get_xija_model_spec(name, check_version=True)
+            model_spec, version = get_xija_model_spec(name,
+                                                      repo_path=repo_path,                                          
+                                                      version=version)
         except ValueError:
             raise IOError(msg)
-        mylog.info("chandra_models version = %s", version)
-        model_path = Path(REPO_PATH / 'chandra_models' / 'xija' /
-                          name / f'{name}_spec.json')
+        mylog.info("Using model for %s from chandra_models version = %s", name, version)
     else:
         model_path = Path(model_spec).resolve()
         if not model_path.exists():
             raise IOError(msg)
-    mylog.info("model_spec = %s", model_path)
+        mylog.info("model_spec = %s", model_path)
     return model_spec
 
 
@@ -340,9 +340,10 @@ class ThermalModelFromRun(ModelDataset):
     ...                          get_msids=True)
     """
     def __init__(self, loc, get_msids=False, tl_file=None):
-        temp_file = Path(loc / "temperatures.dat")
-        state_file = Path(loc / "states.dat")
-        esa_file = Path(loc / "earth_solid_angle.dat")
+        loc = Path(loc)
+        temp_file = loc / "temperatures.dat"
+        state_file = loc / "states.dat"
+        esa_file = loc / "earth_solid_angle.dat"
         if not state_file.exists():
             state_file = None
         if not esa_file.exists():
@@ -467,6 +468,15 @@ class ThermalModelRunner(ModelDataset):
         A function which takes the model name, tstart, tstop,
         and a XijaModel object, and allows the user to 
         perform custom operations on the model.
+    chandra_models_path : str, optional
+        The path to the chandra_models repository to be used
+        when obtaining a model specification file. Default:
+        $SKA/data/chandra_models
+    chandra_models_version : str, optional
+        The version of the chandra_models repository to be used 
+        when obtaining a model specification file. Can be a 
+        version number or a named branch. Default is to use the
+        latest tagged version. 
 
     Examples
     --------
@@ -486,16 +496,20 @@ class ThermalModelRunner(ModelDataset):
     def __init__(self, name, tstart, tstop, states=None, T_init=None,
                  other_init=None, get_msids=False, dt=328.0, model_spec=None,
                  mask_bad_times=False, ephem_file=None, evolve_method=None,
-                 rk4=None, tl_file=None, compute_model_supp=None):
+                 rk4=None, tl_file=None, compute_model_supp=None, 
+                 chandra_models_path=None, chandra_models_version=None):
 
         self.name = name.lower()
         self.sname = short_name.get(name, name)
         if self.name in acis_models:
-            self.model_check = importlib.import_module(f"{self.sname}_check")
+            self.model_check = importlib.import_module(
+                f"acis_thermal_check.apps.{self.sname}_check")
         else:
             self.model_check = None
 
-        self.model_spec = find_json(name, model_spec)
+        self.model_spec = find_json(name, model_spec, 
+                                    repo_path=chandra_models_path,
+                                    version=chandra_models_version)
 
         self.ephem_file = ephem_file
  
@@ -640,7 +654,7 @@ class ThermalModelRunner(ModelDataset):
     def _compute_acis_model(self, name, tstart, tstop, states, dt, T_init,
                             other_init=None, evolve_method=None, rk4=None):
         import re
-        from acis_thermal_check import calc_pitch_roll
+        from acis_thermal_check.utils import calc_pitch_roll
         check_obj = getattr(self.model_check, model_classes[self.sname])()
         if name == "fptemp_11":
             name = "fptemp"
@@ -784,7 +798,7 @@ class ThermalModelRunner(ModelDataset):
         last_tlm_time = CxoTime(last_tlm_date).secs
         tstart = min(last_tlm_time-3600.0, bs_cmds['time'][0]-days*86400.)
         if T_init is None:
-            T_init = fetch.MSID(name, tstart).vals[-1]
+            T_init = fetch.MSID(name, tstart-700., tstart).vals[-1]
         ok = bs_cmds['event_type'] == 'RUNNING_LOAD_TERMINATION_TIME'
         if np.any(ok):
             rltt = CxoTime(bs_dates[ok][0])
