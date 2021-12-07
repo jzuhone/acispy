@@ -141,8 +141,8 @@ mit_trans_table = {"BEP_PCB": "tmp_bep_pcb",
                    "DEAP6VDCB": "deap6voltb"}
 
 cti_simodes = ["TE_007AC", "TE_00B26", "TE_007AE",
-               "TE_00CA8", "TE_00C60", "TE_007AE",
-               "TN_000B4", "TN_000B6"]
+               "TE_00CA8", "TE_00C60", "TN_000B4", 
+               "TN_000B6", "TE_00C62"]
 
 
 def get_display_name(ftype, name):
