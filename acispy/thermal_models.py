@@ -95,7 +95,7 @@ def find_json(name, model_spec, repo_path, version):
         name = short_name.get(name, name)
         try:
             model_spec, version = get_xija_model_spec(name,
-                                                      repo_path=repo_path,                                          
+                                                      repo_path=repo_path,
                                                       version=version)
         except ValueError:
             raise IOError(msg)
@@ -141,7 +141,7 @@ class ModelDataset(Dataset):
         Ska.Numpy.pprint(temp_array, fmt, out)
         out.close()
 
-    def write_model_and_data(self, filename, overwrite=False, 
+    def write_model_and_data(self, filename, overwrite=False,
                              mask_radzones=False, mask_fmt1=False,
                              mask_badtimes=True, tstart=None,
                              tstop=None):
@@ -219,7 +219,7 @@ class ModelDataset(Dataset):
 
     def make_dashboard_plots(self, msid, tstart=None, tstop=None, yplotlimits=None,
                              errorplotlimits=None, fig=None, figfile=None,
-                             bad_times=None, mask_radzones=False, plot_limits=True, 
+                             bad_times=None, mask_radzones=False, plot_limits=True,
                              mask_fmt1=False):
         """
         Make dashboard plots for the particular thermal model.
