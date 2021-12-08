@@ -1,7 +1,8 @@
 from astropy.io import ascii
 import requests
 from acispy.units import get_units
-from acispy.utils import ensure_list, find_load, calc_off_nom_rolls
+from acispy.utils import ensure_list, find_load, calc_off_nom_rolls, \
+    dict_to_array
 from acispy.units import APQuantity, APStringArray, Quantity
 from acispy.time_series import TimeSeriesData
 import numpy as np
@@ -30,7 +31,7 @@ class States(TimeSeriesData):
 
     def __init__(self, table):
         import numpy.lib.recfunctions as rf
-        new_table = OrderedDict()
+        new_table = {}
         if isinstance(table, np.ndarray):
             state_names = list(table.dtype.names)
             if "date" in state_names:
@@ -127,11 +128,7 @@ class States(TimeSeriesData):
         return state
 
     def as_array(self):
-        dtype = [(k, str(v.dtype)) for k, v in self.table.items()]
-        data = np.zeros(len(self), dtype=dtype)
-        for k, v in self.table.items():
-            data[k] = v.value
-        return data
+        return dict_to_array(self.table)
 
     @property
     def current_states(self):

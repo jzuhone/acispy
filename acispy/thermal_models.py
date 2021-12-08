@@ -10,7 +10,8 @@ from acispy.model import Model
 from acispy.msids import MSIDs
 from acispy.time_series import EmptyTimeSeries
 from acispy.utils import mylog, \
-    ensure_list, plotdate2cxctime
+    ensure_list, plotdate2cxctime, \
+    dict_to_array
 import Ska.Numpy
 import Ska.engarchive.fetch_sci as fetch
 import matplotlib.pyplot as plt
@@ -532,6 +533,7 @@ class ThermalModelRunner(ModelDataset):
                     states["letg"] = np.array(["RETR"] * num_states)
                 if "hetg" not in states:
                     states["hetg"] = np.array(["RETR"] * num_states)
+                states = dict_to_array(states)
 
         if T_init is None:
             last_tlm_date = fetch.get_time_range(self.name, format='secs')[1]

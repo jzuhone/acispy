@@ -217,3 +217,11 @@ def plotdate2cxctime(dates):
     # Find the cxctime of first time and use a relative offset from there
     cxctime0 = CxoTime(dates[0], format='plot_date').secs
     return (np.asarray(dates) - dates[0]) * 86400. + cxctime0
+
+
+def dict_to_array(a):
+    dtype = [(k, str(v.dtype)) for k, v in a.items()]
+    data = np.zeros(a["datestart"].size, dtype=dtype)
+    for k, v in a.items():
+        data[k] = getattr(v, "value", v)
+    return data
