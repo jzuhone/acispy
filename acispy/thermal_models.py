@@ -1117,6 +1117,11 @@ class SimulateECSRun(ThermalModelRunner):
         A dictionary of names of nodes (such as pseudo-nodes) and initial
         values, which can be supplied to initialize these nodes for the
         start of the model run. Default: None
+    q : array_like, optional
+        The attitude quaternion for this thermal model run. Only used (and
+        in fact necessary) for the focal plane model. NOTE: no consistency
+        checks are currently done between the attitude quaternion and the 
+        pitch and off-nominal roll angle.
     compute_model_supp : callable, optional
         A function which takes the model name, tstart, tstop,
         and a XijaModel object, and allows the user to 
@@ -1147,6 +1152,12 @@ class SimulateECSRun(ThermalModelRunner):
         if self.vehicle_load is not None:
             mylog.info(f"Modeling a {ccd_count}-chip state concurrent with "
                        f"the {self.vehicle_load} vehicle loads.")
+            if name.lower() == "fptemp_11":
+                which_ignore = "pitch, off-nominal roll, and the attitude quaternion"
+            else:
+                which_ignore = "pitch and off-nominal roll"                
+            mylog.info(f"Since a vehicle load is assumed, the input values "
+                       f"of {which_ignore} are ignored.")
             states = dict((k, state.value) for (k, state) in
                           States.from_load_page(self.vehicle_load).table.items())
             run_idxs = states["tstart"] < tstop
@@ -1159,6 +1170,10 @@ class SimulateECSRun(ThermalModelRunner):
             states["letg"][run_idxs] = "RETR"
         else:
             if q is None:
+                if name.lower() == "fptemp_11":
+                    raise RuntimeError("A valid attitude quaternion is required "
+                                       "to simulate an ECS run for the ACIS FP "
+                                       "model!")
                 q = [1.0, 0.0, 0.0, 0.0]
             states = {
                 "ccd_count": np.array([ccd_count], dtype='int'),
@@ -1248,10 +1263,11 @@ class SimulateECSRun(ThermalModelRunner):
             mylog.info(f"The limit of {self.limit['value']} degrees C "
                        f"is never reached.")
 
-        if self.violate:
-            mylog.warning("This observation is NOT safe from a thermal perspective.")
-        else:
-            mylog.info("This observation is safe from a thermal perspective.")
+        if name.lower() != "fptemp_11":
+            if self.violate:
+                mylog.warning("This observation is NOT safe from a thermal perspective.")
+            else:
+                mylog.info("This observation is safe from a thermal perspective.")
 
     def _time_ticks(self, dp, ymax, fontsize):
         from matplotlib.ticker import AutoMinorLocator
@@ -1290,10 +1306,11 @@ class SimulateECSRun(ThermalModelRunner):
         viol_text = "NOT SAFE" if self.violate else "SAFE"
         dp = DatePlot(self, [("model", self.name)], field2=field2, plot=plot,
                       fontsize=fontsize, **kwargs)
-        dp.add_text(find_text_time(self.dateend, hours=4.0), self.T_init.value + 2.0,
-                    viol_text, fontsize=22, color='black')
         dp.add_hline(self.limit['value'], ls='-', lw=2, color=self.limit['color'])
         if self.name.lower() != "fptemp_11":
+            dp.add_text(find_text_time(self.dateend, hours=4.0), 
+                        self.T_init.value + 2.0, viol_text, fontsize=22, 
+                        color='black')
             dp.add_hline(self.limits["yellow_hi"]['value'], ls='-', lw=2,
                          color=self.limits["yellow_hi"]['color'])
         else:
