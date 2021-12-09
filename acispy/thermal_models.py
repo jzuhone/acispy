@@ -19,7 +19,6 @@ from kadi import events, commands
 import importlib
 from matplotlib import font_manager
 from pathlib import Path
-from xija.limits import get_limit_color
 from acis_thermal_check import get_acis_limits
 
 
@@ -958,10 +957,6 @@ def make_default_states():
         "letg": np.array(["RETR"]),
         "off_nom_roll": np.array([0.0]),
         "dh_heater": np.array([0], dtype='int'),
-        "targ_q1": np.array([1.0]),
-        "targ_q2": np.array([0.0]),
-        "targ_q3": np.array([0.0]),
-        "targ_q4": np.array([0.0]),
         "q1": np.array([1.0]),
         "q2": np.array([0.0]),
         "q3": np.array([0.0]),
@@ -1037,6 +1032,8 @@ class SimulateSingleState(ThermalModelRunner):
                 _states[k][0] = states[k]
             else:
                 raise KeyError(f"You input a state ('{k}') which does not exist!")
+        for i in range(1, 5):
+            _states[f"targ_q{i}"] = _states[f"q{i}"]
         if name in short_name_rev:
             name = short_name_rev[name]
         tstart = CxoTime(tstart).secs
@@ -1081,19 +1078,18 @@ class SimulateECSRun(ThermalModelRunner):
         per the ECS CAP.
     T_init : float
         The starting temperature for the model in degrees C.
-    pitch : float
-        The pitch at which to run the model in degrees. If `vehicle_load`
-        is not None, then this parameter will be ignored. 
+    attitude : array_like
+        The input attitude for this simulated ECS run. Can be one of three
+        types:
+            * (pitch, roll) combination, e.g. (155.0, 5.0)
+            * Attitude quaternion, e.g [1.0, 0.0, 0.0, 0.0]
+            * Load name (for vehicle load): SEP0917C
+        If the (pitch, roll) combination is chosen, note that a default
+        quaternion of [1.0, 0.0, 0.0, 0.0] will be used, which means that the
+        focal plane prediction may be inaccurate since the earth solid angle
+        depends on the quaternion. 
     ccd_count : integer
         The number of CCDs to clock.
-    vehicle_load : string, optional
-        If a vehicle load is running, specify it here, e.g. "SEP0917C".
-        Default: None, meaning no vehicle load. If this parameter is set,
-        the input values of pitch and off-nominal roll will be ignored
-        and the values from the vehicle load will be used.
-    off_nom_roll : float, optional
-        The off-nominal roll in degrees for the model. If `vehicle_load`
-        is not None, then this parameter will be ignored. Default: 0.0
     dh_heater: integer, optional
         Flag to set whether (1) or not (0) the detector housing heater is on.
         Default: 0
@@ -1119,11 +1115,6 @@ class SimulateECSRun(ThermalModelRunner):
         A dictionary of names of nodes (such as pseudo-nodes) and initial
         values, which can be supplied to initialize these nodes for the
         start of the model run. Default: None
-    q : array_like, optional
-        The attitude quaternion for this thermal model run. Only used (and
-        in fact necessary) for the focal plane model. NOTE: no consistency
-        checks are currently done between the attitude quaternion and the 
-        pitch and off-nominal roll angle.
     compute_model_supp : callable, optional
         A function which takes the model name, tstart, tstop,
         and a XijaModel object, and allows the user to 
@@ -1132,34 +1123,33 @@ class SimulateECSRun(ThermalModelRunner):
     Examples
     --------
     >>> dea_run = SimulateECSRun("1deamzt", "2016:201:05:12:03", 24, 14.0,
-    ...                          150., 5, off_nom_roll=-6.0, dh_heater=1)
+    ...                          (150.-6.0), 5, dh_heater=1)
     """
-    def __init__(self, name, tstart, hours, T_init, pitch, ccd_count,
-                 vehicle_load=None, off_nom_roll=0.0, dh_heater=0,
-                 dt=328.0, evolve_method=None, rk4=None,
-                 model_spec=None, no_earth_heat=False,
-                 instrument="ACIS-S", other_init=None, q=None,
+    def __init__(self, name, tstart, hours, T_init, attitude, ccd_count,
+                 dh_heater=0, dt=328.0, evolve_method=None, 
+                 rk4=None, model_spec=None, no_earth_heat=False,
+                 instrument=None, other_init=None,
                  compute_model_supp=None):
         if name in short_name_rev:
             name = short_name_rev[name]
+        if name.lower() == "fptemp_11" and instrument is None:
+            raise RuntimeError("Please specify instrument='ACIS-I' or "
+                               "instrument='ACIS-S' when running the FP model!")
         tstart = CxoTime(tstart).secs
         tend = tstart+hours*3600.0+10012.0
         tstop = tend+0.5*(tend-tstart)
         datestart = CxoTime(tstart).date
         datestop = CxoTime(tstop).date
-        self.vehicle_load = vehicle_load
+        if isinstance(attitude, str):
+            self.vehicle_load = attitude
+        else:
+            self.vehicle_load = None
         self.hours = hours
         self.no_earth_heat = no_earth_heat
         self.instrument = instrument
         if self.vehicle_load is not None:
             mylog.info(f"Modeling a {ccd_count}-chip state concurrent with "
                        f"the {self.vehicle_load} vehicle loads.")
-            if name.lower() == "fptemp_11":
-                which_ignore = "pitch, off-nominal roll, and the attitude quaternion"
-            else:
-                which_ignore = "pitch and off-nominal roll"                
-            mylog.info(f"Since a vehicle load is assumed, the input values "
-                       f"of {which_ignore} are ignored.")
             states = dict((k, state.value) for (k, state) in
                           States.from_load_page(self.vehicle_load).table.items())
             run_idxs = states["tstart"] < tstop
@@ -1171,18 +1161,11 @@ class SimulateECSRun(ThermalModelRunner):
             states["hetg"][run_idxs] = "RETR"
             states["letg"][run_idxs] = "RETR"
         else:
-            if q is None:
-                if name.lower() == "fptemp_11":
-                    raise RuntimeError("A valid attitude quaternion is required "
-                                       "to simulate an ECS run for the ACIS FP "
-                                       "model!")
-                q = [1.0, 0.0, 0.0, 0.0]
             states = {
                 "ccd_count": np.array([ccd_count], dtype='int'),
                 "fep_count": np.array([ccd_count], dtype='int'),
                 "clocking": np.array([1], dtype='int'),
                 "vid_board": np.array([1], dtype='int'),
-                "pitch": np.array([pitch]),
                 "simpos": np.array([-99616.0]),
                 "datestart": np.array([datestart]),
                 "datestop": np.array([datestop]),
@@ -1190,13 +1173,26 @@ class SimulateECSRun(ThermalModelRunner):
                 "tstop": np.array([tstop]),
                 "hetg": np.array(["RETR"]),
                 "letg": np.array(["RETR"]),
-                "q1": np.array([q[0]]),
-                "q2": np.array([q[1]]),
-                "q3": np.array([q[2]]),
-                "q4": np.array([q[3]]),
-                "off_nom_roll": np.array([off_nom_roll]),
                 "dh_heater": np.array([dh_heater], dtype='int')
             }
+            if len(attitude) == 2:
+                if name.lower() == "fptemp_11":
+                    mylog.warning("For the ACIS FP model, an attitude quaternion "
+                                  "is required to accurately capture the effects of "
+                                  "earth solid angle. With only the pitch and "
+                                  "off-nominal roll specified, temperatures "
+                                  "near radiation zones may be inaccurate.")
+                states["pitch"] = np.array([attitude[0]])
+                states["off_nom_roll"] = np.array([attitude[1]])
+                q = [1.0, 0.0, 0.0, 0.0]
+            elif len(attitude) == 4:
+                q = attitude
+            else:
+                raise RuntimeError("Invalid format for 'attitude'! Either "
+                                   "supply [pitch, off_nom_roll], an "
+                                   "attitude quaternion, or a load name!")
+            for i in range(4):
+                states[f"q{i+1}"] = np.array([q[i]])
         super().__init__(name, tstart, tstop, states=states, T_init=T_init,
                          dt=dt, evolve_method=evolve_method, rk4=rk4,
                          model_spec=model_spec, other_init=other_init,
@@ -1210,8 +1206,13 @@ class SimulateECSRun(ThermalModelRunner):
         mylog.info(f"Initial Temperature: {T_init} degrees C")
         mylog.info(f"CCD/FEP Count: {ccd_count}")
         if self.vehicle_load is None:
+            if len(attitude) == 2:
+                pitch, roll = attitude
+            else:
+                pitch = self.xija_model.comp["pitch"].dvals[0]
+                roll = self.xija_model.comp["roll"].dvals[0]
             mylog.info(f"Pitch: {pitch}")
-            mylog.info(f"Off-nominal Roll: {off_nom_roll}")
+            mylog.info(f"Off-nominal Roll: {roll}")
         dhh = {0: "OFF", 1: "ON"}[dh_heater]
         mylog.info(f"Detector Housing Heater: {dhh}")
 
