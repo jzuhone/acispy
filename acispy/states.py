@@ -6,7 +6,6 @@ from acispy.utils import ensure_list, find_load, calc_off_nom_rolls, \
 from acispy.units import APQuantity, APStringArray, Quantity
 from acispy.time_series import TimeSeriesData
 import numpy as np
-from collections import OrderedDict
 from cxotime import CxoTime
 
 cmd_state_codes = {("states", "hetg"): {"RETR": 0, "INSR": 1},
