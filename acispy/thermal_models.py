@@ -1200,6 +1200,7 @@ class SimulateECSRun(ThermalModelRunner):
 
         mylog.info("Run Parameters")
         mylog.info("--------------")
+        mylog.info(f"Modeled Temperature: {name}")
         mylog.info(f"Start Datestring: {datestart}")
         mylog.info(f"Length of state in hours: {self.hours}")
         mylog.info(f"Stop Datestring: {datestop}")
@@ -1211,6 +1212,7 @@ class SimulateECSRun(ThermalModelRunner):
             else:
                 pitch = self.xija_model.comp["pitch"].dvals[0]
                 roll = self.xija_model.comp["roll"].dvals[0]
+                mylog.info(f"Quaternion: {attitude}")
             mylog.info(f"Pitch: {pitch}")
             mylog.info(f"Off-nominal Roll: {roll}")
         dhh = {0: "OFF", 1: "ON"}[dh_heater]
