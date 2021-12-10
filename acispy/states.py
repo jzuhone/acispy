@@ -15,9 +15,9 @@ cmd_state_codes = {("states", "hetg"): {"RETR": 0, "INSR": 1},
                    ("states", "instrument"): {"ACIS-S": 0, "ACIS-I": 1,
                                               "HRC-S": 2, "HRC-I": 3},
                    ("states", "dither"): {"DISA": 0, "ENAB": 1},
-                   ("states", "pcad_mode"): {"STBY": 0, "NPNT": 1, 
-                                             "NMAN": 2, "NSUN": 3, 
-                                             "PWRF": 4, "RMAN": 5, 
+                   ("states", "pcad_mode"): {"STBY": 0, "NPNT": 1,
+                                             "NMAN": 2, "NSUN": 3,
+                                             "PWRF": 4, "RMAN": 5,
                                              "NULL": 6}}
 
 state_dtypes = {"ccd_count": "int",

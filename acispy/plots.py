@@ -313,7 +313,7 @@ class CustomDatePlot(ACISPlot):
             xmax = datetime.strptime(CxoTime(xmax).iso, datefmt)
         self.ax.set_xlim(xmin, xmax)
 
-    def add_hline(self, y, lw=2, ls='-', color='green', 
+    def add_hline(self, y, lw=2, ls='-', color='green',
                   xmin=None, xmax=None, **kwargs):
         """
         Add a horizontal line on the y-axis of the plot.
