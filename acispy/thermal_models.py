@@ -1234,7 +1234,7 @@ class SimulateECSRun(ThermalModelRunner):
         self.hours = hours
 
         if self.name.lower() == "fptemp_11":
-            cold = self.mvals.value < self.limits["cold_ecs"]["value"]
+            cold = self.mvals.value < self.limits["cold_ecs"].value
             cold &= self.xija_model.times < self.tend
             cold_time = np.sum(cold)
             if cold_time == 0:
@@ -1248,13 +1248,13 @@ class SimulateECSRun(ThermalModelRunner):
             limit_name = "planning_hi"
 
         self.limit = self.limits[limit_name]
-        viols = self.mvals.value > self.limit["value"]
+        viols = self.mvals.value > self.limit.value
         if np.any(viols):
             idx = np.where(viols)[0][0]
             self.limit_time = self.times('model', self.name)[idx]
             self.limit_date = CxoTime(self.limit_time).date
             self.duration = Quantity((self.limit_time.value-tstart)*0.001, "ks")
-            msg = f"The limit of {self.limit['value']} degrees C will be " \
+            msg = f"The limit of {self.limit.value} degrees C will be " \
                   f"reached at {self.limit_date}, after {self.duration.value} ksec."
             mylog.info(msg)
             if self.limit_time.value < self.tend:
@@ -1265,7 +1265,7 @@ class SimulateECSRun(ThermalModelRunner):
                 viol_time = "after"
             mylog.info(f"The limit is reached {viol_time} the end of the observation.")
         else:
-            mylog.info(f"The limit of {self.limit['value']} degrees C "
+            mylog.info(f"The limit of {self.limit.value} degrees C "
                        f"is never reached.")
 
         if name.lower() != "fptemp_11":
@@ -1311,32 +1311,32 @@ class SimulateECSRun(ThermalModelRunner):
         viol_text = "NOT SAFE" if self.violate else "SAFE"
         dp = DatePlot(self, [("model", self.name)], field2=field2, plot=plot,
                       fontsize=fontsize, **kwargs)
-        dp.add_hline(self.limit['value'], ls='-', lw=2, color=self.limit['color'])
+        dp.add_hline(self.limit.value, ls='-', lw=2, color=self.limit.color)
         if self.name.lower() != "fptemp_11":
             dp.add_text(find_text_time(self.dateend, hours=4.0), 
                         self.T_init.value + 2.0, viol_text, fontsize=22, 
                         color='black')
-            dp.add_hline(self.limits["yellow_hi"]['value'], ls='-', lw=2,
-                         color=self.limits["yellow_hi"]['color'])
+            dp.add_hline(self.limits["yellow_hi"].value, ls='-', lw=2,
+                         color=self.limits["yellow_hi"].color)
         else:
-            dp.add_hline(self.limits["cold_ecs"]['value'], ls='-', lw=2,
-                         color=self.limits["cold_ecs"]['color'])
+            dp.add_hline(self.limits["cold_ecs"].value, ls='-', lw=2,
+                         color=self.limits["cold_ecs"].color)
         dp.add_vline(self.datestart, ls='--', lw=2, color='b')
-        dp.add_text(find_text_time(self.datestart), self.limit['value'] - 2.0,
+        dp.add_text(find_text_time(self.datestart), self.limit.value - 2.0,
                     "START", color='blue', rotation="vertical")
         dp.add_vline(self.dateend, ls='--', lw=2, color='b')
-        dp.add_text(find_text_time(self.dateend), self.limit['value'] - 2.0,
+        dp.add_text(find_text_time(self.dateend), self.limit.value - 2.0,
                     "END", color='blue', rotation="vertical")
         if self.limit_date is not None:
             dp.add_vline(self.limit_date, ls='--', lw=2, color='r')
-            dp.add_text(find_text_time(self.limit_date), self.limit['value']-2.0,
+            dp.add_text(find_text_time(self.limit_date), self.limit.value-2.0,
                         "VIOLATION", color='red', rotation="vertical")
         dp.set_xlim(find_text_time(self.datestart, hours=-1.0), self.datestop)
         ymin = min(self.T_init.value, self.mvals.value.min())-2.0
         if self.name.lower() != "fptemp_11":
-            ymax = self.limits["yellow_hi"]['value']
+            ymax = self.limits["yellow_hi"].value
         else:
-            ymax = self.limit["value"]
+            ymax = self.limit.value
         ymax = max(ymax, self.mvals.value.max())+3.0
         self._time_ticks(dp, ymax, fontsize)
         dp.set_ylim(ymin, ymax)

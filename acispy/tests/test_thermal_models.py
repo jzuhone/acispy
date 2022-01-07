@@ -142,7 +142,7 @@ def test_single_state(answer_store):
 
 def test_ecs_run():
     tm = SimulateECSRun("1deamzt", "2016:201:05:12:03", 24, 14.0,
-                        150., 5, off_nom_roll=-6.0)
+                        (150., -6.0), 5)
     for field in tm.field_list:
         if field[0] == "states":
             assert tm[field].size == 1
@@ -151,7 +151,7 @@ def test_ecs_run():
     assert_allclose_nounits(t["time"].data, tm["1deamzt"].times)
     assert_equal_nounits(t["date"].data, tm["1deamzt"].dates)
     tm2 = SimulateECSRun("1deamzt", "2017:256:03:20:00", 24, 14.0,
-                         0.0, 5, vehicle_load="SEP0917C")
+                         "SEP0917C", 5)
     t2 = ascii.read(test_dir / "vehicle_ecs.dat")
     assert_allclose_nounits(t2["1deamzt"].data, tm2["1deamzt"])
     assert_allclose_nounits(t2["time"].data, tm2["1deamzt"].times)
