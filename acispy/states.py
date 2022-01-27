@@ -1,11 +1,11 @@
 from astropy.io import ascii
 import requests
 from acispy.units import get_units
-from acispy.utils import ensure_list, find_load, calc_off_nom_rolls
+from acispy.utils import ensure_list, find_load, calc_off_nom_rolls, \
+    dict_to_array
 from acispy.units import APQuantity, APStringArray, Quantity
 from acispy.time_series import TimeSeriesData
 import numpy as np
-from collections import OrderedDict
 from cxotime import CxoTime
 
 cmd_state_codes = {("states", "hetg"): {"RETR": 0, "INSR": 1},
@@ -15,9 +15,9 @@ cmd_state_codes = {("states", "hetg"): {"RETR": 0, "INSR": 1},
                    ("states", "instrument"): {"ACIS-S": 0, "ACIS-I": 1,
                                               "HRC-S": 2, "HRC-I": 3},
                    ("states", "dither"): {"DISA": 0, "ENAB": 1},
-                   ("states", "pcad_mode"): {"STBY": 0, "NPNT": 1, 
-                                             "NMAN": 2, "NSUN": 3, 
-                                             "PWRF": 4, "RMAN": 5, 
+                   ("states", "pcad_mode"): {"STBY": 0, "NPNT": 1,
+                                             "NMAN": 2, "NSUN": 3,
+                                             "PWRF": 4, "RMAN": 5,
                                              "NULL": 6}}
 
 state_dtypes = {"ccd_count": "int",
@@ -30,7 +30,7 @@ class States(TimeSeriesData):
 
     def __init__(self, table):
         import numpy.lib.recfunctions as rf
-        new_table = OrderedDict()
+        new_table = {}
         if isinstance(table, np.ndarray):
             state_names = list(table.dtype.names)
             if "date" in state_names:
@@ -127,11 +127,7 @@ class States(TimeSeriesData):
         return state
 
     def as_array(self):
-        dtype = [(k, str(v.dtype)) for k, v in self.table.items()]
-        data = np.zeros(len(self), dtype=dtype)
-        for k, v in self.table.items():
-            data[k] = v.value
-        return data
+        return dict_to_array(self.table)
 
     @property
     def current_states(self):

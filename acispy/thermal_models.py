@@ -10,7 +10,8 @@ from acispy.model import Model
 from acispy.msids import MSIDs
 from acispy.time_series import EmptyTimeSeries
 from acispy.utils import mylog, \
-    ensure_list, plotdate2cxctime
+    ensure_list, plotdate2cxctime, \
+    dict_to_array
 import Ska.Numpy
 import Ska.engarchive.fetch_sci as fetch
 import matplotlib.pyplot as plt
@@ -18,6 +19,7 @@ from kadi import events, commands
 import importlib
 from matplotlib import font_manager
 from pathlib import Path
+from acis_thermal_check import get_acis_limits
 
 
 short_name = {"1deamzt": "dea",
@@ -44,22 +46,6 @@ full_name = {"1deamzt": "DEA",
              "tmp_fep1_fb": "FEP1 FB",
              "tmp_bep_pcb": "BEP PCB"}
 
-limits = {'1deamzt': 37.5,
-          '1dpamzt': 37.5,
-          '1pdeaat': 52.5,
-          'tmp_fep1_mong': 47.0,
-          'tmp_fep1_actel': 46.0,
-          'tmp_bep_pcb': 43.0,
-          'tmp_fep1_fb': 41.0,
-          'fptemp_11': {"ACIS-I": -112.0, "ACIS-S": -111.0}}
-
-low_limits = {
-    'tmp_fep1_mong': 2.0,
-    'tmp_fep1_actel': 2.0,
-    'tmp_fep1_fb': 2.0,
-    'tmp_bep_pcb': 4.5
-}
-
 acis_models = ["1deamzt",
                "1dpamzt",
                "1pdeaat",
@@ -67,14 +53,6 @@ acis_models = ["1deamzt",
                "tmp_fep1_mong",
                "tmp_fep1_actel",
                "tmp_bep_pcb"]
-
-margins = {'1deamzt': 2.0,
-           '1dpamzt': 2.0,
-           '1pdeaat': 4.5,
-           'tmp_fep1_mong': 2.0,
-           'tmp_fep1_actel': 2.0,
-           'tmp_fep1_fb': 2.0,
-           'tmp_bep_pcb': 2.0}
 
 model_classes = {
     "dpa": "DPACheck",
@@ -86,6 +64,18 @@ model_classes = {
     "bep_pcb": "BEPPCBCheck"
 }
 
+limits_map = {
+    "odb.caution.high": "yellow_hi",
+    "odb.caution.low": "yellow_lo",
+    "safety.caution.high": "yellow_hi",
+    "safety.caution.low": "yellow_lo",
+    "planning.warning.high": "planning_hi",
+    "planning.warning.low": "planning_lo",
+    "planning.data_quality.high.acisi": "acis_i",
+    "planning.data_quality.high.aciss": "acis_s",
+    "planning.data_quality.high.aciss_hot": "acis_hot",
+    "planning.data_quality.high.cold_ecs": "cold_ecs"
+}
 
 def find_json(name, model_spec, repo_path, version):
     from xija.get_model_spec import get_xija_model_spec
@@ -95,7 +85,7 @@ def find_json(name, model_spec, repo_path, version):
         name = short_name.get(name, name)
         try:
             model_spec, version = get_xija_model_spec(name,
-                                                      repo_path=repo_path,                                          
+                                                      repo_path=repo_path,
                                                       version=version)
         except ValueError:
             raise IOError(msg)
@@ -141,7 +131,7 @@ class ModelDataset(Dataset):
         Ska.Numpy.pprint(temp_array, fmt, out)
         out.close()
 
-    def write_model_and_data(self, filename, overwrite=False, 
+    def write_model_and_data(self, filename, overwrite=False,
                              mask_radzones=False, mask_fmt1=False,
                              mask_badtimes=True, tstart=None,
                              tstop=None):
@@ -219,7 +209,7 @@ class ModelDataset(Dataset):
 
     def make_dashboard_plots(self, msid, tstart=None, tstop=None, yplotlimits=None,
                              errorplotlimits=None, fig=None, figfile=None,
-                             bad_times=None, mask_radzones=False, plot_limits=True, 
+                             bad_times=None, mask_radzones=False, plot_limits=True,
                              mask_fmt1=False):
         """
         Make dashboard plots for the particular thermal model.
@@ -296,15 +286,11 @@ class ModelDataset(Dataset):
             yplotlimits = [ymin, ymax]
         if errorplotlimits is None:
             errorplotlimits = [-5, 5]
-        mylimits = {"units": "C"}
         if plot_limits:
-            if msid == "fptemp_11":
-                mylimits["acisi_limit"] = -112.0
-                mylimits["aciss_limit"] = -111.0
-                mylimits["fp_sens_limit"] = -118.7
-            else:
-                mylimits["caution_high"] = limits[msid]+margins[msid]
-                mylimits["planning_limit"] = limits[msid]
+            m = "fptemp" if msid == "fptemp_11" else msid
+            mylimits = self.limits[m]
+        else:
+            mylimits = {"units": "C"}
         dash.dashboard(pred.value[mask], telem.value[mask], times, mylimits,
                        msid=msid, modelname=full_name.get(msid, msid),
                        errorplotlimits=errorplotlimits, yplotlimits=yplotlimits,
@@ -499,6 +485,9 @@ class ThermalModelRunner(ModelDataset):
                  rk4=None, tl_file=None, compute_model_supp=None, 
                  chandra_models_path=None, chandra_models_version=None):
 
+        if name in short_name_rev:
+            name = short_name_rev[name]
+
         self.name = name.lower()
         self.sname = short_name.get(name, name)
         if self.name in acis_models:
@@ -507,9 +496,9 @@ class ThermalModelRunner(ModelDataset):
         else:
             self.model_check = None
 
-        self.model_spec = find_json(name, model_spec, 
-                                    repo_path=chandra_models_path,
-                                    version=chandra_models_version)
+        model_spec = find_json(name, model_spec, 
+                               repo_path=chandra_models_path,
+                               version=chandra_models_version)
 
         self.ephem_file = ephem_file
  
@@ -543,6 +532,7 @@ class ThermalModelRunner(ModelDataset):
                     states["letg"] = np.array(["RETR"] * num_states)
                 if "hetg" not in states:
                     states["hetg"] = np.array(["RETR"] * num_states)
+                states = dict_to_array(states)
 
         if T_init is None:
             last_tlm_date = fetch.get_time_range(self.name, format='secs')[1]
@@ -557,14 +547,18 @@ class ThermalModelRunner(ModelDataset):
 
         if self.name in acis_models and states is not None:
             self.xija_model = self._compute_acis_model(self.name, tstart, tstop,
-                                                       states, dt, T_init, 
+                                                       states, dt, T_init, model_spec,
                                                        rk4=rk4, other_init=other_init,
                                                        evolve_method=evolve_method)
         else:
             self.xija_model = self._compute_model(name, tstart, tstop, dt, T_init,
-                                                  states, other_init=other_init,
+                                                  states, model_spec, 
+                                                  other_init=other_init,
                                                   evolve_method=evolve_method, 
                                                   rk4=rk4)
+
+        self.model_spec = self.xija_model.model_spec
+        self.limits = self.xija_model.limits
 
         if states is None:
             states = self.xija_model.cmd_states
@@ -620,11 +614,12 @@ class ThermalModelRunner(ModelDataset):
         return ephem
 
     def _compute_model(self, name, tstart, tstop, dt, T_init, states,
-                       other_init=None, evolve_method=None, rk4=None):
+                       model_spec, other_init=None, evolve_method=None, 
+                       rk4=None):
         if name == "fptemp_11":
             name = "fptemp"
         model = xija.XijaModel(name, start=tstart, stop=tstop, dt=dt,
-                               model_spec=self.model_spec,
+                               model_spec=model_spec,
                                evolve_method=evolve_method, rk4=rk4)
         model.comp[name].set_data(T_init)
         for t in ["dea0", "dpa0"]:
@@ -652,14 +647,15 @@ class ThermalModelRunner(ModelDataset):
         return model
 
     def _compute_acis_model(self, name, tstart, tstop, states, dt, T_init,
-                            other_init=None, evolve_method=None, rk4=None):
+                            model_spec, other_init=None, evolve_method=None,
+                            rk4=None):
         import re
         from acis_thermal_check.utils import calc_pitch_roll
         check_obj = getattr(self.model_check, model_classes[self.sname])()
         if name == "fptemp_11":
             name = "fptemp"
         model = xija.XijaModel(name, start=tstart, stop=tstop, dt=dt, 
-                               model_spec=self.model_spec, rk4=rk4,
+                               model_spec=model_spec, rk4=rk4,
                                evolve_method=evolve_method)
         ephem = self._get_ephemeris(model.tstart, model.tstop, model.times)
         if states is None:
@@ -961,10 +957,6 @@ def make_default_states():
         "letg": np.array(["RETR"]),
         "off_nom_roll": np.array([0.0]),
         "dh_heater": np.array([0], dtype='int'),
-        "targ_q1": np.array([1.0]),
-        "targ_q2": np.array([0.0]),
-        "targ_q3": np.array([0.0]),
-        "targ_q4": np.array([0.0]),
         "q1": np.array([1.0]),
         "q2": np.array([0.0]),
         "q3": np.array([0.0]),
@@ -1040,6 +1032,8 @@ class SimulateSingleState(ThermalModelRunner):
                 _states[k][0] = states[k]
             else:
                 raise KeyError(f"You input a state ('{k}') which does not exist!")
+        for i in range(1, 5):
+            _states[f"targ_q{i}"] = _states[f"q{i}"]
         if name in short_name_rev:
             name = short_name_rev[name]
         tstart = CxoTime(tstart).secs
@@ -1084,19 +1078,18 @@ class SimulateECSRun(ThermalModelRunner):
         per the ECS CAP.
     T_init : float
         The starting temperature for the model in degrees C.
-    pitch : float
-        The pitch at which to run the model in degrees. If `vehicle_load`
-        is not None, then this parameter will be ignored. 
+    attitude : array_like
+        The input attitude for this simulated ECS run. Can be one of three
+        types:
+            * (pitch, roll) combination, e.g. (155.0, 5.0)
+            * Attitude quaternion, e.g [1.0, 0.0, 0.0, 0.0]
+            * Load name (for vehicle load): SEP0917C
+        If the (pitch, roll) combination is chosen, note that a default
+        quaternion of [1.0, 0.0, 0.0, 0.0] will be used, which means that the
+        focal plane prediction may be inaccurate since the earth solid angle
+        depends on the quaternion. 
     ccd_count : integer
         The number of CCDs to clock.
-    vehicle_load : string, optional
-        If a vehicle load is running, specify it here, e.g. "SEP0917C".
-        Default: None, meaning no vehicle load. If this parameter is set,
-        the input values of pitch and off-nominal roll will be ignored
-        and the values from the vehicle load will be used.
-    off_nom_roll : float, optional
-        The off-nominal roll in degrees for the model. If `vehicle_load`
-        is not None, then this parameter will be ignored. Default: 0.0
     dh_heater: integer, optional
         Flag to set whether (1) or not (0) the detector housing heater is on.
         Default: 0
@@ -1130,21 +1123,30 @@ class SimulateECSRun(ThermalModelRunner):
     Examples
     --------
     >>> dea_run = SimulateECSRun("1deamzt", "2016:201:05:12:03", 24, 14.0,
-    ...                          150., 5, off_nom_roll=-6.0, dh_heater=1)
+    ...                          (150.-6.0), 5, dh_heater=1)
     """
-    def __init__(self, name, tstart, hours, T_init, pitch, ccd_count,
-                 vehicle_load=None, off_nom_roll=0.0, dh_heater=0,
-                 dt=328.0, evolve_method=None, rk4=None, 
-                 model_spec=None, no_earth_heat=False,
-                 other_init=None, compute_model_supp=None):
+    def __init__(self, name, tstart, hours, T_init, attitude, ccd_count,
+                 dh_heater=0, dt=328.0, evolve_method=None, 
+                 rk4=None, model_spec=None, no_earth_heat=False,
+                 instrument=None, other_init=None,
+                 compute_model_supp=None):
+        if name in short_name_rev:
+            name = short_name_rev[name]
+        if name.lower() == "fptemp_11" and instrument is None:
+            raise RuntimeError("Please specify instrument='ACIS-I' or "
+                               "instrument='ACIS-S' when running the FP model!")
         tstart = CxoTime(tstart).secs
         tend = tstart+hours*3600.0+10012.0
         tstop = tend+0.5*(tend-tstart)
         datestart = CxoTime(tstart).date
         datestop = CxoTime(tstop).date
-        self.vehicle_load = vehicle_load
+        if isinstance(attitude, str):
+            self.vehicle_load = attitude
+        else:
+            self.vehicle_load = None
         self.hours = hours
         self.no_earth_heat = no_earth_heat
+        self.instrument = instrument
         if self.vehicle_load is not None:
             mylog.info(f"Modeling a {ccd_count}-chip state concurrent with "
                        f"the {self.vehicle_load} vehicle loads.")
@@ -1164,7 +1166,6 @@ class SimulateECSRun(ThermalModelRunner):
                 "fep_count": np.array([ccd_count], dtype='int'),
                 "clocking": np.array([1], dtype='int'),
                 "vid_board": np.array([1], dtype='int'),
-                "pitch": np.array([pitch]),
                 "simpos": np.array([-99616.0]),
                 "datestart": np.array([datestart]),
                 "datestop": np.array([datestop]),
@@ -1172,24 +1173,48 @@ class SimulateECSRun(ThermalModelRunner):
                 "tstop": np.array([tstop]),
                 "hetg": np.array(["RETR"]),
                 "letg": np.array(["RETR"]),
-                "off_nom_roll": np.array([off_nom_roll]),
                 "dh_heater": np.array([dh_heater], dtype='int')
             }
+            if len(attitude) == 2:
+                if name.lower() == "fptemp_11":
+                    mylog.warning("For the ACIS FP model, an attitude quaternion "
+                                  "is required to accurately capture the effects of "
+                                  "earth solid angle. With only the pitch and "
+                                  "off-nominal roll specified, temperatures "
+                                  "near radiation zones may be inaccurate.")
+                states["pitch"] = np.array([attitude[0]])
+                states["off_nom_roll"] = np.array([attitude[1]])
+                q = [1.0, 0.0, 0.0, 0.0]
+            elif len(attitude) == 4:
+                q = attitude
+            else:
+                raise RuntimeError("Invalid format for 'attitude'! Either "
+                                   "supply [pitch, off_nom_roll], an "
+                                   "attitude quaternion, or a load name!")
+            for i in range(4):
+                states[f"q{i+1}"] = np.array([q[i]])
         super().__init__(name, tstart, tstop, states=states, T_init=T_init,
-                         dt=dt, evolve_method=evolve_method, rk4=rk4, 
+                         dt=dt, evolve_method=evolve_method, rk4=rk4,
                          model_spec=model_spec, other_init=other_init,
                          compute_model_supp=compute_model_supp)
 
         mylog.info("Run Parameters")
         mylog.info("--------------")
+        mylog.info(f"Modeled Temperature: {name}")
         mylog.info(f"Start Datestring: {datestart}")
         mylog.info(f"Length of state in hours: {self.hours}")
         mylog.info(f"Stop Datestring: {datestop}")
         mylog.info(f"Initial Temperature: {T_init} degrees C")
         mylog.info(f"CCD/FEP Count: {ccd_count}")
         if self.vehicle_load is None:
+            if len(attitude) == 2:
+                pitch, roll = attitude
+            else:
+                pitch = self.xija_model.comp["pitch"].dvals[0]
+                roll = self.xija_model.comp["roll"].dvals[0]
+                mylog.info(f"Quaternion: {attitude}")
             mylog.info(f"Pitch: {pitch}")
-            mylog.info(f"Off-nominal Roll: {off_nom_roll}")
+            mylog.info(f"Off-nominal Roll: {roll}")
         dhh = {0: "OFF", 1: "ON"}[dh_heater]
         mylog.info(f"Detector Housing Heater: {dhh}")
 
@@ -1199,27 +1224,38 @@ class SimulateECSRun(ThermalModelRunner):
         mylog.info("Model Result")
         mylog.info("------------")
 
-        limit = limits[self.name]
-        margin = margins[self.name]
-        if self.name in low_limits:
-            self.low_limit = Quantity(low_limits[self.name], "deg_C")
-        else:
-            self.low_limit = None
-        self.limit = Quantity(limit, "deg_C")
-        self.margin = Quantity(margin, 'deg_C')
+        self.limits = get_acis_limits(self.name, self.model_spec, 
+                                      limits_map=limits_map)
+
         self.limit_time = None
         self.limit_date = None
         self.duration = None
         self.violate = False
         self.hours = hours
+
+        if self.name.lower() == "fptemp_11":
+            cold = self.mvals.value < self.limits["cold_ecs"].value
+            cold &= self.xija_model.times < self.tend
+            cold_time = np.sum(cold)
+            if cold_time == 0:
+                msg = "The focal plane is never cold for this ECS measurement."
+            else:
+                msg = f"The focal plane is cold for " \
+                      f"{cold_time*self.xija_model.dt_ksec} ks."
+            mylog.info(msg)
+            limit_name = self.instrument.lower().replace("-", "_")
+        else:
+            limit_name = "planning_hi"
+
+        self.limit = self.limits[limit_name]
         viols = self.mvals.value > self.limit.value
         if np.any(viols):
             idx = np.where(viols)[0][0]
             self.limit_time = self.times('model', self.name)[idx]
             self.limit_date = CxoTime(self.limit_time).date
             self.duration = Quantity((self.limit_time.value-tstart)*0.001, "ks")
-            msg = f"The limit of {self.limit.value} degrees C will be reached at {self.limit_date}, "
-            msg += f"after {self.duration.value} ksec."
+            msg = f"The limit of {self.limit.value} degrees C will be " \
+                  f"reached at {self.limit_date}, after {self.duration.value} ksec."
             mylog.info(msg)
             if self.limit_time.value < self.tend:
                 self.violate = True
@@ -1229,12 +1265,14 @@ class SimulateECSRun(ThermalModelRunner):
                 viol_time = "after"
             mylog.info(f"The limit is reached {viol_time} the end of the observation.")
         else:
-            mylog.info(f"The limit of {self.limit.value} degrees C is never reached.")
+            mylog.info(f"The limit of {self.limit.value} degrees C "
+                       f"is never reached.")
 
-        if self.violate:
-            mylog.warning("This observation is NOT safe from a thermal perspective.")
-        else:
-            mylog.info("This observation is safe from a thermal perspective.")
+        if name.lower() != "fptemp_11":
+            if self.violate:
+                mylog.warning("This observation is NOT safe from a thermal perspective.")
+            else:
+                mylog.info("This observation is safe from a thermal perspective.")
 
     def _time_ticks(self, dp, ymax, fontsize):
         from matplotlib.ticker import AutoMinorLocator
@@ -1273,30 +1311,33 @@ class SimulateECSRun(ThermalModelRunner):
         viol_text = "NOT SAFE" if self.violate else "SAFE"
         dp = DatePlot(self, [("model", self.name)], field2=field2, plot=plot,
                       fontsize=fontsize, **kwargs)
-        dp.add_text(find_text_time(self.dateend, hours=4.0), self.T_init.value + 2.0,
-                    viol_text, fontsize=22, color='black')
-        dp.add_hline(self.limit.value, ls='-', lw=2, color='g')
-        dp.add_hline(self.limit.value+self.margin.value, ls='-', lw=2, color='gold')
-        if self.low_limit is not None:
-            dp.add_hline(self.low_limit.value, ls='-', lw=2, color='g')
-            dp.add_hline(self.low_limit.value - self.margin.value, ls='-', lw=2, color='gold')
+        dp.add_hline(self.limit.value, ls='-', lw=2, color=self.limit.color)
+        if self.name.lower() != "fptemp_11":
+            dp.add_text(find_text_time(self.dateend, hours=4.0), 
+                        self.T_init.value + 2.0, viol_text, fontsize=22, 
+                        color='black')
+            dp.add_hline(self.limits["yellow_hi"].value, ls='-', lw=2,
+                         color=self.limits["yellow_hi"].color)
+        else:
+            dp.add_hline(self.limits["cold_ecs"].value, ls='-', lw=2,
+                         color=self.limits["cold_ecs"].color)
         dp.add_vline(self.datestart, ls='--', lw=2, color='b')
         dp.add_text(find_text_time(self.datestart), self.limit.value - 2.0,
                     "START", color='blue', rotation="vertical")
         dp.add_vline(self.dateend, ls='--', lw=2, color='b')
-        dp.add_text(find_text_time(self.dateend), self.limit.value - 12.0,
+        dp.add_text(find_text_time(self.dateend), self.limit.value - 2.0,
                     "END", color='blue', rotation="vertical")
         if self.limit_date is not None:
             dp.add_vline(self.limit_date, ls='--', lw=2, color='r')
             dp.add_text(find_text_time(self.limit_date), self.limit.value-2.0,
                         "VIOLATION", color='red', rotation="vertical")
         dp.set_xlim(find_text_time(self.datestart, hours=-1.0), self.datestop)
-        if self.low_limit is not None:
-            ymin = self.low_limit.value-self.margin.value
+        ymin = min(self.T_init.value, self.mvals.value.min())-2.0
+        if self.name.lower() != "fptemp_11":
+            ymax = self.limits["yellow_hi"].value
         else:
-            ymin = self.T_init.value
-        ymin = min(ymin, self.mvals.value.min())-2.0
-        ymax = max(self.limit.value+self.margin.value, self.mvals.value.max())+3.0
+            ymax = self.limit.value
+        ymax = max(ymax, self.mvals.value.max())+3.0
         self._time_ticks(dp, ymax, fontsize)
         dp.set_ylim(ymin, ymax)
         return dp

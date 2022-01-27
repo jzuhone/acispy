@@ -141,8 +141,8 @@ mit_trans_table = {"BEP_PCB": "tmp_bep_pcb",
                    "DEAP6VDCB": "deap6voltb"}
 
 cti_simodes = ["TE_007AC", "TE_00B26", "TE_007AE",
-               "TE_00CA8", "TE_00C60", "TE_007AE",
-               "TN_000B4", "TN_000B6"]
+               "TE_00CA8", "TE_00C60", "TN_000B4", 
+               "TN_000B6", "TE_00C62"]
 
 
 def get_display_name(ftype, name):
@@ -217,3 +217,11 @@ def plotdate2cxctime(dates):
     # Find the cxctime of first time and use a relative offset from there
     cxctime0 = CxoTime(dates[0], format='plot_date').secs
     return (np.asarray(dates) - dates[0]) * 86400. + cxctime0
+
+
+def dict_to_array(a):
+    dtype = [(k, str(v.dtype)) for k, v in a.items()]
+    data = np.zeros(a["datestart"].size, dtype=dtype)
+    for k, v in a.items():
+        data[k] = getattr(v, "value", v)
+    return data
