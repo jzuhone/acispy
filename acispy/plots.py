@@ -39,7 +39,7 @@ unit_labels = {"V": 'V',
                "deg": "deg"}
 
 
-class ACISPlot(object):
+class ACISPlot:
     def __init__(self, fig, ax, lines, ax2, lines2):
         self.fig = fig
         self.ax = ax

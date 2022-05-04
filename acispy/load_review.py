@@ -49,7 +49,7 @@ pretty_names = {"comm_ends": "End of Comm",
 offsets = {"sim_trans": 0.75}
 
 
-class LoadReviewEvent(object):
+class LoadReviewEvent:
     def __init__(self, name, event):
         self.event = event
         self.name = name
@@ -64,7 +64,7 @@ class LoadReviewEvent(object):
         return self.event[item]
 
 
-class ACISLoadReview(object):
+class ACISLoadReview:
     """
     Parse data from a particular load review for 
     access and plotting of data.

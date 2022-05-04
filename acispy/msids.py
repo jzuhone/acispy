@@ -11,6 +11,7 @@ from acispy.fields import builtin_deps
 from astropy.table import Table
 from cxotime import CxoTime
 
+
 def check_depends(msids):
     output_msids = []
     derived_msids = []
