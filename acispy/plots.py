@@ -224,7 +224,7 @@ class CustomDatePlot(ACISPlot):
         An existing DatePlot to add this plot to. Default: None, one 
         will be created if not provided.
     """
-    def __init__(self, dates, values, fmt='-b', lw=2, fontsize=18, ls='-',
+    def __init__(self, dates, values, lw=2, fontsize=18, ls='-',
                  figsize=(10, 8), color=None, plot=None, fig=None, 
                  subplot=None, **kwargs):
         fig, ax, lines, ax2, lines2 = get_figure(plot, fig, subplot, figsize)
@@ -238,8 +238,8 @@ class CustomDatePlot(ACISPlot):
             y = np.asarray(values)
         if color is None:
             color = f"C{len(lines)}"
-        ticklocs, fig, ax = plot_cxctime(x, y, fmt=fmt, fig=fig, ax=ax, 
-                                         lw=lw, ls=ls, color=color, **kwargs)
+        ticklocs, fig, ax = plot_cxctime(x, y, fig=fig, ax=ax, lw=lw, ls=ls, 
+                                         color=color, **kwargs)
         super(CustomDatePlot, self).__init__(fig, ax, lines, ax2, lines2)
         self.ax.tick_params(which="major", width=2, length=6)
         self.ax.tick_params(which="minor", width=2, length=3)
@@ -253,7 +253,7 @@ class CustomDatePlot(ACISPlot):
         self.times = dates
         self.y = values
 
-    def plot_right(self, dates, values, fmt='-b', lw=2, fontsize=18,
+    def plot_right(self, dates, values, lw=2, fontsize=18,
                    ls='-', color="magenta", **kwargs):
         """
         Plot a quantity on the right x-axis of this plot.
@@ -288,8 +288,8 @@ class CustomDatePlot(ACISPlot):
         else:
             x = np.asarray(dates)
             y = np.asarray(values)
-        plot_cxctime(x, y, fmt=fmt, fig=self.fig,
-                     ax=self.ax2, ls=ls, color=color, lw=lw, **kwargs)
+        plot_cxctime(x, y, fig=self.fig, ax=self.ax2, ls=ls, color=color,
+                     lw=lw, **kwargs)
         self.ax2.tick_params(which="major", width=2, length=6)
         self.ax2.tick_params(which="minor", width=2, length=3)
         fontProperties = font_manager.FontProperties(size=fontsize)
@@ -629,7 +629,7 @@ class DatePlot(CustomDatePlot):
     >>> fields = [("msids", "1dpamzt"), ("msids", "1deamzt"), ("msids", "1pdeaat")]
     >>> p2 = DatePlot(ds, fields, fontsize=12, color=["brown","black","orange"])
     """
-    def __init__(self, ds, fields, field2=None, fmt='-b', lw=2, ls='-',
+    def __init__(self, ds, fields, field2=None, lw=2, ls='-',
                  ls2='-', lw2=2, fontsize=18, color=None, color2='magenta',
                  figsize=(10, 8), plot=None, fig=None, subplot=None,
                  plot_bad=False):
@@ -675,7 +675,7 @@ class DatePlot(CustomDatePlot):
             else:
                 x = ds[field].times.value[mask]
             label = ds.fields[field].display_name
-            _, fig, ax = plot_cxctime(x, y, fmt=fmt, fig=fig, lw=lw[i],
+            _, fig, ax = plot_cxctime(x, y, fig=fig, lw=lw[i],
                                       ax=ax, color=color[i], ls=ls[i],
                                       state_codes=state_codes,
                                       drawstyle=drawstyle,
