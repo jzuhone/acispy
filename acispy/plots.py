@@ -876,7 +876,7 @@ class DatePlot(CustomDatePlot):
         self.set_line_label(idx, label)
 
 
-class DummyDatePlot(object):
+class DummyDatePlot:
     def __init__(self, fig, ax):
         self.fig = fig
         self.ax = ax
@@ -898,7 +898,7 @@ def make_dateplots(*args, **kwargs):
         return plots
 
 
-class MultiDatePlot(object):
+class MultiDatePlot:
     r""" Make a multi-panel plot of multiple quantities vs. date and time.
 
     Parameters
