@@ -165,6 +165,9 @@ class ACISPlot:
         fontdict = {"size": fontsize}
         self.ax.set_ylabel(ylabel, fontdict=fontdict, **kwargs)
 
+    def set_yscale(self, scale):
+        self.ax.set_yscale(scale)
+
     def redraw(self):
         """
         Re-draw the plot.

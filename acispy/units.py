@@ -313,4 +313,6 @@ def get_units(ftype, fname):
                 unit = ''
     if unit == "DEG":
         unit = 'deg'
+    if unit == "HZ":
+        unit = "Hz"
     return unit
