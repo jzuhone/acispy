@@ -166,6 +166,10 @@ class ACISPlot:
         self.ax.set_ylabel(ylabel, fontdict=fontdict, **kwargs)
 
     def set_yscale(self, scale):
+        """
+        Set the y scaling of the plot to "linear" or "log" using
+        the parameter *scale*.
+        """
         self.ax.set_yscale(scale)
 
     def redraw(self):
