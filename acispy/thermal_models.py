@@ -1136,7 +1136,7 @@ class SimulateECSRun(ThermalModelRunner):
             raise RuntimeError("Please specify instrument='ACIS-I' or "
                                "instrument='ACIS-S' when running the FP model!")
         tstart = CxoTime(tstart).secs
-        tend = tstart+hours*3600.0+10012.0
+        tend = tstart+hours*3600.0
         tstop = tend+0.5*(tend-tstart)
         datestart = CxoTime(tstart).date
         datestop = CxoTime(tstop).date
