@@ -1,4 +1,4 @@
-class TimeSeriesData(object):
+class TimeSeriesData:
     _is_empty = False
 
     def __init__(self, table=None):

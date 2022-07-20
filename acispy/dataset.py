@@ -14,7 +14,7 @@ import Ska.engarchive.fetch_sci as fetch
 from cxotime import CxoTime
 
 
-class Dataset(object):
+class Dataset:
     def __init__(self, msids, states, model):
         self.msids = msids
         self.states = states

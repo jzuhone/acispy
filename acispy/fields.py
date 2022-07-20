@@ -35,7 +35,7 @@ class OutputFieldsNotFound(Exception):
                 f"fields which are not found in this Dataset: {self.ofields} ")
 
 
-class OutputFieldFunction(object):
+class OutputFieldFunction:
     def __init__(self, ftype, fname):
         self.ftype = ftype
         self.fname = fname
@@ -45,7 +45,7 @@ class OutputFieldFunction(object):
         return obj[self.fname]
 
 
-class DerivedField(object):
+class DerivedField:
     def __init__(self, ftype, fname, function, units, display_name=None,
                  depends=None):
         self.ftype = ftype
@@ -62,7 +62,7 @@ class DerivedField(object):
         return self.function(ds)
 
 
-class FieldContainer(object):
+class FieldContainer:
     def __init__(self):
         self.output_fields = {}
         self.derived_fields = {}

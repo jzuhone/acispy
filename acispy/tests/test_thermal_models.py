@@ -142,7 +142,7 @@ def test_single_state(answer_store):
 
 def test_ecs_run(answer_store):
     tm = SimulateECSRun("1deamzt", "2016:201:05:12:03", 24, 14.0,
-                        (150., -6.0), 5)
+                        (150., -6.0), 5, model_spec=dea_spec)
     for field in tm.field_list:
         if field[0] == "states":
             assert tm[field].size == 1
@@ -154,7 +154,7 @@ def test_ecs_run(answer_store):
         assert_allclose_nounits(t["time"].data, tm["1deamzt"].times)
         assert_equal_nounits(t["date"].data, tm["1deamzt"].dates)
     tm2 = SimulateECSRun("1deamzt", "2017:256:03:20:00", 24, 14.0,
-                         "SEP0917C", 5)
+                         "SEP0917C", 5, model_spec=dea_spec)
     if answer_store:
         tm2.write_model(test_dir / "vehicle_ecs.dat", overwrite=True)
     else:
@@ -164,7 +164,7 @@ def test_ecs_run(answer_store):
         assert_equal_nounits(t2["date"].data, tm2["1deamzt"].dates)
     tm3 = SimulateECSRun("fptemp_11", "2020:148:14:45:00", 24, -115.0,
                          [-0.04470333, 0.63502552, -0.67575906, 0.37160988],
-                         4, instrument="ACIS-S")
+                         4, instrument="ACIS-S", model_spec=fp_spec)
     if answer_store:
         tm3.write_model(test_dir / "fptemp_ecs.dat", overwrite=True)
     else:
