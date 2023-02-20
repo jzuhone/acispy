@@ -510,20 +510,23 @@ class ThermalModelRunner(ModelDataset):
         self.no_eclipse = tstop_secs > last_ecl_time
         self.no_earth_heat = getattr(self, "no_earth_heat", False)
 
-        if states is not None:
-            if isinstance(states, States):
-                states = states.as_array()
-            elif isinstance(states, dict):
-                if "tstart" not in states:
-                    states["tstart"] = CxoTime(states["datestart"]).secs
-                if "tstop" not in states:
-                    states["tstop"] = CxoTime(states["datestop"]).secs
-                num_states = states["tstart"].size
-                if "letg" not in states:
-                    states["letg"] = np.array(["RETR"] * num_states)
-                if "hetg" not in states:
-                    states["hetg"] = np.array(["RETR"] * num_states)
-                states = dict_to_array(states)
+        if states is None:
+            states = commands.states.get_states(tstart, tstop,
+                                                merge_identical=True).as_array()
+
+        if isinstance(states, States):
+            states = states.as_array()
+        elif isinstance(states, dict):
+            if "tstart" not in states:
+                states["tstart"] = CxoTime(states["datestart"]).secs
+            if "tstop" not in states:
+                states["tstop"] = CxoTime(states["datestop"]).secs
+            num_states = states["tstart"].size
+            if "letg" not in states:
+                states["letg"] = np.array(["RETR"] * num_states)
+            if "hetg" not in states:
+                states["hetg"] = np.array(["RETR"] * num_states)
+            states = dict_to_array(states)
 
         if T_init is None:
             last_tlm_date = fetch.get_time_range(self.name, format='secs')[1]
