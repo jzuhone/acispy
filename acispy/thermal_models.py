@@ -1141,6 +1141,8 @@ class SimulateECSRun(ThermalModelRunner):
                                "instrument='ACIS-S' when running the FP model!")
         tstart = CxoTime(tstart).secs
         tend = tstart+hours*3600.0
+        self.ecs_start = CxoTime(tstart).yday
+        self.ecs_end = CxoTime(tend).yday
         tstop = tend+0.5*(tend-tstart)
         datestart = CxoTime(tstart).date
         datestop = CxoTime(tstop).date
@@ -1152,11 +1154,15 @@ class SimulateECSRun(ThermalModelRunner):
         self.no_earth_heat = no_earth_heat
         self.instrument = instrument
         if self.vehicle_load is not None:
+            load_model = Model.from_load_page(self.vehicle_load, [name])
+            load_states = States.from_load_page(self.vehicle_load)
+            run_start = load_model.table[name].times[0]
+            T_init = load_model.table[name].value[0]
             mylog.info(f"Modeling a {ccd_count}-chip state concurrent with "
                        f"the {self.vehicle_load} vehicle loads.")
             states = dict((k, state.value) for (k, state) in
-                          States.from_load_page(self.vehicle_load).table.items())
-            run_idxs = states["tstart"] < tstop
+                          load_states.table.items())
+            run_idxs = (tstart <= states["tstart"]) & (states["tstart"] < tend)
             states["ccd_count"][run_idxs] = ccd_count
             states["fep_count"][run_idxs] = ccd_count
             states["clocking"][run_idxs] = 1
@@ -1165,6 +1171,7 @@ class SimulateECSRun(ThermalModelRunner):
             states["hetg"][run_idxs] = "RETR"
             states["letg"][run_idxs] = "RETR"
         else:
+            run_start = tstart
             states = {
                 "ccd_count": np.array([ccd_count], dtype='int'),
                 "fep_count": np.array([ccd_count], dtype='int'),
@@ -1197,7 +1204,7 @@ class SimulateECSRun(ThermalModelRunner):
                                    "attitude quaternion, or a load name!")
             for i in range(4):
                 states[f"q{i+1}"] = np.array([q[i]])
-        super().__init__(name, tstart, tstop, states=states, T_init=T_init,
+        super().__init__(name, run_start, tstop, states=states, T_init=T_init,
                          dt=dt, evolve_method=evolve_method, rk4=rk4,
                          model_spec=model_spec, other_init=other_init,
                          compute_model_supp=compute_model_supp)
@@ -1223,7 +1230,6 @@ class SimulateECSRun(ThermalModelRunner):
         mylog.info(f"Detector Housing Heater: {dhh}")
 
         self.tend = tend
-        self.dateend = CxoTime(tend).date
 
         mylog.info("Model Result")
         mylog.info("------------")
@@ -1282,8 +1288,9 @@ class SimulateECSRun(ThermalModelRunner):
         from matplotlib.ticker import AutoMinorLocator
         axt = dp.ax.twiny()
         mtimes = self.xija_model.times
-        xmin, xmax = (plotdate2cxctime(dp.ax.get_xlim())-mtimes[0])*1.0e-3
-        axt.plot((mtimes-mtimes[0])*1.0e-3, 
+        ecs_start = CxoTime(self.ecs_start).secs
+        xmin, xmax = (plotdate2cxctime(dp.ax.get_xlim())-ecs_start)*1.0e-3
+        axt.plot((mtimes-ecs_start)*1.0e-3, 
                  ymax*np.ones_like(mtimes))
         axt.set_xlim(xmin, xmax)
         axt.xaxis.set_minor_locator(AutoMinorLocator(5))
@@ -1317,7 +1324,7 @@ class SimulateECSRun(ThermalModelRunner):
                       fontsize=fontsize, **kwargs)
         dp.add_hline(self.limit.value, ls='-', lw=2, color=self.limit.color)
         if self.name.lower() != "fptemp_11":
-            dp.add_text(find_text_time(self.dateend, hours=4.0), 
+            dp.add_text(find_text_time(self.ecs_end, hours=4.0), 
                         self.T_init.value + 2.0, viol_text, fontsize=22, 
                         color='black')
             dp.add_hline(self.limits["yellow_hi"].value, ls='-', lw=2,
@@ -1325,17 +1332,17 @@ class SimulateECSRun(ThermalModelRunner):
         else:
             dp.add_hline(self.limits["cold_ecs"].value, ls='-', lw=2,
                          color=self.limits["cold_ecs"].color)
-        dp.add_vline(self.datestart, ls='--', lw=2, color='b')
-        dp.add_text(find_text_time(self.datestart), self.limit.value - 2.0,
+        dp.add_vline(self.ecs_start, ls='--', lw=2, color='b')
+        dp.add_text(find_text_time(self.ecs_start), self.limit.value - 2.0,
                     "START", color='blue', rotation="vertical")
-        dp.add_vline(self.dateend, ls='--', lw=2, color='b')
-        dp.add_text(find_text_time(self.dateend), self.limit.value - 2.0,
+        dp.add_vline(self.ecs_end, ls='--', lw=2, color='b')
+        dp.add_text(find_text_time(self.ecs_end), self.limit.value - 2.0,
                     "END", color='blue', rotation="vertical")
         if self.limit_date is not None:
             dp.add_vline(self.limit_date, ls='--', lw=2, color='r')
             dp.add_text(find_text_time(self.limit_date), self.limit.value-2.0,
                         "VIOLATION", color='red', rotation="vertical")
-        dp.set_xlim(find_text_time(self.datestart, hours=-1.0), self.datestop)
+        dp.set_xlim(find_text_time(self.ecs_start, hours=-1.0), self.datestop)
         ymin = min(self.T_init.value, self.mvals.value.min())-2.0
         if self.name.lower() != "fptemp_11":
             ymax = self.limits["yellow_hi"].value
