@@ -77,6 +77,7 @@ limits_map = {
     "planning.data_quality.high.cold_ecs": "cold_ecs"
 }
 
+
 def find_json(name, model_spec, repo_path, version):
     from xija.get_model_spec import get_xija_model_spec
     msg = f"The JSON file {model_spec} does not exist! Please " \
@@ -416,7 +417,7 @@ class ThermalModelRunner(ModelDataset):
         values, which can be supplied to initialize these nodes for the
         start of the model run. Default: None
     get_msids : boolean, optional
-        Whether or not to pull data from the engineering archive. 
+        Whether to pull data from the engineering archive. 
         Default: False
     dt : float, optional
         The timestep to use for this run. Default is 328 seconds or is provided
