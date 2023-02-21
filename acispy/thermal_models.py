@@ -554,8 +554,6 @@ class ThermalModelRunner(ModelDataset):
         self.model_spec = self.xija_model.model_spec
         self.limits = self.xija_model.limits
 
-        if states is None:
-            states = self.xija_model.cmd_states
         states_obj = States(states)
 
         self.bad_times = getattr(self.xija_model, "bad_times", None)
@@ -569,11 +567,6 @@ class ThermalModelRunner(ModelDataset):
             components.append('dpa_power')
         if 'earthheat__fptemp' in self.xija_model.comp:
             components.append('earthheat__fptemp')
-        if states is None:
-            for c in ["pitch", "roll", "fep_count", "vid_board", "clocking",
-                      "ccd_count", "sim_z"]:
-                if c in self.xija_model.comp:
-                    components.append(c)
 
         masks = {}
         if mask_bad_times and self.bad_times is not None:
@@ -622,16 +615,15 @@ class ThermalModelRunner(ModelDataset):
         if other_init is not None:
             for k, v in other_init.items():
                 model.comp[k].set_data(v)
-        if states is not None:
-            if isinstance(states, np.ndarray):
-                state_names = states.dtype.names
-            else:
-                state_names = list(states.keys())
-            state_times = CxoTime(
-                np.array([states["datestart"], states["datestop"]])).secs
-            for k in state_names:
-                if k in model.comp:
-                    model.comp[k].set_data(states[k], state_times)
+        if isinstance(states, np.ndarray):
+            state_names = states.dtype.names
+        else:
+            state_names = list(states.keys())
+        state_times = CxoTime(
+            np.array([states["datestart"], states["datestop"]])).secs
+        for k in state_names:
+            if k in model.comp:
+                model.comp[k].set_data(states[k], state_times)
         if self.no_eclipse:
             model.comp["eclipse"].set_data(False)
         if self.compute_model_supp is not None:
@@ -651,43 +643,26 @@ class ThermalModelRunner(ModelDataset):
                                model_spec=model_spec, rk4=rk4,
                                evolve_method=evolve_method)
         ephem = self._get_ephemeris(model.tstart, model.tstop, model.times)
-        if states is None:
-            state_times = model.times
-            state_names = ["ccd_count", "fep_count", "vid_board", 
-                           "clocking", "pitch", "roll"]
-            if 'aoattqt1' in model.comp:
-                state_names += ["q1", "q2", "q3", "q4"]
-            states = {}
-            pattern = re.compile("q[1-4]")
-            for n in state_names:
-                nstate = n
-                ncomp = n
-                if pattern.match(n):
-                    ncomp = f'aoattqt{n[-1]}'
-                elif name == "roll":
-                    nstate = "off_nom_roll"
-                states[nstate] = np.array(model.comp[ncomp].dvals)
+        if isinstance(states, np.ndarray):
+            state_names = states.dtype.names
         else:
-            if isinstance(states, np.ndarray):
-                state_names = states.dtype.names
-            else:
-                state_names = list(states.keys())
-            state_times = np.array([states["tstart"], states["tstop"]])
-            model.comp['sim_z'].set_data(np.array(states['simpos']), state_times)
-            if 'pitch' in state_names:
-                model.comp['pitch'].set_data(np.array(states['pitch']), state_times)
-            else:
-                pitch, roll = calc_pitch_roll(model.times, ephem, states)
-                model.comp['pitch'].set_data(pitch, model.times)
-                model.comp['roll'].set_data(roll, model.times)
-            for st in ('ccd_count', 'fep_count', 'vid_board', 'clocking'):
-                model.comp[st].set_data(np.array(states[st]), state_times)
-            if 'dh_heater' in model.comp:
-                dhh = states["dh_heater"] if "dh_heater" in state_names else 0
-                model.comp['dh_heater'].set_data(dhh, state_times)
-            if "off_nom_roll" in state_names:
-                roll = np.array(states["off_nom_roll"])
-                model.comp["roll"].set_data(roll, state_times)
+            state_names = list(states.keys())
+        state_times = np.array([states["tstart"], states["tstop"]])
+        model.comp['sim_z'].set_data(np.array(states['simpos']), state_times)
+        if 'pitch' in state_names:
+            model.comp['pitch'].set_data(np.array(states['pitch']), state_times)
+        else:
+            pitch, roll = calc_pitch_roll(model.times, ephem, states)
+            model.comp['pitch'].set_data(pitch, model.times)
+            model.comp['roll'].set_data(roll, model.times)
+        for st in ('ccd_count', 'fep_count', 'vid_board', 'clocking'):
+            model.comp[st].set_data(np.array(states[st]), state_times)
+        if 'dh_heater' in model.comp:
+            dhh = states["dh_heater"] if "dh_heater" in state_names else 0
+            model.comp['dh_heater'].set_data(dhh, state_times)
+        if "off_nom_roll" in state_names:
+            roll = np.array(states["off_nom_roll"])
+            model.comp["roll"].set_data(roll, state_times)
         if 'dpa_power' in model.comp:
             # This is just a hack, we're not
             # really setting the power to zero.
