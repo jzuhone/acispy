@@ -461,7 +461,8 @@ class CustomDatePlot(ACISPlot):
         if zorder is not None:
             self.legend.set_zorder(zorder)
 
-    def fill_between(self, datestart, datestop, color, alpha=1.0):
+    def fill_between(self, datestart, datestop, color, alpha=1.0,
+                     ymin=None, ymax=None):
         """
         Fill a shaded region between two times on the plot. 
 
@@ -478,13 +479,23 @@ class CustomDatePlot(ACISPlot):
         alpha : float, optional
             The transparency of the shaded region. Default is 1.0,
             which is opaque.
+        ymin : float, optional
+            If specified, this will be the lower limit for the filled
+            region. Default is the lower limit of the plot.
+        ymax : float, optional
+            If specified, this will be the upper limit for the filled
+            region. Default is the upper limit of the plot.
         """
         tmin, tmax = self.ax.get_xlim()
         ybot, ytop = self.ax.get_ylim()
+        if ymin is None:
+            ymin = ybot
+        if ymax is None:
+            ymax = ytop
         t = np.linspace(tmin, tmax, 1000)
         tbegin, tend = cxctime2plotdate(CxoTime([datestart, datestop]).secs)
         where = (t >= tbegin) & (t <= tend)
-        self.ax.fill_between(t, ybot, ytop, where=where, 
+        self.ax.fill_between(t, ymin, ymax, where=where, 
                              color=color, alpha=alpha)
 
     def annotate_obsids(self, ypos, ds=None, show_manuvrs=False, ywidth=2.0,
