@@ -1050,9 +1050,7 @@ class SimulateECSRun(ThermalModelRunner):
     tstart : string or float
         The start time of the single-state run.
     hours : integer or float
-        The length of the ECS measurement in hours. NOTE that the
-        actual length of the ECS run is hours + 10 ks + 12 s, as
-        per the ECS CAP.
+        The length of the ECS measurement in hours.
     T_init : float
         The starting temperature for the model in degrees C.
     attitude : array_like
@@ -1116,9 +1114,7 @@ class SimulateECSRun(ThermalModelRunner):
         tend = tstart+hours*3600.0
         self.ecs_start = CxoTime(tstart).yday
         self.ecs_end = CxoTime(tend).yday
-        tstop = tend+0.5*(tend-tstart)
         datestart = CxoTime(tstart).date
-        datestop = CxoTime(tstop).date
         if isinstance(attitude, str):
             self.vehicle_load = attitude
         else:
@@ -1129,21 +1125,22 @@ class SimulateECSRun(ThermalModelRunner):
         if self.vehicle_load is not None:
             load_model = Model.from_load_page(self.vehicle_load, [name])
             load_states = States.from_load_page(self.vehicle_load)
-            run_start = load_model.table[name].times[0]
+            run_start = load_states.table["tstart"].value[0]
             T_init = load_model.table[name].value[0]
             mylog.info(f"Modeling a {ccd_count}-chip state concurrent with "
                        f"the {self.vehicle_load} vehicle loads.")
             states = dict((k, state.value) for (k, state) in
                           load_states.table.items())
-            run_idxs = (tstart <= states["tstart"]) & (states["tstart"] < tend)
+            run_idxs = (tstart <= states["tstart"]) & (states["tstop"] < tend)
             states["ccd_count"][run_idxs] = ccd_count
             states["fep_count"][run_idxs] = ccd_count
             states["clocking"][run_idxs] = 1
             states["vid_board"][run_idxs] = 1
-            states["simpos"][run_idxs] = -99616.0
-            states["hetg"][run_idxs] = "RETR"
-            states["letg"][run_idxs] = "RETR"
+            tstop = load_states.table["tstop"].value[-1]
+            datestop = CxoTime(tstop).date
         else:
+            tstop = tend + 0.5 * (tend - tstart)
+            datestop = CxoTime(tstop).date
             run_start = tstart
             states = {
                 "ccd_count": np.array([ccd_count], dtype='int'),
