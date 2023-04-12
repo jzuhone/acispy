@@ -39,7 +39,8 @@ class States(TimeSeriesData):
                     [CxoTime(table["date"]).secs],
                     usemask=False
                 )
-            if "tstart" not in state_names:
+                state_names.append("time")
+            elif "tstart" not in state_names:
                 table = rf.append_fields(
                     table, ["tstart", "tstop"],
                     [CxoTime(table["datestart"]).secs,
@@ -48,7 +49,10 @@ class States(TimeSeriesData):
                 state_names += ["tstart", "tstop"]
         else:
             state_names = list(table.keys())
-            if "tstart" not in state_names:
+            if "date" in state_names:
+                table["time"] = CxoTime(table["date"]).secs
+                state_names.append("time")
+            elif "tstart" not in state_names:
                 table["tstart"] = CxoTime(table["datestart"]).secs
                 table["tstop"] = CxoTime(table["datestop"]).secs
                 state_names += ["tstart", "tstop"]

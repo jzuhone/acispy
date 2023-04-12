@@ -686,7 +686,7 @@ class DatePlot(CustomDatePlot):
             else:
                 state_codes = [(v, k) for k, v in state_codes.items()]
                 y = convert_state_code(ds, field)[mask]
-            if src_name == "states":
+            if src_name == "states" and len(ds[field].times.shape) == 2:
                 tstart, tstop = ds[field].times
                 x = pointpair(tstart.value[mask], tstop.value[mask])
                 y = pointpair(y[mask])
