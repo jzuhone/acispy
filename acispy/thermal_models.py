@@ -539,7 +539,7 @@ class ThermalModelRunner(ModelDataset):
 
         self.T_init = Quantity(T_init, "deg_C")
 
-        if self.name in acis_models and states is not None:
+        if self.name in acis_models:
             self.xija_model = self._compute_acis_model(self.name, tstart, tstop,
                                                        states, dt, T_init, model_spec,
                                                        rk4=rk4, other_init=other_init,
@@ -649,8 +649,9 @@ class ThermalModelRunner(ModelDataset):
             state_names = list(states.keys())
         state_times = np.array([states["tstart"], states["tstop"]])
         model.comp['sim_z'].set_data(np.array(states['simpos']), state_times)
-        if 'pitch' in state_names:
+        if "q1" not in state_names:
             model.comp['pitch'].set_data(np.array(states['pitch']), state_times)
+            model.comp["roll"].set_data(np.array(states["off_nom_roll"]), state_times)
         else:
             pitch, roll = calc_pitch_roll(model.times, ephem, states)
             model.comp['pitch'].set_data(pitch, model.times)
@@ -660,9 +661,6 @@ class ThermalModelRunner(ModelDataset):
         if 'dh_heater' in model.comp:
             dhh = states["dh_heater"] if "dh_heater" in state_names else 0
             model.comp['dh_heater'].set_data(dhh, state_times)
-        if "off_nom_roll" in state_names:
-            roll = np.array(states["off_nom_roll"])
-            model.comp["roll"].set_data(roll, state_times)
         if 'dpa_power' in model.comp:
             # This is just a hack, we're not
             # really setting the power to zero.
