@@ -70,6 +70,12 @@ class States(TimeSeriesData):
             v = calc_off_nom_rolls(new_table)
             new_table["off_nom_roll"] = APQuantity(v, times, "deg", dtype=v.dtype)
         super(States, self).__init__(table=new_table)
+        derived_states = []
+        if "hetg" in new_table and "letg" in new_table:
+            derived_states.append("grating")
+        if "simpos" in new_table:
+            derived_states.append("instrument")
+        self.derived_states = derived_states
 
     @classmethod
     def from_hdf5(cls, g):
