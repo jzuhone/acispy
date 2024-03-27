@@ -196,7 +196,7 @@ class MSIDs(TimeSeriesData):
             if interpolate is not None:
                 indexes = Ska.Numpy.interpolate(np.arange(len(msid.times)),
                                                 msid.times, interpolate_times,
-                                                method=interpolate, sorted=True)
+                                                method=interpolate, sorted=True).astype("int")
                 times[k.lower()] = interpolate_times
             else:
                 indexes = slice(None, None, None)

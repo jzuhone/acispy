@@ -106,7 +106,7 @@ def create_builtin_derived_states(dset):
             inst[np.logical_and(-20000 >= simpos, simpos >= -86147)] = "HRC-I"
             inst[np.logical_and(-86148 >= simpos, simpos >= -104362)] = "HRC-S"
             return APStringArray(inst, ds.states["simpos"].times)
-    
+
         dset.add_derived_field("states", "instrument", _instrument, "",
                                display_name="Instrument",
                                depends=builtin_deps[("states", "instrument")])
