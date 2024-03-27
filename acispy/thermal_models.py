@@ -656,13 +656,20 @@ class ThermalModelRunner(ModelDataset):
             state_names = list(states.keys())
         state_times = np.array([states["tstart"], states["tstop"]])
         model.comp['sim_z'].set_data(np.array(states['simpos']), state_times)
-        if "q1" not in state_names:
-            model.comp['pitch'].set_data(np.array(states['pitch']), state_times)
-            model.comp["roll"].set_data(np.array(states["off_nom_roll"]), state_times)
-        else:
+        pitch = np.array(states["pitch"]) if "pitch" in state_names else None
+        roll = np.array(states["off_nom_roll"]) if "off_nom_roll" in state_names else None
+        if "q1" in state_names and (pitch is None or roll is None):
+            mylog.warning("Using quaternions to calculate pitch and roll because "
+                          "both were not specified in the states.")
             pitch, roll = calc_pitch_roll(model.times, ephem, states)
-            model.comp['pitch'].set_data(pitch, model.times)
-            model.comp['roll'].set_data(roll, model.times)
+            att_times = model.times
+        else:
+            att_times = state_times
+        if pitch is None or roll is None:
+            raise ValueError("pitch and off_nom_roll (or quaternions) must be specified "
+                             "in the states!")
+        model.comp['pitch'].set_data(pitch, att_times)
+        model.comp['roll'].set_data(roll, att_times)
         for st in ('ccd_count', 'fep_count', 'vid_board', 'clocking'):
             model.comp[st].set_data(np.array(states[st]), state_times)
         if 'dh_heater' in model.comp:
