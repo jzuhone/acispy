@@ -622,8 +622,15 @@ class ThermalModelRunner(ModelDataset):
         state_times = CxoTime(
             np.array([states["datestart"], states["datestop"]])).secs
         for k in state_names:
-            if k in model.comp:
-                model.comp[k].set_data(states[k], state_times)
+            if k == "simpos":
+                key = "sim_z"
+            elif k == "off_nom_roll":
+                key = "roll"
+            elif k in model.comp:
+                key = k
+            else:
+                continue
+            model.comp[key].set_data(states[k], state_times)
         if self.no_eclipse:
             model.comp["eclipse"].set_data(False)
         if self.compute_model_supp is not None:
