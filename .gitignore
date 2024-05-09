@@ -8,3 +8,4 @@ doc/source/*.png
 doc/source/*.dat
 build
 dist
+.eggs
