@@ -19,7 +19,6 @@ from kadi import events, commands
 import importlib
 from matplotlib import font_manager
 from pathlib import Path
-from acis_thermal_check import get_acis_limits
 
 
 short_name = {"1deamzt": "dea",
@@ -64,18 +63,6 @@ model_classes = {
     "bep_pcb": "BEPPCBCheck"
 }
 
-limits_map = {
-    "odb.caution.high": "yellow_hi",
-    "odb.caution.low": "yellow_lo",
-    "safety.caution.high": "yellow_hi",
-    "safety.caution.low": "yellow_lo",
-    "planning.warning.high": "planning_hi",
-    "planning.warning.low": "planning_lo",
-    "planning.data_quality.high.acisi": "acis_i",
-    "planning.data_quality.high.aciss": "acis_s",
-    "planning.data_quality.high.aciss_hot": "acis_hot",
-    "planning.data_quality.high.cold_ecs": "cold_ecs"
-}
 
 def find_json(name, model_spec, repo_path, version):
     from xija.get_model_spec import get_xija_model_spec
@@ -493,8 +480,10 @@ class ThermalModelRunner(ModelDataset):
         if self.name in acis_models:
             self.model_check = importlib.import_module(
                 f"acis_thermal_check.apps.{self.sname}_check")
+            self.check_obj = getattr(self.model_check, model_classes[self.sname])()
         else:
             self.model_check = None
+            self.check_obj = None
 
         model_spec = find_json(name, model_spec, 
                                repo_path=chandra_models_path,
@@ -651,7 +640,6 @@ class ThermalModelRunner(ModelDataset):
                             rk4=None):
         import re
         from acis_thermal_check.utils import calc_pitch_roll
-        check_obj = getattr(self.model_check, model_classes[self.sname])()
         if name == "fptemp_11":
             name = "fptemp"
         model = xija.XijaModel(name, start=tstart, stop=tstop, dt=dt, 
@@ -704,7 +692,7 @@ class ThermalModelRunner(ModelDataset):
         model.comp[name].set_data(T_init)
         if self.no_eclipse:
             model.comp["eclipse"].set_data(False)
-        check_obj._calc_model_supp(model, state_times, states, ephem, None)
+        self.check_obj._calc_model_supp(model, state_times, states, ephem, None)
         if self.name == "fptemp_11" and self.no_earth_heat:
             model.comp["earthheat__fptemp"].k = 0.0
         if other_init is not None:
@@ -1224,9 +1212,7 @@ class SimulateECSRun(ThermalModelRunner):
         mylog.info("Model Result")
         mylog.info("------------")
 
-        self.limits = get_acis_limits(self.name, self.model_spec, 
-                                      limits_map=limits_map)
-
+        self.limits = self.check_obj._limit_class(model_spec=self.model_spec, margin=0.0).limits
         self.limit_time = None
         self.limit_date = None
         self.duration = None
@@ -1234,7 +1220,7 @@ class SimulateECSRun(ThermalModelRunner):
         self.hours = hours
 
         if self.name.lower() == "fptemp_11":
-            cold = self.mvals.value < self.limits["cold_ecs"].value
+            cold = self.mvals.value < self.limits["cold_ecs"]["value"]
             cold &= self.xija_model.times < self.tend
             cold_time = np.sum(cold)
             if cold_time == 0:
@@ -1248,13 +1234,13 @@ class SimulateECSRun(ThermalModelRunner):
             limit_name = "planning_hi"
 
         self.limit = self.limits[limit_name]
-        viols = self.mvals.value > self.limit.value
+        viols = self.mvals.value > self.limit["value"]
         if np.any(viols):
             idx = np.where(viols)[0][0]
             self.limit_time = self.times('model', self.name)[idx]
             self.limit_date = CxoTime(self.limit_time).date
             self.duration = Quantity((self.limit_time.value-tstart)*0.001, "ks")
-            msg = f"The limit of {self.limit.value} degrees C will be " \
+            msg = f"The limit of {self.limit['value']} degrees C will be " \
                   f"reached at {self.limit_date}, after {self.duration.value} ksec."
             mylog.info(msg)
             if self.limit_time.value < self.tend:
@@ -1265,7 +1251,7 @@ class SimulateECSRun(ThermalModelRunner):
                 viol_time = "after"
             mylog.info(f"The limit is reached {viol_time} the end of the observation.")
         else:
-            mylog.info(f"The limit of {self.limit.value} degrees C "
+            mylog.info(f"The limit of {self.limit['value']} degrees C "
                        f"is never reached.")
 
         if name.lower() != "fptemp_11":
@@ -1311,32 +1297,32 @@ class SimulateECSRun(ThermalModelRunner):
         viol_text = "NOT SAFE" if self.violate else "SAFE"
         dp = DatePlot(self, [("model", self.name)], field2=field2, plot=plot,
                       fontsize=fontsize, **kwargs)
-        dp.add_hline(self.limit.value, ls='-', lw=2, color=self.limit.color)
+        dp.add_hline(self.limit["value"], ls='-', lw=2, color=self.limit["color"])
         if self.name.lower() != "fptemp_11":
             dp.add_text(find_text_time(self.dateend, hours=4.0), 
                         self.T_init.value + 2.0, viol_text, fontsize=22, 
                         color='black')
-            dp.add_hline(self.limits["yellow_hi"].value, ls='-', lw=2,
-                         color=self.limits["yellow_hi"].color)
+            dp.add_hline(self.limits["yellow_hi"]["value"], ls='-', lw=2,
+                         color=self.limits["yellow_hi"]["color"])
         else:
-            dp.add_hline(self.limits["cold_ecs"].value, ls='-', lw=2,
-                         color=self.limits["cold_ecs"].color)
+            dp.add_hline(self.limits["cold_ecs"]["value"], ls='-', lw=2,
+                         color=self.limits["cold_ecs"]["color"])
         dp.add_vline(self.datestart, ls='--', lw=2, color='b')
-        dp.add_text(find_text_time(self.datestart), self.limit.value - 2.0,
+        dp.add_text(find_text_time(self.datestart), self.limit["value"] - 2.0,
                     "START", color='blue', rotation="vertical")
         dp.add_vline(self.dateend, ls='--', lw=2, color='b')
-        dp.add_text(find_text_time(self.dateend), self.limit.value - 2.0,
+        dp.add_text(find_text_time(self.dateend), self.limit["value"] - 2.0,
                     "END", color='blue', rotation="vertical")
         if self.limit_date is not None:
             dp.add_vline(self.limit_date, ls='--', lw=2, color='r')
-            dp.add_text(find_text_time(self.limit_date), self.limit.value-2.0,
+            dp.add_text(find_text_time(self.limit_date), self.limit["value"]-2.0,
                         "VIOLATION", color='red', rotation="vertical")
         dp.set_xlim(find_text_time(self.datestart, hours=-1.0), self.datestop)
         ymin = min(self.T_init.value, self.mvals.value.min())-2.0
         if self.name.lower() != "fptemp_11":
-            ymax = self.limits["yellow_hi"].value
+            ymax = self.limits["yellow_hi"]["value"]
         else:
-            ymax = self.limit.value
+            ymax = self.limit["value"]
         ymax = max(ymax, self.mvals.value.max())+3.0
         self._time_ticks(dp, ymax, fontsize)
         dp.set_ylim(ymin, ymax)
