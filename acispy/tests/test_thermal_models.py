@@ -103,10 +103,8 @@ def test_load_output():
 
 
 def test_specify_path():
-    from xija.get_model_spec import REPO_PATH
-    from pathlib import Path
-    model_spec = Path(REPO_PATH / 'chandra_models' / 'xija' /
-                      'dpa' / 'dpa_spec.json')
+    from ska_helpers.paths import xija_models_path
+    model_spec = xija_models_path() / 'dpa/dpa_spec.json'
     tm1 = ThermalModelRunner("1dpamzt", '2018:001:00:00:00',
                              '2018:002:00:00:00')
     tm2 = ThermalModelRunner("1dpamzt", '2018:001:00:00:00',
