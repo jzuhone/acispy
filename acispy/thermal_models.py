@@ -1057,9 +1057,7 @@ class SimulateECSRun(ThermalModelRunner):
     tstart : string or float
         The start time of the single-state run.
     hours : integer or float
-        The length of the ECS measurement in hours. NOTE that the
-        actual length of the ECS run is hours + 10 ks + 12 s, as
-        per the ECS CAP.
+        The length of the ECS measurement in hours.
     T_init : float
         The starting temperature for the model in degrees C.
     attitude : array_like
