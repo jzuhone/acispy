@@ -16,6 +16,7 @@ import Ska.Numpy
 import Ska.engarchive.fetch_sci as fetch
 import matplotlib.pyplot as plt
 from kadi import events, commands
+from kadi.commands import states as cmd_states
 import importlib
 from matplotlib import font_manager
 from pathlib import Path
@@ -1071,7 +1072,7 @@ class SimulateECSRun(ThermalModelRunner):
         types:
             * (pitch, roll) combination, e.g. (155.0, 5.0)
             * Attitude quaternion, e.g [1.0, 0.0, 0.0, 0.0]
-            * Load name (for vehicle load): SEP0917C
+            * "vehicle" to use the vehicle load attitudes for the run.
         If the (pitch, roll) combination is chosen, note that a default
         quaternion of [1.0, 0.0, 0.0, 0.0] will be used, which means that the
         focal plane prediction may be inaccurate since the earth solid angle
@@ -1116,30 +1117,23 @@ class SimulateECSRun(ThermalModelRunner):
     def __init__(self, name, tstart, hours, T_init, attitude, ccd_count,
                  dh_heater=0, dt=328.0, evolve_method=None, 
                  rk4=None, model_spec=None, no_earth_heat=False,
-                 instrument=None, other_init=None,
-                 compute_model_supp=None):
+                 other_init=None, compute_model_supp=None):
         if name in short_name_rev:
             name = short_name_rev[name]
-        if name.lower() == "fptemp_11" and instrument is None:
-            raise RuntimeError("Please specify instrument='ACIS-I' or "
-                               "instrument='ACIS-S' when running the FP model!")
         tstart = CxoTime(tstart).secs
         tend = tstart+hours*3600.0
         tstop = tend+0.5*(tend-tstart)
         datestart = CxoTime(tstart).date
         datestop = CxoTime(tstop).date
-        if isinstance(attitude, str):
-            self.vehicle_load = attitude
-        else:
-            self.vehicle_load = None
+        self.vehicle_load = attitude == "vehicle"
         self.hours = hours
         self.no_earth_heat = no_earth_heat
-        self.instrument = instrument
-        if self.vehicle_load is not None:
+        if self.vehicle_load:
+            loads = set(l.load_name for l in events.load_segments.filter(tstart, tend))
             mylog.info(f"Modeling a {ccd_count}-chip state concurrent with "
-                       f"the {self.vehicle_load} vehicle loads.")
-            states = dict((k, state.value) for (k, state) in
-                          States.from_load_page(self.vehicle_load).table.items())
+                       f"states from the following vehicle loads: {loads}")
+            states = cmd_states.get_states(tstart, tstop,
+                                           merge_identical=True).as_array()
             run_idxs = states["tstart"] < tstop
             states["ccd_count"][run_idxs] = ccd_count
             states["fep_count"][run_idxs] = ccd_count
@@ -1194,7 +1188,7 @@ class SimulateECSRun(ThermalModelRunner):
         mylog.info(f"Stop Datestring: {datestop}")
         mylog.info(f"Initial Temperature: {T_init} degrees C")
         mylog.info(f"CCD/FEP Count: {ccd_count}")
-        if self.vehicle_load is None:
+        if not self.vehicle_load:
             if len(attitude) == 2:
                 pitch, roll = attitude
             else:
@@ -1229,11 +1223,8 @@ class SimulateECSRun(ThermalModelRunner):
                 msg = f"The focal plane is cold for " \
                       f"{cold_time*self.xija_model.dt_ksec} ks."
             mylog.info(msg)
-            limit_name = self.instrument.lower().replace("-", "_")
-        else:
-            limit_name = "planning_hi"
 
-        self.limit = self.limits[limit_name]
+        self.limit = self.limits["planning_hi"]
         viols = self.mvals.value > self.limit["value"]
         if np.any(viols):
             idx = np.where(viols)[0][0]
@@ -1290,7 +1281,7 @@ class SimulateECSRun(ThermalModelRunner):
         fontsize : integer, optional
             The font size for the labels in the plot. Default: 18 pt.
         """
-        if self.vehicle_load is None:
+        if not self.vehicle_load:
             field2 = None
         else:
             field2 = "pitch"
