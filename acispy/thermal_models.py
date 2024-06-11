@@ -631,6 +631,8 @@ class ThermalModelRunner(ModelDataset):
                 key = k
             else:
                 continue
+            if key not in model.comp:
+                continue
             model.comp[key].set_data(states[k], state_times)
         if self.no_eclipse:
             model.comp["eclipse"].set_data(False)
