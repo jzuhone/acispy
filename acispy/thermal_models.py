@@ -65,7 +65,6 @@ model_classes = {
 }
 
 
-
 def find_json(name, model_spec, repo_path, version):
     from xija.get_model_spec import get_xija_model_spec
     msg = f"The JSON file {model_spec} does not exist! Please " \
@@ -301,7 +300,7 @@ class ThermalModelFromRun(ModelDataset):
     loc : string or list of strings
         Path to the directory where the model and state data are stored.
     get_msids : boolean, optional
-        Whether or not to load the MSIDs corresponding to the
+        Whether to load the MSIDs corresponding to the
         temperature models for the same time period from the
         engineering archive. Default: False.
     tl_file : string
@@ -351,7 +350,7 @@ class ThermalModelFromLoad(ModelDataset):
         List of temperature components to get from the load models. If
         not specified all four components will be loaded.
     get_msids : boolean, optional
-        Whether or not to load the MSIDs corresponding to the
+        Whether to load the MSIDs corresponding to the
         temperature models for the same time period from the
         engineering archive. Default: False.
     states_comp : string, optional
